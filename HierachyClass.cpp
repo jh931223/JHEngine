@@ -82,7 +82,6 @@ void HierachyClass::Start()
 
 void HierachyClass::Update()
 {
-	gameObjects[0]->euler += XMFLOAT3(0, 1, 0);
 	for (auto i : gameObjects)
 	{
 		i->Update();

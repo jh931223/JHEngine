@@ -2,6 +2,7 @@
 #include "InputComponent.h"
 #include "InputClass.h"
 #include "SystemClass.h"
+#include "CameraComponent.h"
 InputComponent::InputComponent()
 {
 }
@@ -24,16 +25,18 @@ void InputComponent::Update()
 	}
 	if (Input()->IsKeyDown(87))
 	{
-		axis += up();
+		axis += forward();
 	}
 	else if (Input()->IsKeyDown(83))
 	{
-		axis -= up();
+		axis -= forward();
 	}
-	axis.z = axis.y;
-	axis.y = 0;
+	axis = XMFLOAT3(cos(Deg2Rad(gameObject->euler.y))*axis.x, 0, sin(Deg2Rad(gameObject->euler.y))*axis.z);
 	gameObject->position += (Normalize3(axis)*0.1f);
-	gameObject->euler += Input()->GetCursorAxis();// XMFLOAT3(0, 1, 0);
+
+
+	CameraComponent::mainCamera()->gameObject->euler += Input()->GetCursorAxis();// XMFLOAT3(0, 1, 0);
+	CameraComponent::mainCamera()->gameObject->position = gameObject->position+XMFLOAT3(0,2,-5);
 	//}
 	//DebugMessage(""+(int)(Input()->GetCursorAxis().x));
 }

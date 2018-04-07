@@ -159,6 +159,7 @@
     <ClInclude Include="Component.h" />
     <ClInclude Include="D3DClass.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="DepthShaderClass.h" />
     <ClInclude Include="DxDefine.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GraphicsClass.h" />
@@ -167,6 +168,7 @@
     <ClInclude Include="JHVector.h" />
     <ClInclude Include="LightComponent.h" />
     <ClInclude Include="HierachyClass.h" />
+    <ClInclude Include="MaterialClass.h" />
     <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MeshClass.h" />
     <ClInclude Include="ProjectionShaderClass.h" />
@@ -189,6 +191,7 @@
     <ClCompile Include="InputClass.cpp" />
     <ClCompile Include="LightComponent.cpp" />
     <ClCompile Include="HierachyClass.cpp" />
+    <ClCompile Include="MaterialClass.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="MeshClass.cpp" />
     <ClCompile Include="ProjectionShaderClass.cpp" />

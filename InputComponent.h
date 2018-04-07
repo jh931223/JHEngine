@@ -4,6 +4,7 @@ class InputComponent :
 	public Component
 {
 public:
+
 	InputComponent();
 	~InputComponent();
 	void Update() override;

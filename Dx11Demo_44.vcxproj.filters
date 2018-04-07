@@ -114,6 +114,12 @@
     <ClInclude Include="HierachyClass.h">
       <Filter>헤더 파일\Frameworks</Filter>
     </ClInclude>
+    <ClInclude Include="MaterialClass.h">
+      <Filter>헤더 파일\Frameworks</Filter>
+    </ClInclude>
+    <ClInclude Include="DepthShaderClass.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -169,6 +175,9 @@
     </ClCompile>
     <ClCompile Include="InputComponent.cpp">
       <Filter>소스 파일\Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="MaterialClass.cpp">
+      <Filter>소스 파일\Frameworks</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

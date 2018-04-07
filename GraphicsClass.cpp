@@ -73,6 +73,7 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 		return false;
 	}
 
+
 	// 뷰 포인트 객체를 만듭니다.
 	m_ViewPoint = new ViewPointClass;
 	if(!m_ViewPoint)
@@ -112,6 +113,7 @@ void GraphicsClass::Shutdown()
 		m_ProjectionTexture = 0;
 	}
 
+
 	// 투영 쉐이더 객체를 해제합니다.
 	if(m_ProjectionShader)
 	{
@@ -127,6 +129,9 @@ void GraphicsClass::Shutdown()
 		delete m_Direct3D;
 		m_Direct3D = 0;
 	}
+
+
+
 }
 
 

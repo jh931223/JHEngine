@@ -8,7 +8,7 @@ public:
 
 	void Render();
 	void GetViewMatrix(XMMATRIX&);
-
+	static const CameraComponent* mainCamera();
 private:
 	XMMATRIX m_viewMatrix;
 };
