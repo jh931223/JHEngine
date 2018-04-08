@@ -21,7 +21,7 @@ Mesh::~Mesh()
 }
 
 
-bool Mesh::Initialize(ID3D11Device* device, const char* modelFilename, const WCHAR* textureFilename)
+bool Mesh::Initialize(ID3D11Device* device, const char* modelFilename)
 {
 	// 모델 데이터를 로드합니다.
 	if(!LoadModel(modelFilename))
@@ -34,16 +34,12 @@ bool Mesh::Initialize(ID3D11Device* device, const char* modelFilename, const WCH
 	{
 		return false;
 	}
-
-	// 이 모델의 텍스처를 로드합니다.
-	return LoadTexture(device, textureFilename);
+	return true;
 }
 
 
 void Mesh::Shutdown()
 {
-	// 모델 텍스쳐를 반환합니다.
-	ReleaseTexture();
 
 	// 버텍스 및 인덱스 버퍼를 종료합니다.
 	ShutdownBuffers();
@@ -66,10 +62,6 @@ int Mesh::GetIndexCount()
 }
 
 
-ID3D11ShaderResourceView* Mesh::GetTexture()
-{
-	return m_Texture->GetTexture();
-}
 
 
 bool Mesh::InitializeBuffers(ID3D11Device* device)
@@ -185,31 +177,6 @@ void Mesh::RenderBuffers(ID3D11DeviceContext* deviceContext)
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
-
-bool Mesh::LoadTexture(ID3D11Device* device, const WCHAR * filename)
-{
-	// 텍스처 오브젝트를 생성한다.
-	m_Texture = new TextureClass;
-	if (!m_Texture)
-	{
-		return false;
-	}
-
-	// 텍스처 오브젝트를 초기화한다.
-	return m_Texture->Initialize(device, filename);
-}
-
-
-void Mesh::ReleaseTexture()
-{
-	// 텍스처 오브젝트를 릴리즈한다.
-	if (m_Texture)
-	{
-		m_Texture->Shutdown();
-		delete m_Texture;
-		m_Texture = 0;
-	}
-}
 
 bool Mesh::LoadModel(const char * filename)
 {

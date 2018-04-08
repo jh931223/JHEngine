@@ -18,7 +18,7 @@ public:
 	LRESULT CALLBACK MessageHandler(HWND, UINT, WPARAM, LPARAM);
 	GraphicsClass* GetGraphics();
 	ResourcesClass* GetResources();
-
+	ID3D11Device* GetDevice();
 
 private:
 	bool Frame();

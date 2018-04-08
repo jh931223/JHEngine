@@ -2,13 +2,15 @@
 #include "d3dclass.h"
 #include "CameraComponent.h"
 #include "meshclass.h"
+#include "MaterialClass.h"
 #include "LightComponent.h"
 #include "projectionshaderclass.h"
 #include "textureclass.h"
 #include "viewpointclass.h"
 #include "graphicsclass.h"
 #include "MeshRenderer.h"
-
+#include "BitmapClass.h"
+#include "TextureShaderClass.h"
 GraphicsClass::GraphicsClass()
 {
 }
@@ -81,6 +83,20 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 		return false;
 	}
 
+	// 비트맵 객체 생성
+	m_Bitmap = new BitmapClass;
+	if (!m_Bitmap)
+	{
+		return false;
+	}
+
+	// 비트맵 객체 초기화
+	if (!m_Bitmap->Initialize(m_Direct3D->GetDevice(), screenWidth, screenHeight, L"../JHEngine/data/seafloor.dds",
+		256, 256))
+	{
+		MessageBox(hwnd, L"Could not initialize the bitmap object.", L"Error", MB_OK);
+		return false;
+	}
 	// 뷰 포인트 객체를 초기화합니다.
 	m_ViewPoint->SetPosition(2.0f, 5.0f, -2.0f);
 	m_ViewPoint->SetLookAt(0.0f, 0.0f, 0.0f);
@@ -104,7 +120,13 @@ void GraphicsClass::Shutdown()
 		delete m_ViewPoint;
 		m_ViewPoint = 0;
 	}
-
+	// m_Bitmap 객체 반환
+	if (m_Bitmap)
+	{
+		m_Bitmap->Shutdown();
+		delete m_Bitmap;
+		m_Bitmap = 0;
+	}
 	// 투영 텍스처 객체를 해제합니다.
 	if(m_ProjectionTexture)
 	{
@@ -120,6 +142,13 @@ void GraphicsClass::Shutdown()
 		m_ProjectionShader->Shutdown();
 		delete m_ProjectionShader;
 		m_ProjectionShader = 0;
+	}
+
+	if (textureShader)
+	{
+		textureShader->Shutdown();
+		delete textureShader;
+		textureShader = 0;
 	}
 
 	// Direct3D 객체 반환
@@ -207,14 +236,12 @@ bool GraphicsClass::Render()
 
 		XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(pitch, yaw, roll);
 		worldMatrix = XMMatrixTranslation(gameObject->position.x, gameObject->position.y, gameObject->position.z);
-		i->model->Render(m_Direct3D->GetDeviceContext());
+		i->GetMesh()->Render(m_Direct3D->GetDeviceContext());
 		if (lights.size() == 0)
 		{
 			return false;
 		}
-		if (!m_ProjectionShader->Render(m_Direct3D->GetDeviceContext(), i->model->GetIndexCount(), rotationMatrix*worldMatrix, viewMatrix, projectionMatrix,
-			i->model->GetTexture(), m_Light->GetAmbientColor(), m_Light->GetDiffuseColor(), m_Light->GetPosition(),
-			viewMatrix2, projectionMatrix2, m_ProjectionTexture->GetTexture()))
+		if (!i->GetMaterial()->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(), rotationMatrix*worldMatrix, viewMatrix, projectionMatrix))
 		{
 			return false;
 		}

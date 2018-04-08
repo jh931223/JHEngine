@@ -11,6 +11,11 @@ TextureClass::TextureClass(const TextureClass& other)
 {
 }
 
+TextureClass::TextureClass(ID3D11Device* device, const WCHAR* filename)
+{
+	Initialize(device, filename);
+}
+
 
 TextureClass::~TextureClass()
 {
@@ -41,7 +46,8 @@ void TextureClass::Shutdown()
 }
 
 
-ID3D11ShaderResourceView* TextureClass::GetTexture()
+ID3D11ShaderResourceView* const *TextureClass::GetTexture()
 {
-	return m_texture;
+	return &m_texture;
 }
+

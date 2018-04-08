@@ -9,7 +9,7 @@ public:
 
 	bool Initialize(int, int, bool, HWND, bool, float, float);
 	void Shutdown();
-	
+
 	void BeginScene(float, float, float, float);
 	void EndScene();
 
@@ -22,6 +22,8 @@ public:
 
 	void GetVideoCardInfo(char*, int&);
 
+	void TurnZBufferOn();
+	void TurnZBufferOff();
 private:
 	bool m_vsync_enabled = false;
 	int m_videoCardMemory = 0;
@@ -37,4 +39,5 @@ private:
 	XMMATRIX m_projectionMatrix;
 	XMMATRIX m_worldMatrix;
 	XMMATRIX m_orthoMatrix;
+	ID3D11DepthStencilState* m_depthDisabledStencilState = nullptr;
 };

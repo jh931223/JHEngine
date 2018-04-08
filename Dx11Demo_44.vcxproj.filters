@@ -117,8 +117,14 @@
     <ClInclude Include="MaterialClass.h">
       <Filter>헤더 파일\Frameworks</Filter>
     </ClInclude>
-    <ClInclude Include="DepthShaderClass.h">
+    <ClInclude Include="BitmapClass.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureShaderClass.h">
+      <Filter>헤더 파일\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderClass.h">
+      <Filter>헤더 파일\Frameworks</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -179,12 +185,27 @@
     <ClCompile Include="MaterialClass.cpp">
       <Filter>소스 파일\Frameworks</Filter>
     </ClCompile>
+    <ClCompile Include="BitmapClass.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureShaderClass.cpp">
+      <Filter>소스 파일\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderClass.cpp">
+      <Filter>소스 파일\Frameworks</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="projection_ps.hlsl">
       <Filter>HLSL</Filter>
     </FxCompile>
     <FxCompile Include="projection_vs.hlsl">
+      <Filter>HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="texture_ps.hlsl">
+      <Filter>HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="texture_vs.hlsl">
       <Filter>HLSL</Filter>
     </FxCompile>
   </ItemGroup>

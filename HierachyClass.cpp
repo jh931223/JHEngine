@@ -7,6 +7,9 @@
 #include "LightComponent.h"
 #include "CameraComponent.h"
 #include "InputComponent.h"
+#include <map>
+#include <string>
+using namespace std;
 
 HierachyClass::HierachyClass()
 {
@@ -46,7 +49,8 @@ void HierachyClass::Setup()
 	GameObject* gobj = new GameObject("땅");
 	AddGameObject(gobj);
 	MeshRenderer* renderer = new MeshRenderer;
-	renderer->model = ResourcesClass::GetInstance()->m_GroundModel;
+	renderer->SetMesh(ResourcesClass::GetInstance()->m_GroundModel);//메쉬 설정
+	renderer->SetMaterial(ResourcesClass::GetInstance()->materialMap["floor"]);//머테리얼 설정
 	gobj->AddComponent(renderer);
 	gobj->position = XMFLOAT3(0, -1, 0);
 	gobj->euler = XMFLOAT3(0, 20, 0);
@@ -55,7 +59,8 @@ void HierachyClass::Setup()
 	AddGameObject(gobj);
 	renderer = new MeshRenderer;
 	gobj->AddComponent(renderer);
-	renderer->model = ResourcesClass::GetInstance()->m_CubeModel;
+	renderer->SetMesh(ResourcesClass::GetInstance()->m_CubeModel);// 메쉬 설정
+	renderer->SetMaterial(ResourcesClass::GetInstance()->materialMap["cube"]);// 머테리얼 설정
 	gobj->AddComponent(new InputComponent);
 	// light object 생성
 	gobj = new GameObject("라이트");

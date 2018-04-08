@@ -4,6 +4,7 @@
 #include "systemclass.h"
 #include "HierachyClass.h"
 #include"resourcesclass.h"
+#include "D3DClass.h"
 #include<time.h>
 
 SystemClass::SystemClass()
@@ -53,6 +54,7 @@ bool SystemClass::Initialize()
 	m_Resources = new ResourcesClass;
 	if (!m_Resources)
 		return false;
+	m_Resources->Initialize(m_hwnd);
 
 	m_Hierachy = new HierachyClass;
 	if (!m_Hierachy)
@@ -252,6 +254,15 @@ GraphicsClass * SystemClass::GetGraphics()
 ResourcesClass * SystemClass::GetResources()
 {
 	return m_Resources;
+}
+
+ID3D11Device * SystemClass::GetDevice()
+{
+	if (m_Graphics)
+	{
+		return m_Graphics->GetD3D()->GetDevice();
+	}
+	return nullptr;
 }
 
 

@@ -16,7 +16,8 @@ class ProjectionShaderClass;
 class TextureClass;
 class ViewPointClass;
 class MeshRenderer;
-
+class BitmapClass;
+class TextureShaderClass;
 class GraphicsClass
 {
 public:
@@ -40,5 +41,7 @@ private:
 	D3DClass* m_Direct3D = nullptr;
 	ProjectionShaderClass* m_ProjectionShader = nullptr;
 	TextureClass* m_ProjectionTexture = nullptr;
+	TextureShaderClass* textureShader = nullptr;
 	ViewPointClass* m_ViewPoint = nullptr;
+	BitmapClass* m_Bitmap = nullptr;
 };
