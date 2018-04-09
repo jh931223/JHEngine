@@ -180,6 +180,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TextureClass.h" />
     <ClInclude Include="TextureShaderClass.h" />
+    <ClInclude Include="Transform.h" />
     <ClInclude Include="ViewPointClass.h" />
   </ItemGroup>
   <ItemGroup>
@@ -209,6 +210,7 @@
     <ClCompile Include="SystemClass.cpp" />
     <ClCompile Include="TextureClass.cpp" />
     <ClCompile Include="TextureShaderClass.cpp" />
+    <ClCompile Include="Transform.cpp" />
     <ClCompile Include="ViewPointClass.cpp" />
   </ItemGroup>
   <ItemGroup>

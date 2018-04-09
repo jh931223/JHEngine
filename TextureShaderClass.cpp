@@ -1,7 +1,8 @@
 #include "stdafx.h"
 #include "Textureshaderclass.h"
 #include "TextureClass.h"
-
+#include <map>
+#include <string>
 TextureShaderClass::TextureShaderClass()
 {
 }
@@ -32,7 +33,7 @@ void TextureShaderClass::Shutdown()
 
 
 bool TextureShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix,
-	XMMATRIX viewMatrix, XMMATRIX projectionMatrix, std::vector<TextureClass*>* textureArray)
+	XMMATRIX viewMatrix, XMMATRIX projectionMatrix, void* textureArray)
 {
 	// 렌더링에 사용할 셰이더 매개 변수를 설정합니다.
 	if (!SetShaderParameters(deviceContext, worldMatrix, viewMatrix, projectionMatrix, textureArray))
@@ -229,8 +230,9 @@ void TextureShaderClass::ShutdownShader()
 
 
 bool TextureShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix,
-	XMMATRIX projectionMatrix, std::vector<TextureClass*>* textureArray)
+	XMMATRIX projectionMatrix, void* pArray)
 {
+	std::map<std::string,void*>* parameters = (std::map<std::string, void*>*)pArray;
 	// 행렬을 transpose하여 셰이더에서 사용할 수 있게 합니다
 	worldMatrix = XMMatrixTranspose(worldMatrix);
 	viewMatrix = XMMatrixTranspose(viewMatrix);
@@ -261,7 +263,7 @@ bool TextureShaderClass::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 	deviceContext->VSSetConstantBuffers(bufferNumber, 1, &m_matrixBuffer);
 
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
-	deviceContext->PSSetShaderResources(0, 1, textureArray->at(0)->GetTexture() );
+	deviceContext->PSSetShaderResources(0, 1, GetParam<TextureClass*>(parameters,"Texture")->GetTexture());
 
 	return true;
 }

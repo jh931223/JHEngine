@@ -11,6 +11,7 @@
 #include "MeshRenderer.h"
 #include "BitmapClass.h"
 #include "TextureShaderClass.h"
+#include "ResourcesClass.h"
 GraphicsClass::GraphicsClass()
 {
 }
@@ -178,7 +179,7 @@ D3DClass * GraphicsClass::GetD3D()
 
 bool GraphicsClass::Render()
 {
-	XMMATRIX worldMatrix, viewMatrix, projectionMatrix;
+	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, orthoMatrix;
 	XMMATRIX viewMatrix2, projectionMatrix2;
 	
 	// 씬을 그리기 위해 버퍼를 지웁니다
@@ -203,6 +204,7 @@ bool GraphicsClass::Render()
 	m_Direct3D->GetWorldMatrix(worldMatrix);
 	m_Camera->GetViewMatrix(viewMatrix);
 	m_Direct3D->GetProjectionMatrix(projectionMatrix);
+	m_Direct3D->GetOrthoMatrix(orthoMatrix);
 
 	// 뷰 포인트 객체에서 뷰 및 투영 행렬을 가져옵니다.
 	m_ViewPoint->GetViewMatrix(viewMatrix2);
@@ -221,8 +223,10 @@ bool GraphicsClass::Render()
 		}
 	}
 
-	// 메쉬를 그립니다.
 
+
+
+	// 메쉬를 그립니다.
 	for (const auto i:meshRenderers)
 	{
 		m_Direct3D->GetWorldMatrix(worldMatrix);
@@ -247,6 +251,24 @@ bool GraphicsClass::Render()
 		}
 	}
 
+	m_Direct3D->GetWorldMatrix(worldMatrix);
+	// 모든 2D 렌더링을 시작하려면 Z 버퍼를 끕니다.
+	m_Direct3D->TurnZBufferOff();
+
+	// 비트 맵 버텍스와 인덱스 버퍼를 그래픽 파이프 라인에 배치하여 그리기를 준비합니다.
+	if (!m_Bitmap->Render(m_Direct3D->GetDeviceContext(), 50, 100))
+	{
+		return false;
+	}
+
+	// 텍스처 쉐이더로 비트 맵을 렌더링합니다.    
+	if (!ResourcesClass::GetInstance()->FindMaterial("floor")->Render(m_Direct3D->GetDeviceContext(), m_Bitmap->GetIndexCount(), worldMatrix, viewMatrix, orthoMatrix))
+	{
+		return false;
+	}
+
+	// 모든 2D 렌더링이 완료되었으므로 Z 버퍼를 다시 켜십시오.
+	m_Direct3D->TurnZBufferOn();
 							   
 	 //렌더링 된 장면을 화면에 표시합니다.
 	m_Direct3D->EndScene();

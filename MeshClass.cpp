@@ -10,6 +10,11 @@ Mesh::Mesh()
 {
 }
 
+Mesh::Mesh(ID3D11Device* device, const char* modelFilename)
+{
+	Initialize(device, modelFilename);
+}
+
 
 Mesh::Mesh(const Mesh& other)
 {

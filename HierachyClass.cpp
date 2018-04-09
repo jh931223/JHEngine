@@ -49,19 +49,18 @@ void HierachyClass::Setup()
 	GameObject* gobj = new GameObject("땅");
 	AddGameObject(gobj);
 	MeshRenderer* renderer = new MeshRenderer;
-	renderer->SetMesh(ResourcesClass::GetInstance()->m_GroundModel);//메쉬 설정
-	renderer->SetMaterial(ResourcesClass::GetInstance()->materialMap["floor"]);//머테리얼 설정
+	renderer->SetMesh(ResourcesClass::GetInstance()->FindMesh("floor"));//메쉬 설정
+	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("floor"));//머테리얼 설정
 	gobj->AddComponent(renderer);
 	gobj->position = XMFLOAT3(0, -1, 0);
-	gobj->euler = XMFLOAT3(0, 20, 0);
+	gobj->euler = XMFLOAT3(0, 0, 0);
 	// cube object 생성
 	gobj = new GameObject("큐브");
 	AddGameObject(gobj);
 	renderer = new MeshRenderer;
 	gobj->AddComponent(renderer);
-	renderer->SetMesh(ResourcesClass::GetInstance()->m_CubeModel);// 메쉬 설정
-	renderer->SetMaterial(ResourcesClass::GetInstance()->materialMap["cube"]);// 머테리얼 설정
-	gobj->AddComponent(new InputComponent);
+	renderer->SetMesh(ResourcesClass::GetInstance()->FindMesh("cube"));// 메쉬 설정
+	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("cube"));// 머테리얼 설정
 	// light object 생성
 	gobj = new GameObject("라이트");
 	AddGameObject(gobj);
@@ -77,6 +76,7 @@ void HierachyClass::Setup()
 	gobj->AddComponent(m_Camera);
 	m_Camera->gameObject->position=(XMFLOAT3(0.0f, 7.0f, -10.0f));
 	m_Camera->gameObject->euler=(XMFLOAT3(35.0f, 0.0f, 0.0f));
+	gobj->AddComponent(new InputComponent);
 }
 
 void HierachyClass::Start()

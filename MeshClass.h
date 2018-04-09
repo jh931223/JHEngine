@@ -20,6 +20,7 @@ private:
 
 public:
 	Mesh();
+	Mesh(ID3D11Device*, const char*);
 	Mesh(const Mesh&);
 	~Mesh();
 

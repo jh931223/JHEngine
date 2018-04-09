@@ -31,12 +31,19 @@ void InputComponent::Update()
 	{
 		axis -= forward();
 	}
-	axis = XMFLOAT3(cos(Deg2Rad(gameObject->euler.y))*axis.x, 0, sin(Deg2Rad(gameObject->euler.y))*axis.z);
-	gameObject->position += (Normalize3(axis)*0.1f);
+	axis=Normalize3(axis);
 
 
-	CameraComponent::mainCamera()->gameObject->euler += Input()->GetCursorAxis();// XMFLOAT3(0, 1, 0);
-	CameraComponent::mainCamera()->gameObject->position = gameObject->position+XMFLOAT3(0,2,-5);
-	//}
-	//DebugMessage(""+(int)(Input()->GetCursorAxis().x));
+	gameObject->euler += Input()->GetCursorAxis();
+	XMVECTOR v = XMVectorSet(axis.x, axis.y, axis.z, 1);
+	XMVECTOR q = XMQuaternionRotationRollPitchYaw(Deg2Rad(gameObject->euler.x), Deg2Rad(gameObject->euler.y), Deg2Rad(gameObject->euler.z));
+
+	XMMATRIX M;
+	XMVECTOR V;
+
+	M = XMMatrixRotationQuaternion(q);
+	V = XMVectorMultiply(v, q);
+
+	XMStoreFloat3(&axis, V);
+	gameObject->position += axis;
 }
