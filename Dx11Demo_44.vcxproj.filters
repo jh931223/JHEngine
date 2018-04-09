@@ -129,6 +129,9 @@
     <ClInclude Include="Transform.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="ShadowShaderClass.h">
+      <Filter>헤더 파일\Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -200,6 +203,9 @@
     <ClCompile Include="Transform.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="ShadowShaderClass.cpp">
+      <Filter>소스 파일\Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="projection_ps.hlsl">
@@ -212,6 +218,12 @@
       <Filter>HLSL</Filter>
     </FxCompile>
     <FxCompile Include="texture_vs.hlsl">
+      <Filter>HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="Shadow_vs.hlsl">
+      <Filter>HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="Shadow_ps.hlsl">
       <Filter>HLSL</Filter>
     </FxCompile>
   </ItemGroup>

@@ -203,6 +203,7 @@ bool GraphicsClass::Render()
 	// 카메라 및 d3d 객체에서 월드, 뷰 및 투영 행렬을 가져옵니다
 	m_Direct3D->GetWorldMatrix(worldMatrix);
 	m_Camera->GetViewMatrix(viewMatrix);
+	XMMATRIX matrix;
 	m_Direct3D->GetProjectionMatrix(projectionMatrix);
 	m_Direct3D->GetOrthoMatrix(orthoMatrix);
 
@@ -262,7 +263,7 @@ bool GraphicsClass::Render()
 	}
 
 	// 텍스처 쉐이더로 비트 맵을 렌더링합니다.    
-	if (!ResourcesClass::GetInstance()->FindMaterial("floor")->Render(m_Direct3D->GetDeviceContext(), m_Bitmap->GetIndexCount(), worldMatrix, viewMatrix, orthoMatrix))
+	if (!ResourcesClass::GetInstance()->FindMaterial("cube")->Render(m_Direct3D->GetDeviceContext(), m_Bitmap->GetIndexCount(), worldMatrix, viewMatrix, orthoMatrix))
 	{
 		return false;
 	}
