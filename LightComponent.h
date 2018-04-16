@@ -20,6 +20,7 @@ public:
 
 	void GetViewMatrix(XMMATRIX&);
 	void GetProjectionMatrix(XMMATRIX&);
+	static LightComponent* mainLight();
 
 private:
 	XMFLOAT4 m_ambientColor = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);

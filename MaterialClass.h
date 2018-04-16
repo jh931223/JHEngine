@@ -1,9 +1,8 @@
 #pragma once
-#include<vector>
-#include<map>
 #include<string>
-class TextureClass;
+#include"ShaderClass.h"
 class ShaderClass;
+class ShaderParameterCollections;
 
 class MaterialClass
 {
@@ -13,15 +12,8 @@ public:
 	~MaterialClass();
 	bool Render(ID3D11DeviceContext*, const int, XMMATRIX, XMMATRIX, XMMATRIX);
 	void SetShader(ShaderClass *_shader);
-	template<class T> bool SetParameter(const std::string& key, T v);
+	ShaderParameterCollections* GetParams();
 private:
 	ShaderClass * shader;
-	std::map<std::string,void*> parameterArray;
+	ShaderParameterCollections params;
 };
-
-template<class T>
-inline bool MaterialClass::SetParameter(const std::string & key, T v)
-{
-	parameterArray[key] = v;
-	return true;
-}

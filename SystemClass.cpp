@@ -50,7 +50,6 @@ bool SystemClass::Initialize()
 	}
 	// m_Graphics 객체 초기화.
 	m_Graphics->Initialize(screenWidth, screenHeight, m_hwnd);
-
 	m_Resources = new ResourcesClass;
 	if (!m_Resources)
 		return false;
@@ -110,6 +109,10 @@ void SystemClass::Run()
 			if (!Frame())
 				break;
 		}
+		if (Input()->IsKeyDown(VK_ESCAPE))
+		{
+			break;
+		}
 	}
 }
 
@@ -142,6 +145,7 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 		m_Input->KeyUp((unsigned int)wparam);
 		return 0;
 	}
+
 
 	// 그 외의 모든 메시지들은 기본 메시지 처리로 넘깁니다.
 	default:
@@ -223,6 +227,8 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 	ShowWindow(m_hwnd, SW_SHOW);
 	SetForegroundWindow(m_hwnd);
 	SetFocus(m_hwnd);
+	SetCursor(NULL);
+	ShowCursor(false);
 }
 
 
@@ -283,6 +289,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 		PostQuitMessage(0);
 		return 0;
 	}
+
 
 	// 그 외의 모든 메시지들은 시스템 클래스의 메시지 처리로 넘깁니다.
 	default:

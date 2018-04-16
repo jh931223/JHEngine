@@ -11,7 +11,7 @@ public:
 	bool Initialize(ID3D11Device*, const WCHAR*);
 	void Shutdown();
 
-	ID3D11ShaderResourceView* const* GetTexture();
+	ID3D11ShaderResourceView* const* GetResourceView();
 
 
 private:

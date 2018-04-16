@@ -17,7 +17,7 @@ public:
 	XMFLOAT3 GetCursorAxis();
 	XMFLOAT3 GetCursorPosition();
 private:
-
+	XMFLOAT3 centerOfScrren;
 	bool m_keys[256];
 	XMFLOAT3 lastCursorPosition;
 };

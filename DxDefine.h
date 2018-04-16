@@ -10,7 +10,6 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
-
 //////////////
 // INCLUDES //
 //////////////
@@ -19,6 +18,7 @@
 #include <d3dcompiler.h>
 #include <directxmath.h>
 #include "DDSTextureLoader.h"	// DDS 颇老 贸府
+#include "WICTextureLoader.h"	// WIC 颇老 贸府
 using namespace DirectX;
 
 ///////////////////////////

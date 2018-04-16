@@ -6,7 +6,14 @@
 #include "GraphicsClass.h"
 #include "d3dclass.h"
 #include "MaterialClass.h"
+
+// Ω¶¿Ã¥ıµÈ
+
 #include "TextureShaderClass.h"
+#include "ShadowShaderClass.h"
+#include "RenderTextureClass.h"
+#include "DepthShaderClass.h"
+
 #include <map>
 #include <string>
 
@@ -48,6 +55,7 @@ void ResourcesClass::Initialize(HWND hwnd)
 	InitializeMesh(hwnd);
 	InitializeTexture(hwnd);
 	InitializeShader(hwnd);
+	InitializeRenderTexture(hwnd);
 	InitializeMaterial(hwnd);
 }
 
@@ -76,6 +84,11 @@ ShaderClass * ResourcesClass::FindShader(string _name)
 	return shaderMap[_name];
 }
 
+RenderTextureClass * ResourcesClass::FindRenderTexture(std::string _name)
+{
+	return rttMap[_name];
+}
+
 
 void ResourcesClass::InitializeShader(HWND hwnd)
 {
@@ -83,31 +96,63 @@ void ResourcesClass::InitializeShader(HWND hwnd)
 	result = new TextureShaderClass;
 	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
 	shaderMap["TextureShader"] = result;
+
+	result = new ShadowShaderClass;
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
+	shaderMap["ShadowShader"] = result;
+
+	result = new DepthShaderClass;
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
+	shaderMap["DepthShader"] = result;
+}
+
+void ResourcesClass::InitializeRenderTexture(HWND hwnd)
+{
+	RenderTextureClass* result;
+	result = new RenderTextureClass;
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, SCREEN_DEPTH, SCREEN_NEAR);
+	rttMap["rt_Shadow"] = result;
 }
 
 void ResourcesClass::InitializeMesh(HWND hwnd)
 {
-	meshMap["floor"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/floor.txt");
-	meshMap["cube"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/cube.txt");
+	//meshMap["floor"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/floor.txt");
+	//meshMap["cube"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/cube.txt");
 }
 
 void ResourcesClass::InitializeTexture(HWND hwnd)
 {
 	textureMap["stone"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"../JHEngine/data/stone.dds");
 	textureMap["floor"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"../JHEngine/data/seafloor.dds");
+	textureMap["tile"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"../JHEngine/data/tile.dds");
 }
 
 void ResourcesClass::InitializeMaterial(HWND hwnd)
 {
 	MaterialClass* result = new MaterialClass;
-	result->SetShader(FindShader("TextureShader"));
-	result->SetParameter<TextureClass*>("Texture",FindTexture("stone"));
+	result->SetShader(FindShader("ShadowShader"));
+	result->GetParams()->SetTexture("Texture", FindTexture("stone"));
+	result->GetParams()->SetRenderTexture("DepthMapTexture", FindRenderTexture("rt_Shadow"));
+	result->GetParams()->SetFloat4("ambientColor", XMFLOAT4(1.0, 1.0, 1, 1));
+	result->GetParams()->SetFloat4("diffuseColor", XMFLOAT4(4, 1.0, 0, 1));
 	materialMap["cube"] = result;
 
 	result = new MaterialClass;
-	result->SetShader(FindShader("TextureShader"));
-	result->SetParameter<TextureClass*>("Texture", FindTexture("floor"));
+	result->SetShader(FindShader("ShadowShader"));
+	result->GetParams()->SetTexture("Texture", FindTexture("floor"));
+	result->GetParams()->SetRenderTexture("DepthMapTexture", FindRenderTexture("rt_Shadow"));
+	result->GetParams()->SetFloat4("ambientColor", XMFLOAT4(1,1.0,1,1));
+	result->GetParams()->SetFloat4("diffuseColor", XMFLOAT4(1, 1.0, 0, 1));
 	materialMap["floor"] = result;
+
+	result = new MaterialClass;
+	result->SetShader(FindShader("DepthShader"));
+	materialMap["depthMap"] = result;
+
+	result = new MaterialClass;
+	result->SetShader(FindShader("TextureShader"));
+	result->GetParams()->SetTexture("Texture", FindTexture("tile"));
+	materialMap["test"] = result;
 }
 
 

@@ -36,8 +36,9 @@ void InputComponent::Update()
 
 	gameObject->euler += Input()->GetCursorAxis();
 	XMVECTOR v = XMVectorSet(axis.x, axis.y, axis.z, 0.0f);
-	XMMATRIX q = XMMatrixRotationRollPitchYaw(Deg2Rad(gameObject->euler.x), Deg2Rad(gameObject->euler.y), Deg2Rad(gameObject->euler.z));
-	v=XMVector3TransformCoord(v, q);
+	XMVECTOR q = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(gameObject->euler.x), XMConvertToRadians(gameObject->euler.y), XMConvertToRadians(gameObject->euler.z));
+	XMMATRIX m=XMMatrixRotationQuaternion(q);
+	v = XMVector3Transform(v, m);
 	XMStoreFloat3(&axis, v);
-	gameObject->position += axis*0.1f;
+	gameObject->position += axis*0.5f;
 }

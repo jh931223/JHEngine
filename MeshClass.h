@@ -1,9 +1,9 @@
 #pragma once
-
+#include<vector>
 
 class Mesh
 {
-private:
+public:
 	struct VertexType
 	{
 		XMFLOAT3 position;
@@ -11,12 +11,6 @@ private:
 		XMFLOAT3 normal;
 	};
 
-	struct MeshType
-	{
-		float x, y, z;
-		float tu, tv;
-		float nx, ny, nz;
-	};
 
 public:
 	Mesh();
@@ -25,14 +19,19 @@ public:
 	~Mesh();
 
 	bool Initialize(ID3D11Device*, const char*);
+	bool InitializeBuffers(ID3D11Device*);
 	void Shutdown();
 	void Render(ID3D11DeviceContext*);
+	bool SetVertices(XMFLOAT3*, int);
+	bool SetNormals(XMFLOAT3*);
+	bool SetUVs(XMFLOAT2*);
+	bool SetIndices(unsigned long*,int);
+	bool RecalculateNormals();
 
 	int GetIndexCount();
 
 
 private:
-	bool InitializeBuffers(ID3D11Device*);
 	void ShutdownBuffers();
 	void RenderBuffers(ID3D11DeviceContext*);
 
@@ -44,5 +43,9 @@ private:
 	ID3D11Buffer* m_indexBuffer = nullptr;
 	int m_vertexCount = 0;
 	int m_indexCount = 0;
-	MeshType* m_mesh = nullptr;
+	XMFLOAT3* vertices;
+	XMFLOAT3* normals;
+	XMFLOAT2* uv;
+	unsigned long* indices;
+
 };

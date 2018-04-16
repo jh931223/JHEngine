@@ -160,6 +160,7 @@
     <ClInclude Include="Component.h" />
     <ClInclude Include="D3DClass.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="DepthShaderClass.h" />
     <ClInclude Include="DxDefine.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GraphicsClass.h" />
@@ -172,6 +173,7 @@
     <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MeshClass.h" />
     <ClInclude Include="ProjectionShaderClass.h" />
+    <ClInclude Include="RenderTextureClass.h" />
     <ClInclude Include="ResourcesClass.h" />
     <ClInclude Include="ShaderClass.h" />
     <ClInclude Include="ShadowShaderClass.h" />
@@ -183,12 +185,15 @@
     <ClInclude Include="TextureShaderClass.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="ViewPointClass.h" />
+    <ClInclude Include="VoxelComponent.h" />
+    <ClInclude Include="WICTextureLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BitmapClass.cpp" />
     <ClCompile Include="CameraComponent.cpp" />
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="DepthShaderClass.cpp" />
     <ClCompile Include="InputComponent.cpp" />
     <ClCompile Include="JHEngine.cpp" />
     <ClCompile Include="GameObject.cpp" />
@@ -200,6 +205,7 @@
     <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="MeshClass.cpp" />
     <ClCompile Include="ProjectionShaderClass.cpp" />
+    <ClCompile Include="RenderTextureClass.cpp" />
     <ClCompile Include="ResourcesClass.cpp" />
     <ClCompile Include="ShaderClass.cpp" />
     <ClCompile Include="ShadowShaderClass.cpp" />
@@ -214,8 +220,22 @@
     <ClCompile Include="TextureShaderClass.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="ViewPointClass.cpp" />
+    <ClCompile Include="VoxelComponent.cpp" />
+    <ClCompile Include="WICTextureLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="depth_ps.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="depth_vs.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="projection_ps.hlsl" />
     <FxCompile Include="projection_vs.hlsl" />
     <FxCompile Include="Shadow_ps.hlsl">
@@ -251,6 +271,8 @@
     <Image Include="data\grate.dds" />
     <Image Include="data\seafloor.dds" />
     <Image Include="data\stone.dds" />
+    <Image Include="data\tile.dds" />
+    <Image Include="data\tilesheet.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

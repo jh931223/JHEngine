@@ -12,6 +12,7 @@
 #include "BitmapClass.h"
 #include "TextureShaderClass.h"
 #include "ResourcesClass.h"
+#include "RenderTextureClass.h"
 GraphicsClass::GraphicsClass()
 {
 }
@@ -175,60 +176,18 @@ D3DClass * GraphicsClass::GetD3D()
 {
 	return m_Direct3D;
 }
-
-
-bool GraphicsClass::Render()
+bool GraphicsClass::RenderScene(CameraComponent* m_Camera,MaterialClass* customMaterial = nullptr)
 {
-	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, orthoMatrix;
-	XMMATRIX viewMatrix2, projectionMatrix2;
-	
-	// 씬을 그리기 위해 버퍼를 지웁니다
-	m_Direct3D->BeginScene(0.0f, 0.0f, 0.0f, 1.0f);
-	// 카메라의 위치에 따라 뷰 행렬을 생성합니다
-	CameraComponent* m_Camera=0;
-	if (cameras.size() > 0)
-	{
-		for (const auto i : cameras)
-		{
-			if (i->enabled)
-			{
-				m_Camera = i;
-				break;
-			}
-		}
-	}
-	if(m_Camera!=0)
+	if (m_Camera != 0)
 		m_Camera->Render();
 
-	// 카메라 및 d3d 객체에서 월드, 뷰 및 투영 행렬을 가져옵니다
+	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, orthoMatrix;
 	m_Direct3D->GetWorldMatrix(worldMatrix);
 	m_Camera->GetViewMatrix(viewMatrix);
-	XMMATRIX matrix;
 	m_Direct3D->GetProjectionMatrix(projectionMatrix);
-	m_Direct3D->GetOrthoMatrix(orthoMatrix);
-
-	// 뷰 포인트 객체에서 뷰 및 투영 행렬을 가져옵니다.
-	m_ViewPoint->GetViewMatrix(viewMatrix2);
-	m_ViewPoint->GetProjectionMatrix(projectionMatrix2);
-
-	LightComponent* m_Light = 0;
-	if (lights.size() > 0)
-	{
-		for (const auto i : lights)
-		{
-			if (i->enabled)
-			{
-				m_Light = i;
-				break;
-			}
-		}
-	}
-
-
-
 
 	// 메쉬를 그립니다.
-	for (const auto i:meshRenderers)
+	for (const auto i : meshRenderers)
 	{
 		m_Direct3D->GetWorldMatrix(worldMatrix);
 		GameObject* gameObject = i->gameObject;
@@ -246,16 +205,31 @@ bool GraphicsClass::Render()
 		{
 			return false;
 		}
-		if (!i->GetMaterial()->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(), rotationMatrix*worldMatrix, viewMatrix, projectionMatrix))
+		if (customMaterial != nullptr)
+		{
+			if (!customMaterial->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(), XMMatrixMultiply(rotationMatrix, worldMatrix), viewMatrix, projectionMatrix))
+			{
+				return false;
+			}
+		}
+		else if (!i->GetMaterial()->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(), XMMatrixMultiply(rotationMatrix, worldMatrix), viewMatrix, projectionMatrix))
 		{
 			return false;
 		}
 	}
+	return true;
+}
+
+bool GraphicsClass::RenderCanvas(CameraComponent* m_Camera)
+{
+	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, orthoMatrix;
+	m_Direct3D->GetWorldMatrix(worldMatrix);
+	m_Camera->GetViewMatrix(viewMatrix);
+	m_Direct3D->GetOrthoMatrix(orthoMatrix);
+	// 모든 2D 렌더링을 시작하려면 Z 버퍼를 끕니다.
+	//m_Direct3D->TurnZBufferOff();
 
 	m_Direct3D->GetWorldMatrix(worldMatrix);
-	// 모든 2D 렌더링을 시작하려면 Z 버퍼를 끕니다.
-	m_Direct3D->TurnZBufferOff();
-
 	// 비트 맵 버텍스와 인덱스 버퍼를 그래픽 파이프 라인에 배치하여 그리기를 준비합니다.
 	if (!m_Bitmap->Render(m_Direct3D->GetDeviceContext(), 50, 100))
 	{
@@ -269,8 +243,97 @@ bool GraphicsClass::Render()
 	}
 
 	// 모든 2D 렌더링이 완료되었으므로 Z 버퍼를 다시 켜십시오.
-	m_Direct3D->TurnZBufferOn();
-							   
+	//m_Direct3D->TurnZBufferOn();
+
+	return true;
+}
+
+bool GraphicsClass::RenderToTexture(CameraComponent * camera)
+{
+	// 렌더링 대상을 렌더링에 맞게 설정합니다.
+	RenderTextureClass* m_RenderTexture = ResourcesClass::GetInstance()->FindRenderTexture("rt_Shadow");
+
+	m_RenderTexture->SetRenderTarget(m_Direct3D->GetDeviceContext());
+
+	// 렌더링을 텍스처에 지웁니다.
+	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetDeviceContext(), 0.0f, 0.0f, 1.0f,1.0f);
+
+	// 이제 장면을 렌더링하면 백 버퍼 대신 텍스처로 렌더링됩니다.
+	if (!RenderScene(camera,ResourcesClass::GetInstance()->FindMaterial("depthMap")))
+	{
+		return false;
+	}
+
+	// 렌더링 대상을 원래의 백 버퍼로 다시 설정하고 렌더링에 대한 렌더링을 더 이상 다시 설정하지 않습니다.
+	m_Direct3D->SetBackBufferRenderTarget();
+
+	return true;
+}
+bool GraphicsClass::RenderToDepthTexture(CameraComponent * camera)
+{
+	// 렌더링 대상을 렌더링에 맞게 설정합니다.
+	RenderTextureClass* m_RenderTexture = ResourcesClass::GetInstance()->FindRenderTexture("rt_Shadow");
+
+	m_RenderTexture->SetRenderTarget(m_Direct3D->GetDeviceContext());
+
+	// 렌더링을 텍스처에 지웁니다.
+	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetDeviceContext(), 0.0f, 0.0f, 1.0f, 1.0f);
+
+	// 이제 장면을 렌더링하면 백 버퍼 대신 텍스처로 렌더링됩니다.
+	if (!RenderScene(camera, ResourcesClass::GetInstance()->FindMaterial("depthMap")))
+	{
+		return false;
+	}
+
+	// 렌더링 대상을 원래의 백 버퍼로 다시 설정하고 렌더링에 대한 렌더링을 더 이상 다시 설정하지 않습니다.
+	m_Direct3D->SetBackBufferRenderTarget();
+	// 뷰포트를 원본으로 다시 설정합니다.
+	m_Direct3D->ResetViewport();
+
+	return true;
+}
+bool GraphicsClass::Render()
+{
+
+	CameraComponent* m_Camera = 0;
+	if (cameras.size() > 0)
+	{
+		for (const auto i : cameras)
+		{
+			if (i->enabled)
+			{
+				m_Camera = i;
+				break;
+			}
+		}
+	}
+	LightComponent* m_Light = 0;
+	if (lights.size() > 0)
+	{
+		for (const auto i : lights)
+		{
+			if (i->enabled)
+			{
+				m_Light = i;
+				break;
+			}
+		}
+	}
+
+	//if (!RenderToTexture(m_Camera))
+	//	return false;
+
+	// 씬을 그리기 위해 버퍼를 지웁니다
+	m_Direct3D->BeginScene(0.0f, 0.0f, 1.0f, 1.0f);
+	// 카메라의 위치에 따라 뷰 행렬을 생성합니다
+
+
+	if (!RenderScene(m_Camera))
+		return false;
+
+	/*if (!RenderCanvas(m_Camera))
+		return false;*/
+	
 	 //렌더링 된 장면을 화면에 표시합니다.
 	m_Direct3D->EndScene();
 

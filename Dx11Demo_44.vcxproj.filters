@@ -1,14 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="소스 파일">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="헤더 파일">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
     <Filter Include="리소스 파일">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
@@ -16,215 +8,239 @@
     <Filter Include="data">
       <UniqueIdentifier>{003b7574-e748-46d9-bdc3-c11c2ccd5846}</UniqueIdentifier>
     </Filter>
-    <Filter Include="HLSL">
-      <UniqueIdentifier>{387d9a59-812a-49da-87b1-f844ae53a3df}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\Shaders">
+    <Filter Include="Shaders">
       <UniqueIdentifier>{9a217e4f-241a-4cce-ba87-abf7572b3df7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="헤더 파일\Frameworks">
-      <UniqueIdentifier>{653e4ea3-3182-4481-a91d-5ef4a8968898}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\Frameworks">
-      <UniqueIdentifier>{e77a705f-5a4b-40c1-b930-ebbf268d2646}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="헤더 파일\Shaders">
-      <UniqueIdentifier>{2a7074ce-1616-4d38-838d-b827bb9ffee9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\Components">
-      <UniqueIdentifier>{d97dfd12-8516-4701-b29e-04599a612094}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="헤더 파일\Components">
-      <UniqueIdentifier>{e6b1b15b-463b-427b-9661-37fc33c7a1cc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\Scripts">
+    <Filter Include="Scripts">
       <UniqueIdentifier>{32e0c130-6937-42ff-aa77-95755f38a4d5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="헤더 파일\Scripts">
-      <UniqueIdentifier>{7e7dea18-94b7-4c7b-be1e-1c8808c42f60}</UniqueIdentifier>
+    <Filter Include="Shaders\HLSL">
+      <UniqueIdentifier>{387d9a59-812a-49da-87b1-f844ae53a3df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineFrameworks">
+      <UniqueIdentifier>{9674c307-5b97-4715-a878-9992848de378}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineFrameworks\Source">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="EngineFrameworks\Source\Frameworks">
+      <UniqueIdentifier>{653e4ea3-3182-4481-a91d-5ef4a8968898}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineFrameworks\Source\Frameworks\ResourceClass">
+      <UniqueIdentifier>{59ec0132-e857-42d0-9ccd-eb79454d0d81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineFrameworks\Source\Components">
+      <UniqueIdentifier>{e6b1b15b-463b-427b-9661-37fc33c7a1cc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>EngineFrameworks\Source</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>EngineFrameworks\Source</Filter>
     </ClInclude>
     <ClInclude Include="MeshRenderer.h">
-      <Filter>헤더 파일\Components</Filter>
+      <Filter>EngineFrameworks\Source\Components</Filter>
     </ClInclude>
     <ClInclude Include="D3DClass.h">
-      <Filter>헤더 파일\Frameworks</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="DxDefine.h">
-      <Filter>헤더 파일\Frameworks</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="GraphicsClass.h">
-      <Filter>헤더 파일\Frameworks</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="InputClass.h">
-      <Filter>헤더 파일\Frameworks</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="Singleton.h">
-      <Filter>헤더 파일\Frameworks</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="SystemClass.h">
-      <Filter>헤더 파일\Frameworks</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureClass.h">
-      <Filter>헤더 파일\Frameworks</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="ViewPointClass.h">
-      <Filter>헤더 파일\Frameworks</Filter>
-    </ClInclude>
-    <ClInclude Include="ProjectionShaderClass.h">
-      <Filter>헤더 파일\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="DDSTextureLoader.h">
-      <Filter>헤더 파일\Shaders</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="AlignedAllocationPolicy.h">
-      <Filter>헤더 파일\Frameworks</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="ResourcesClass.h">
-      <Filter>헤더 파일\Frameworks</Filter>
-    </ClInclude>
-    <ClInclude Include="MeshClass.h">
-      <Filter>헤더 파일\Frameworks</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="JHVector.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>EngineFrameworks\Source</Filter>
     </ClInclude>
     <ClInclude Include="LightComponent.h">
-      <Filter>헤더 파일\Components</Filter>
+      <Filter>EngineFrameworks\Source\Components</Filter>
     </ClInclude>
     <ClInclude Include="GameObject.h">
-      <Filter>헤더 파일\Frameworks</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="Component.h">
-      <Filter>헤더 파일\Frameworks</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="CameraComponent.h">
-      <Filter>헤더 파일\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="InputComponent.h">
-      <Filter>헤더 파일\Scripts</Filter>
+      <Filter>EngineFrameworks\Source\Components</Filter>
     </ClInclude>
     <ClInclude Include="HierachyClass.h">
-      <Filter>헤더 파일\Frameworks</Filter>
-    </ClInclude>
-    <ClInclude Include="MaterialClass.h">
-      <Filter>헤더 파일\Frameworks</Filter>
-    </ClInclude>
-    <ClInclude Include="BitmapClass.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureShaderClass.h">
-      <Filter>헤더 파일\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="ShaderClass.h">
-      <Filter>헤더 파일\Frameworks</Filter>
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
     <ClInclude Include="Transform.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>EngineFrameworks\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshClass.h">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderClass.h">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureClass.h">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClInclude>
+    <ClInclude Include="MaterialClass.h">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTextureClass.h">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClInclude>
+    <ClInclude Include="DepthShaderClass.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="ProjectionShaderClass.h">
+      <Filter>Shaders</Filter>
     </ClInclude>
     <ClInclude Include="ShadowShaderClass.h">
-      <Filter>헤더 파일\Shaders</Filter>
+      <Filter>Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureShaderClass.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="InputComponent.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="VoxelComponent.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="BitmapClass.h">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClInclude>
+    <ClInclude Include="DDSTextureLoader.h">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClInclude>
+    <ClInclude Include="WICTextureLoader.h">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="MeshRenderer.cpp">
-      <Filter>소스 파일\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="JHEngine.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="GraphicsClass.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
-    </ClCompile>
-    <ClCompile Include="InputClass.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
-    </ClCompile>
-    <ClCompile Include="SystemClass.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
-    </ClCompile>
-    <ClCompile Include="TextureClass.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
-    </ClCompile>
-    <ClCompile Include="ViewPointClass.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
-    </ClCompile>
-    <ClCompile Include="D3DClass.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
-    </ClCompile>
     <ClCompile Include="ProjectionShaderClass.cpp">
-      <Filter>소스 파일\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="DDSTextureLoader.cpp">
-      <Filter>소스 파일\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="ResourcesClass.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
-    </ClCompile>
-    <ClCompile Include="MeshClass.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
-    </ClCompile>
-    <ClCompile Include="LightComponent.cpp">
-      <Filter>소스 파일\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="GameObject.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
-    </ClCompile>
-    <ClCompile Include="CameraComponent.cpp">
-      <Filter>소스 파일\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="HierachyClass.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
+      <Filter>Shaders</Filter>
     </ClCompile>
     <ClCompile Include="InputComponent.cpp">
-      <Filter>소스 파일\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="MaterialClass.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
-    </ClCompile>
-    <ClCompile Include="BitmapClass.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>Scripts</Filter>
     </ClCompile>
     <ClCompile Include="TextureShaderClass.cpp">
-      <Filter>소스 파일\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="ShaderClass.cpp">
-      <Filter>소스 파일\Frameworks</Filter>
-    </ClCompile>
-    <ClCompile Include="Transform.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>Shaders</Filter>
     </ClCompile>
     <ClCompile Include="ShadowShaderClass.cpp">
-      <Filter>소스 파일\Shaders</Filter>
+      <Filter>Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="DepthShaderClass.cpp">
+      <Filter>Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourcesClass.cpp" />
+    <ClCompile Include="HierachyClass.cpp" />
+    <ClCompile Include="VoxelComponent.cpp">
+      <Filter>Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureClass.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClCompile>
+    <ClCompile Include="MaterialClass.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshClass.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTextureClass.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderClass.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClCompile>
+    <ClCompile Include="D3DClass.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsClass.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="InputClass.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemClass.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="ViewPointClass.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="BitmapClass.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClCompile>
+    <ClCompile Include="JHEngine.cpp">
+      <Filter>EngineFrameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>EngineFrameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>EngineFrameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraComponent.cpp">
+      <Filter>EngineFrameworks\Source\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="LightComponent.cpp">
+      <Filter>EngineFrameworks\Source\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshRenderer.cpp">
+      <Filter>EngineFrameworks\Source\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="DDSTextureLoader.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="WICTextureLoader.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="projection_ps.hlsl">
-      <Filter>HLSL</Filter>
+      <Filter>Shaders\HLSL</Filter>
     </FxCompile>
     <FxCompile Include="projection_vs.hlsl">
-      <Filter>HLSL</Filter>
+      <Filter>Shaders\HLSL</Filter>
     </FxCompile>
     <FxCompile Include="texture_ps.hlsl">
-      <Filter>HLSL</Filter>
+      <Filter>Shaders\HLSL</Filter>
     </FxCompile>
     <FxCompile Include="texture_vs.hlsl">
-      <Filter>HLSL</Filter>
+      <Filter>Shaders\HLSL</Filter>
     </FxCompile>
     <FxCompile Include="Shadow_vs.hlsl">
-      <Filter>HLSL</Filter>
+      <Filter>Shaders\HLSL</Filter>
     </FxCompile>
     <FxCompile Include="Shadow_ps.hlsl">
-      <Filter>HLSL</Filter>
+      <Filter>Shaders\HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="depth_ps.hlsl">
+      <Filter>Shaders\HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="depth_vs.hlsl">
+      <Filter>Shaders\HLSL</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
@@ -243,6 +259,12 @@
       <Filter>data</Filter>
     </Image>
     <Image Include="data\stone.dds">
+      <Filter>data</Filter>
+    </Image>
+    <Image Include="data\tilesheet.png">
+      <Filter>data</Filter>
+    </Image>
+    <Image Include="data\tile.dds">
       <Filter>data</Filter>
     </Image>
   </ItemGroup>

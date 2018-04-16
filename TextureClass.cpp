@@ -30,7 +30,6 @@ bool TextureClass::Initialize(ID3D11Device* device, const WCHAR* filename)
 	{
 		return false;
 	}
-
 	return true;
 }
 
@@ -46,7 +45,7 @@ void TextureClass::Shutdown()
 }
 
 
-ID3D11ShaderResourceView* const *TextureClass::GetTexture()
+ID3D11ShaderResourceView* const *TextureClass::GetResourceView()
 {
 	return &m_texture;
 }

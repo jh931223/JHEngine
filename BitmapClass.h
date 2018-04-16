@@ -21,7 +21,7 @@ public:
 	bool Render(ID3D11DeviceContext*, int, int);
 
 	int GetIndexCount();
-	ID3D11ShaderResourceView* const* GetTexture();
+	ID3D11ShaderResourceView* const* GetResourceView();
 
 private:
 	bool InitializeBuffers(ID3D11Device*);
