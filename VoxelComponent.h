@@ -3,6 +3,7 @@
 #include <vector>
 class Mesh;
 class MeshRenderer;
+class TextureClass;
 class Voxel : public Component
 {
 public:
@@ -17,6 +18,7 @@ public:
 	void CreateFaceLeft(int x, int y, int z, byte, int&);
 	void CreateFaceForward(int x, int y, int z, byte, int&);
 	void CreateFaceBackward(int x, int y, int z, byte, int&);
+	void LoadHeightMapFromRaw(int,int,const WCHAR*);
 	XMFLOAT2 GetUV(byte);
 	byte GetBlock(int x, int y, int z);
 	void UpdateMesh();
@@ -25,6 +27,7 @@ public:
 private:
 	void ReleaseChunks();
 	void NewChunks();
+	void ReadRawEX(unsigned char** &_srcBuf, const WCHAR* filename, int _width, int _height);
 	int width, height, depth;
 	float unit;
 	float tUnit;

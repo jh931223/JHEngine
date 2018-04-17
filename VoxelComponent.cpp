@@ -4,6 +4,7 @@
 #include"MeshClass.h"
 #include"MeshRenderer.h"
 #include"SystemClass.h"
+#include"TextureClass.h"
 #include<vector>
 
 Voxel::Voxel()
@@ -26,10 +27,10 @@ void Voxel::OnStart()
 
 void Voxel::Initialize()
 {
-	width = 100;
-	height = 2;
-	depth = 100;
-	unit = 3.0f;
+	width = 512;
+	height = 64;
+	depth = 512;
+	unit = 1.0f;
 	tUnit = 0.25f;
 	tAmount = 4;
 	NewChunks();
@@ -51,9 +52,11 @@ void Voxel::Initialize()
 		}
 		c++;
 		if (c == tAmount + 1)
-			c = 1;
+			c = 0;
 	}
 	UpdateMesh();
+
+//	LoadHeightMapFromRaw(256,256,L"../JHEngine/data/brilliant_terrain.raw");
 }
 void Voxel::NewChunks()
 {
@@ -64,7 +67,10 @@ void Voxel::NewChunks()
 	{
 		chunks[i] = new byte*[height];
 		for (int j = 0; j < height; j++)
+		{
 			chunks[i][j] = new byte[depth];
+			memset(chunks[i][j], 0, depth);
+		}
 	}
 }
 void Voxel::ReleaseChunks()
@@ -116,7 +122,6 @@ void Voxel::CreateFaceDown(int x, int y, int z, byte type, int& faceCount)
 	vertices.push_back(XMFLOAT3(x*unit - offset, y*unit - offset, z*unit + offset));
 	vertices.push_back(XMFLOAT3(x*unit + offset, y*unit - offset, z*unit + offset));
 	vertices.push_back(XMFLOAT3(x*unit + offset, y*unit - offset, z*unit - offset));
-
 	indices.push_back(faceCount * 4);
 	indices.push_back(faceCount * 4 + 2);
 	indices.push_back(faceCount * 4 + 1);
@@ -288,10 +293,52 @@ void Voxel::UpdateMesh()
 	Mesh* m = new Mesh;
 	renderer->SetMesh(m);
 	m->SetVertices(&vertices[0],vertices.size());
-	printf("verts : %d ", vertices.size());
 	m->SetIndices(&indices[0], indices.size());
-	printf("faces : %d \n", indices.size()/3/2);
 	m->SetUVs(&uvs[0]);
 	m->RecalculateNormals();
 	m->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
+}
+
+void Voxel::LoadHeightMapFromRaw(int _width,int _depth,const WCHAR* filename)
+{
+	unsigned char** data=nullptr;
+	ReleaseChunks();
+	height = 64;
+	width = _width;
+	depth = _depth;
+	NewChunks();
+	ReadRawEX(data, filename, width, depth);
+	for (int x = 0; x < width; x++)
+	{
+		for (int z = 0; z < depth; z++)
+		{
+			for (int y = 0; (y < data[x][z]&&y<height); y++)
+			{
+				chunks[x][y][z] = 1;
+			}
+		}
+	}
+	for (int i = 0; i < width; i++)
+		delete[] data[i];
+	delete[] data;
+	printf("%d개 생성 완료", width*depth*height);
+	UpdateMesh();
+}
+
+void Voxel::ReadRawEX(unsigned char** &_srcBuf, const WCHAR* filename, int _width, int _height)
+{
+	unsigned char** srcBuf = new unsigned char*[_width];
+	for (int i = 0; i < _width; i++)
+	{
+		srcBuf[i] = new unsigned char[_height];
+		memset(srcBuf[i], 0, _height);
+	}
+	FILE* pInput = NULL;
+	_wfopen_s(&pInput, filename, L"rb");
+	for (int i = 0; i < _width; i++)
+	{
+		fread_s(srcBuf[i], _height, 1, _height, pInput);
+	}
+	fclose(pInput);
+	_srcBuf = srcBuf;
 }

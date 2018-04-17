@@ -277,7 +277,7 @@ bool GraphicsClass::RenderToDepthTexture(CameraComponent * camera)
 	m_RenderTexture->SetRenderTarget(m_Direct3D->GetDeviceContext());
 
 	// 렌더링을 텍스처에 지웁니다.
-	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetDeviceContext(), 0.0f, 0.0f, 1.0f, 1.0f);
+	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetDeviceContext(), 0.0f, 0.3f, 0.5f, 1.0f);
 
 	// 이제 장면을 렌더링하면 백 버퍼 대신 텍스처로 렌더링됩니다.
 	if (!RenderScene(camera, ResourcesClass::GetInstance()->FindMaterial("depthMap")))
@@ -324,7 +324,7 @@ bool GraphicsClass::Render()
 	//	return false;
 
 	// 씬을 그리기 위해 버퍼를 지웁니다
-	m_Direct3D->BeginScene(0.0f, 0.0f, 1.0f, 1.0f);
+	m_Direct3D->BeginScene(0.0f, 0.3f, 0.8f, 1.0f);
 	// 카메라의 위치에 따라 뷰 행렬을 생성합니다
 
 

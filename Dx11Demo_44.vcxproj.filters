@@ -268,4 +268,12 @@
       <Filter>data</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="data\lena(512x512).raw">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\brilliant_terrain.raw">
+      <Filter>data</Filter>
+    </None>
+  </ItemGroup>
 </Project>

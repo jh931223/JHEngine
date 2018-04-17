@@ -95,6 +95,9 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <StackReserveSize>9000000</StackReserveSize>
+      <StackCommitSize>9000000</StackCommitSize>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <FxCompile>
       <ShaderType>Effect</ShaderType>
@@ -273,6 +276,10 @@
     <Image Include="data\stone.dds" />
     <Image Include="data\tile.dds" />
     <Image Include="data\tilesheet.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="data\brilliant_terrain.raw" />
+    <None Include="data\lena(512x512).raw" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

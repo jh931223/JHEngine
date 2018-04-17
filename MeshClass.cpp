@@ -248,39 +248,25 @@ void Mesh::ReleaseModel()
 
 bool Mesh::SetVertices(XMFLOAT3* _vertices,int _size)
 {
-	if (vertices)
-		delete[] vertices;
-	vertices = new XMFLOAT3[_size];
-	for (int i = 0; i < _size; i++)
-		vertices[i] = _vertices[i];
+	vertices = _vertices;
 	m_vertexCount = _size;
 	return false;
 }
 
 bool Mesh::SetNormals(XMFLOAT3* _normals)
 {
-	if (normals)
-		delete[] normals;
 	normals = _normals;
 	return false;
 }
 bool Mesh::SetUVs(XMFLOAT2* _uv)
 {
-	if (uv)
-		delete[] uv;
-	uv = new XMFLOAT2[m_vertexCount];
-	for (int i = 0; i < m_vertexCount; i++)
-		uv[i] = _uv[i];
+	uv = _uv;
 	return false;
 }
 
 bool Mesh::SetIndices(unsigned long* _indices, int _size)
 {
-	if (indices)
-		delete[] indices;
-	indices = new DWORD[_size];
-	for (int i = 0; i < _size; i++)
-		indices[i] = _indices[i];
+	indices = _indices;
 	m_indexCount = _size;
 	return false;
 }
