@@ -110,9 +110,6 @@
     <ClInclude Include="DepthShaderClass.h">
       <Filter>Shaders</Filter>
     </ClInclude>
-    <ClInclude Include="ProjectionShaderClass.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="ShadowShaderClass.h">
       <Filter>Shaders</Filter>
     </ClInclude>
@@ -136,9 +133,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ProjectionShaderClass.cpp">
-      <Filter>Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="InputComponent.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
@@ -218,12 +212,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="projection_ps.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
-    <FxCompile Include="projection_vs.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
     <FxCompile Include="texture_ps.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
@@ -273,6 +261,15 @@
       <Filter>data</Filter>
     </None>
     <None Include="data\brilliant_terrain.raw">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\1x1-island.raw">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\heightmap.r16">
+      <Filter>data</Filter>
+    </None>
+    <None Include="data\teasdrrain.raw">
       <Filter>data</Filter>
     </None>
   </ItemGroup>

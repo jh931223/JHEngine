@@ -4,13 +4,11 @@
 #include "meshclass.h"
 #include "MaterialClass.h"
 #include "LightComponent.h"
-#include "projectionshaderclass.h"
 #include "textureclass.h"
 #include "viewpointclass.h"
 #include "graphicsclass.h"
 #include "MeshRenderer.h"
 #include "BitmapClass.h"
-#include "TextureShaderClass.h"
 #include "ResourcesClass.h"
 #include "RenderTextureClass.h"
 GraphicsClass::GraphicsClass()
@@ -45,37 +43,6 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 		return false;
 	}
 
-
-
-	// 프로젝션 셰이더 개체를 만듭니다.
-	m_ProjectionShader = new ProjectionShaderClass;
-	if(!m_ProjectionShader)
-	{
-		return false;
-	}
-
-	// 프로젝션 셰이더 개체를 초기화합니다.
-	result = m_ProjectionShader->Initialize(m_Direct3D->GetDevice(), hwnd);
-	if(!result)
-	{
-		MessageBox(hwnd, L"Could not initialize the projection shader object.", L"Error", MB_OK);
-		return false;
-	}
-
-	// 투영 텍스처 객체를 만듭니다.
-	m_ProjectionTexture = new TextureClass;
-	if(!m_ProjectionTexture)
-	{
-		return false;
-	}
-
-	// 투영 텍스처 객체를 초기화합니다.
-	result = m_ProjectionTexture->Initialize(m_Direct3D->GetDevice(), L"../JHEngine/data/grate.dds");
-	if(!result)
-	{
-		MessageBox(hwnd, L"Could not initialize the projection texture object.", L"Error", MB_OK);
-		return false;
-	}
 
 
 	// 뷰 포인트 객체를 만듭니다.
@@ -129,29 +96,7 @@ void GraphicsClass::Shutdown()
 		delete m_Bitmap;
 		m_Bitmap = 0;
 	}
-	// 투영 텍스처 객체를 해제합니다.
-	if(m_ProjectionTexture)
-	{
-		m_ProjectionTexture->Shutdown();
-		delete m_ProjectionTexture;
-		m_ProjectionTexture = 0;
-	}
 
-
-	// 투영 쉐이더 객체를 해제합니다.
-	if(m_ProjectionShader)
-	{
-		m_ProjectionShader->Shutdown();
-		delete m_ProjectionShader;
-		m_ProjectionShader = 0;
-	}
-
-	if (textureShader)
-	{
-		textureShader->Shutdown();
-		delete textureShader;
-		textureShader = 0;
-	}
 
 	// Direct3D 객체 반환
 	if (m_Direct3D)

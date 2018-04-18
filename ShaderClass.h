@@ -31,8 +31,6 @@ typedef ShaderParameterCollections PARAM;
 class ShaderClass : public AlignedAllocationPolicy<16>
 {
 protected:
-	virtual struct MyStruct {};
-
 	struct MatrixBufferType
 	{
 		XMMATRIX world;

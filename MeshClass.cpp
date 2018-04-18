@@ -24,8 +24,10 @@ Mesh::Mesh(const Mesh& other)
 
 Mesh::~Mesh()
 {
-	delete vertices;
-	delete indices;
+	if (vertices)
+		delete vertices;
+	if (indices)
+		delete indices;
 }
 
 
@@ -82,16 +84,6 @@ bool Mesh::InitializeBuffers(ID3D11Device* device)
 	{
 		return false;
 	}
-	if (uv == 0)
-		return false;
-	VertexType* vertType = new VertexType[m_vertexCount];
-	for (int i = 0; i < m_vertexCount; i++)
-	{
-		vertType[i].position = vertices[i];
-		vertType[i].normal = normals[i];
-		vertType[i].texture = uv[i];
-	}
-
 	
 
 	// 정적 정점 버퍼의 구조체를 설정합니다.
@@ -105,7 +97,7 @@ bool Mesh::InitializeBuffers(ID3D11Device* device)
 
 	// subresource 구조에 정점 데이터에 대한 포인터를 제공합니다.
 	D3D11_SUBRESOURCE_DATA vertexData;
-	vertexData.pSysMem = vertType;
+	vertexData.pSysMem = vertices;
 	vertexData.SysMemPitch = 0;
 	vertexData.SysMemSlicePitch = 0;
 
@@ -135,9 +127,6 @@ bool Mesh::InitializeBuffers(ID3D11Device* device)
 	{
 		return false;
 	}
-
-	delete[] vertType;
-	vertType = 0;
 	return true;
 }
 
@@ -217,21 +206,15 @@ bool Mesh::LoadModel(const char * filename)
 	// 버텍스 데이터를 읽습니다.
 	if (vertices)
 		delete[] vertices;
-	vertices = new XMFLOAT3[m_vertexCount];
-	if (uv)
-		delete[] uv;
-	uv = new XMFLOAT2[m_vertexCount];
-	if (normals)
-		delete[] normals;
-	normals = new XMFLOAT3[m_vertexCount];
+	vertices = new VertexType[m_vertexCount];
 	if (indices)
 		delete[] indices;
 	indices = new unsigned long[m_indexCount];
 	for (int i = 0; i < m_vertexCount; i++)
 	{
-		fin >> vertices[i].x >> vertices[i].y >> vertices[i].z;
-		fin >> uv[i].x >> uv[i].y;
-		fin >> normals[i].x >> normals[i].y >> normals[i].z;
+		fin >> vertices[i].position.x >> vertices[i].position.y >> vertices[i].position.z;
+		fin >> vertices[i].texture.x >> vertices[i].texture.y;
+		fin >> vertices[i].normal.x >> vertices[i].normal.y >> vertices[i].normal.z;
 		indices[i] = i;
 	}
 
@@ -244,25 +227,23 @@ bool Mesh::LoadModel(const char * filename)
 
 void Mesh::ReleaseModel()
 {
+	if (vertices)
+	{
+		delete[] vertices;
+	}
+	if (indices)
+	{
+		delete[] indices;
+	}
 }
 
-bool Mesh::SetVertices(XMFLOAT3* _vertices,int _size)
+bool Mesh::SetVertices(VertexType* _vertices,int _size)
 {
 	vertices = _vertices;
 	m_vertexCount = _size;
 	return false;
 }
 
-bool Mesh::SetNormals(XMFLOAT3* _normals)
-{
-	normals = _normals;
-	return false;
-}
-bool Mesh::SetUVs(XMFLOAT2* _uv)
-{
-	uv = _uv;
-	return false;
-}
 
 bool Mesh::SetIndices(unsigned long* _indices, int _size)
 {
@@ -277,26 +258,23 @@ bool Mesh::RecalculateNormals()
 		return false;
 	if (indices == 0)
 		return false;
-	if (normals)
-		delete[] normals;
-	normals = new XMFLOAT3[m_vertexCount];
 	XMVECTOR V1, V2,UP;
 	XMFLOAT3 n(0, 1, 0);
 	XMFLOAT3 f1, f2;
 	for (int i = 0; i < m_indexCount; i += 3)
 	{
-		f1 = vertices[indices[i]] - vertices[indices[i+1]];
+		f1 = vertices[indices[i]].position - vertices[indices[i+1]].position;
 		f1=Normalize3(f1);
-		f2 = vertices[indices[i+2]] - vertices[indices[i + 1]];
+		f2 = vertices[indices[i+2]].position - vertices[indices[i+1]].position;
 		f2 = Normalize3(f2);
 		V1=XMLoadFloat3(&f1);
 		V2=XMLoadFloat3(&f2);
 		UP=XMVector3Cross(V1, V2);
 		UP=XMVector3Normalize(UP);
 		XMStoreFloat3(&n, UP);
-		normals[indices[i]] = n;
-		normals[indices[i+1]] = n;
-		normals[indices[i+2]] = n;
+		vertices[indices[i]].normal = n;
+		vertices[indices[i+1]].normal = n;
+		vertices[indices[i+2]].normal = n;
 	}
 	return true;
 }
