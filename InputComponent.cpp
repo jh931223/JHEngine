@@ -40,5 +40,5 @@ void InputComponent::Update()
 	XMMATRIX m=XMMatrixRotationQuaternion(q);
 	v = XMVector3Transform(v, m);
 	XMStoreFloat3(&axis, v);
-	gameObject->position += axis*0.5f;
+	gameObject->position += axis*0.1f;
 }
