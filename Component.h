@@ -1,5 +1,6 @@
 #pragma once
 class GameObject;
+class CTransform;
 class Component : public AlignedAllocationPolicy<16>
 {
 public:
@@ -11,5 +12,6 @@ public:
 	virtual ~Component() {}
 	virtual void OnStart() {};
 	virtual void Update() {};
+	CTransform* transform();
 };
 

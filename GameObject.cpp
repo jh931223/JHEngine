@@ -17,11 +17,19 @@ GameObject::GameObject(const std::string& _name):name(_name)
 
 GameObject::~GameObject()
 {
-	Initialize();
+	for (auto i : components)
+		delete i;
+	components.clear();
+	for (auto i : childObjects)
+		delete i;
+	childObjects.clear();
+	delete transform;
+	transform = 0;
 }
 
 void GameObject::Initialize()
 {
+	transform = new CTransform(this);
 	for (auto i : components)
 		delete i;
 	components.clear();
@@ -32,6 +40,8 @@ void GameObject::Initialize()
 
 bool GameObject::AddChild(GameObject* _childObject, int _index)
 {
+	if (_childObject == 0)
+		return false;
 	if (_index != -1&&(_index >= childObjects.size() || _index < 0))
 		return false;
 	for (auto i : childObjects)
@@ -43,6 +53,7 @@ bool GameObject::AddChild(GameObject* _childObject, int _index)
 		childObjects.push_back(_childObject);
 	else
 		childObjects.insert(childObjects.begin() + _index, _childObject);
+	_childObject->transform->parent = transform;
 	return true;
 }
 

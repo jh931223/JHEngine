@@ -89,9 +89,6 @@
     <ClInclude Include="HierachyClass.h">
       <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClInclude>
-    <ClInclude Include="Transform.h">
-      <Filter>EngineFrameworks\Source</Filter>
-    </ClInclude>
     <ClInclude Include="MeshClass.h">
       <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
     </ClInclude>
@@ -130,6 +127,12 @@
     </ClInclude>
     <ClInclude Include="WICTextureLoader.h">
       <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClInclude>
+    <ClInclude Include="Octree.h">
+      <Filter>Scripts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -192,9 +195,6 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>EngineFrameworks</Filter>
     </ClCompile>
-    <ClCompile Include="Transform.cpp">
-      <Filter>EngineFrameworks</Filter>
-    </ClCompile>
     <ClCompile Include="CameraComponent.cpp">
       <Filter>EngineFrameworks\Source\Components</Filter>
     </ClCompile>
@@ -209,6 +209,13 @@
     </ClCompile>
     <ClCompile Include="WICTextureLoader.cpp">
       <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="Component.cpp" />
+    <ClCompile Include="Octree.cpp">
+      <Filter>Scripts</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -240,9 +247,6 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="data\grate.dds">
-      <Filter>data</Filter>
-    </Image>
     <Image Include="data\seafloor.dds">
       <Filter>data</Filter>
     </Image>
@@ -253,6 +257,15 @@
       <Filter>data</Filter>
     </Image>
     <Image Include="data\tile.dds">
+      <Filter>data</Filter>
+    </Image>
+    <Image Include="data\grass1.dds">
+      <Filter>data</Filter>
+    </Image>
+    <Image Include="data\sample.dds">
+      <Filter>data</Filter>
+    </Image>
+    <Image Include="data\grass.dds">
       <Filter>data</Filter>
     </Image>
   </ItemGroup>

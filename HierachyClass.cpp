@@ -73,7 +73,7 @@ void HierachyClass::Setup()
 	m_Light->SetAmbientColor(0.15f, 0.15f, 0.15f, 1.0f);
 	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
 	m_Light->SetLookAt(0.0f, 0.0f, 0.0f);
-	m_Light->SetPosition(2.0f, 10.0f, -10.0f);
+	m_Light->transform()->SetPosition(XMFLOAT3(2.0f, 10.0f, -10.0f));
 	m_Light->GenerateProjectionMatrix(SCREEN_DEPTH, SCREEN_NEAR);
 	m_Light->GenerateViewMatrix();
 	// light object 생성
@@ -81,20 +81,26 @@ void HierachyClass::Setup()
 	AddGameObject(gobj);
 	CameraComponent* m_Camera = new CameraComponent;
 	gobj->AddComponent(m_Camera);
-	m_Camera->gameObject->position=(XMFLOAT3(0.0f, 7.0f, -10.0f));
-	m_Camera->gameObject->euler=(XMFLOAT3(35.0f, 0.0f, 0.0f));
+	m_Camera->transform()->SetPosition(XMFLOAT3(0.0f, 7.0f, -10.0f));
+	m_Camera->transform()->SetRotation(XMFLOAT3(35.0f, 0.0f, 0.0f));
 	gobj->AddComponent(new InputComponent);
 	// 복셀 생성
+	gobj = new GameObject("복셀루트");
+	GameObject* r = gobj;
+	r->transform->SetPosition(XMFLOAT3(0, -10, 0));
+	AddGameObject(gobj);
+
 	gobj = new GameObject("복셀");
 	AddGameObject(gobj);
+	r->AddChild(gobj);
 	renderer = new MeshRenderer;
 	gobj->AddComponent(renderer);
 	Voxel* voxel = new Voxel;
 	voxel->renderer = renderer;
 	gobj->AddComponent(voxel);
 	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("test"));// 머테리얼 설정
-	gobj->position = XMFLOAT3(0, -1, 0);
-	gobj->euler = XMFLOAT3(0, 0, 0);
+	gobj->transform->SetLocalPosition(XMFLOAT3(-10, 0, 0));
+	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
 }
 
 void HierachyClass::Start()

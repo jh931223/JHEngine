@@ -1,15 +1,14 @@
 #pragma once
 #include<vector>
+#include"Transform.h"
 class Component;
 class GameObject
 {
 public:
-	XMFLOAT3 position;
-	XMFLOAT3 euler;
-	XMFLOAT3 scale;
 	std::vector<Component*> components;
 	std::vector<GameObject*> childObjects;
 	std::string name;
+	CTransform* transform;
 public:
 	GameObject();
 	GameObject(const std::string& _name);

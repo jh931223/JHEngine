@@ -21,6 +21,10 @@ Voxel ::~Voxel()
 
 void Voxel::Update()
 {
+	if (transform()->parent)
+	{
+		//transform()->parent->RotateW(XMFLOAT3(0, 0.1f, 0));
+	}
 }
 
 void Voxel::OnStart()
@@ -34,35 +38,14 @@ void Voxel::Initialize()
 	height = 32;
 	depth = 32;
 	unit = 1.0f;
-	tUnit = 0.25f;
-	tAmount = 4;
+	tUnit = 1.0f;
+	tAmount = 1;
 	mesh = new Mesh;
 	renderer->SetMesh(mesh);
+	useMarchingCube = true;
 
-	//NewChunks();
-	//int c = 1;
-	//for (int x = 0; x < width; x++)
-	//{
-	//	for (int z = 0; z < depth; z++)
-	//	{
-	//		for (int y = 0; y < height; y++)
-	//		{
-	//			chunks[x][y][z] = c;
-	//			c++;
-	//			if (c == tAmount+1)
-	//				c = 1;
-	//		}
-	//		c++;
-	//		if (c == tAmount + 1)
-	//			c = 1;
-	//	}
-	//	c++;
-	//	if (c == tAmount + 1)
-	//		c = 1;
-	//}
-	//UpdateMesh();
-
-	LoadHeightMapFromRaw(1025,1025,32,"../JHEngine/data/heightmap.r16");
+	//LoadCube();
+	LoadHeightMapFromRaw(1025,1025,512,"../JHEngine/data/heightmap.r16");
 }
 void Voxel::NewChunks()
 {
@@ -284,39 +267,29 @@ void Voxel::CreateFaceMarchingCube(int _case, int x, int y, int z, byte type)
 	if (_case == 0 || _case == 255)
 		return;
 	float offset = unit * 0.5f;
-	int count = 0;
-	int vertCount=0;
-	std::map<int,int> vertIDMap;
-	for (count = 0; count < 5; count++)
-	{
-		if (triTable[_case][count * 3] == -1)
-			break;
-		for (int i = 0; i < 3; i++)
-			if (vertIDMap.find(triTable[_case][count * 3 + i]) == vertIDMap.end())
-				vertIDMap[triTable[_case][count * 3 + i]] = vertCount++;
-	}
-	if (count == 0)
-		return;
-	Mesh::VertexType* vert = new Mesh::VertexType[vertCount];
+
+	Mesh::VertexType vert[12] = { XMFLOAT3(0,0,0) };
 	XMFLOAT2 uv = GetUV(type);
-	for (auto i : vertIDMap)
+	for (int i = 0; i < 12; i++)
 	{
-		vert[i.second].position = XMFLOAT3(x,y,z)+edgeMiddle[i.first]*offset;
-		vert[i.second].texture = XMFLOAT2(1.0f, 1.0f);
+		if ((edgeTable[_case] & (1 << i)) != 0)
+		{
+			vert[i].position = XMFLOAT3(x, y, z) + edgeMiddle[i] * offset;
+		}
 	}
-	int currentVertIndex = +vertices.size();
-	for (int i = 0; triTable[_case][i]!=-1; i+=3)
+	for (int i = 0; i<5; i++)
 	{
-		indices.push_back(vertIDMap[triTable[_case][i+1]]+ currentVertIndex);
-		indices.push_back(vertIDMap[triTable[_case][i]] + currentVertIndex);
-		indices.push_back(vertIDMap[triTable[_case][i + 2]] + currentVertIndex);
-		vert[vertIDMap[triTable[_case][i+2]]].texture= XMFLOAT2(uv.x, uv.y + tUnit);
-		vert[vertIDMap[triTable[_case][i+1]]].texture = XMFLOAT2(uv.x, uv.y);
-		vert[vertIDMap[triTable[_case][i]]].texture = XMFLOAT2(uv.x + tUnit, uv.y);
+		if (triTable[_case][i * 3] < 0)break;
+		for (int j = 2; j >= 0; j--)
+		{
+			int edge = triTable[_case][i*3+j];
+			vert[edge].texture=(j==0)? XMFLOAT2(uv.x + tUnit, uv.y + tUnit):(j==1)? XMFLOAT2(uv.x + tUnit*0.5f, uv.y): XMFLOAT2(uv.x, uv.y + tUnit);
+			indices.push_back(vertices.size());
+			vertices.push_back(vert[edge]);
+		}
 	}
-	for(int i=0;i<vertCount;i++)
-		vertices.push_back(vert[i]);
-	delete[] vert;
+
+
 }
 void Voxel::GenerateMarchingCube()
 {
@@ -354,15 +327,25 @@ void Voxel::GenerateMarchingCube()
 			}
 		}
 	}
+	int chunkTest = 1;
 	for (int x = 0; x < cSize.x; x++)
 	{
 		for (int y = 0; y < cSize.y; y++)
 		{
 			for (int z = 0; z < cSize.z; z++)
 			{
-				CreateFaceMarchingCube(myCube[x][y][z], x, y, z, GetChunk(x,y,z));
+				CreateFaceMarchingCube(myCube[x][y][z], x, y, z, -1);
+				chunkTest++;
+				if (chunkTest >=tAmount)
+					chunkTest = 1;
 			}
+			chunkTest++;
+			if (chunkTest >= tAmount)
+				chunkTest = 1;
 		}
+		chunkTest++;
+		if (chunkTest >= tAmount)
+			chunkTest = 1;
 	}
 	for (int x = 0; x < cSize.x; x++)
 	{
@@ -419,6 +402,8 @@ void Voxel::GenerateVoxel()
 
 XMFLOAT2 Voxel::GetUV(byte type)
 {
+	if (type == -1)
+		return XMFLOAT2(0, 0);
 	return XMFLOAT2(tUnit*(type - 1), (int)(type / tAmount) * tUnit);
 }
 
@@ -435,7 +420,10 @@ void Voxel::UpdateMesh()
 {
 	vertices.clear();
 	indices.clear();
-	GenerateMarchingCube();
+	if (useMarchingCube)
+		GenerateMarchingCube();
+	else
+		GenerateVoxel();
 	mesh->SetVertices(&vertices[0],vertices.size());
 	mesh->SetIndices(&indices[0], indices.size());
 	mesh->RecalculateNormals();
@@ -471,6 +459,32 @@ void Voxel::LoadHeightMapFromRaw(int _width,int _depth,int _height,const char* f
 		delete[] data[i];
 	delete[] data;
 	printf("%d개 생성 완료", width*depth*height);
+	UpdateMesh();
+}
+
+void Voxel::LoadCube()
+{
+	NewChunks();
+	int c = 1;
+	for (int x = 0; x < width; x++)
+	{
+		for (int z = 0; z < depth; z++)
+		{
+			for (int y = 0; y < height; y++)
+			{
+				chunks[x][y][z] = c;
+				c++;
+				if (c == tAmount + 1)
+					c = 1;
+			}
+			c++;
+			if (c == tAmount + 1)
+				c = 1;
+		}
+		c++;
+		if (c == tAmount + 1)
+			c = 1;
+	}
 	UpdateMesh();
 }
 

@@ -177,6 +177,7 @@
     <ClInclude Include="MaterialClass.h" />
     <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MeshClass.h" />
+    <ClInclude Include="Octree.h" />
     <ClInclude Include="RenderTextureClass.h" />
     <ClInclude Include="ResourcesClass.h" />
     <ClInclude Include="ShaderClass.h" />
@@ -195,6 +196,7 @@
   <ItemGroup>
     <ClCompile Include="BitmapClass.cpp" />
     <ClCompile Include="CameraComponent.cpp" />
+    <ClCompile Include="Component.cpp" />
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="DepthShaderClass.cpp" />
@@ -208,6 +210,7 @@
     <ClCompile Include="MaterialClass.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="MeshClass.cpp" />
+    <ClCompile Include="Octree.cpp" />
     <ClCompile Include="RenderTextureClass.cpp" />
     <ClCompile Include="ResourcesClass.cpp" />
     <ClCompile Include="ShaderClass.cpp" />
@@ -275,7 +278,9 @@
     <Text Include="data\floor.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="data\grate.dds" />
+    <Image Include="data\grass.dds" />
+    <Image Include="data\grass1.dds" />
+    <Image Include="data\sample.dds" />
     <Image Include="data\seafloor.dds" />
     <Image Include="data\stone.dds" />
     <Image Include="data\tile.dds" />

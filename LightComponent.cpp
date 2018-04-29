@@ -55,7 +55,7 @@ void LightComponent::GenerateViewMatrix()
 	XMFLOAT3 up = XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 	XMVECTOR upVector = XMLoadFloat3(&up);
-	XMVECTOR positionVector = XMLoadFloat3(&(gameObject->position));
+	XMVECTOR positionVector = XMLoadFloat3(&(transform()->GetWorldPosition()));
 	XMVECTOR lookAtVector = XMLoadFloat3(&m_lookAt);
 
 	// ¼¼ º¤ÅÍ·ÎºÎÅÍ ºä Çà·ÄÀ» ¸¸µì´Ï´Ù.
@@ -93,10 +93,10 @@ LightComponent * LightComponent::mainLight()
 
 void LightComponent::SetPosition(float x, float y, float z)
 {
-	gameObject->position = XMFLOAT3(x, y, z);
+	transform()->SetPosition(XMFLOAT3(x, y, z));
 }
 
 XMFLOAT3 LightComponent::GetPosition()
 {
-	return gameObject->position;
+	return transform()->GetWorldPosition();
 }

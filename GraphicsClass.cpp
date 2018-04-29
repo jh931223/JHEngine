@@ -11,6 +11,7 @@
 #include "BitmapClass.h"
 #include "ResourcesClass.h"
 #include "RenderTextureClass.h"
+#include"Transform.h"
 GraphicsClass::GraphicsClass()
 {
 }
@@ -137,14 +138,8 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,MaterialClass* customM
 		m_Direct3D->GetWorldMatrix(worldMatrix);
 		GameObject* gameObject = i->gameObject;
 
-		float pitch = gameObject->euler.x * 0.0174532925f;
-		float yaw = gameObject->euler.y * 0.0174532925f;
-		float roll = gameObject->euler.z * 0.0174532925f;
-
 		//  yaw, pitch, roll 값을 통해 회전 행렬을 만듭니다.
 
-		XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(pitch, yaw, roll);
-		worldMatrix = XMMatrixTranslation(gameObject->position.x, gameObject->position.y, gameObject->position.z);
 		i->GetMesh()->Render(m_Direct3D->GetDeviceContext());
 		if (lights.size() == 0)
 		{
@@ -152,12 +147,12 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,MaterialClass* customM
 		}
 		if (customMaterial != nullptr)
 		{
-			if (!customMaterial->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(), XMMatrixMultiply(rotationMatrix, worldMatrix), viewMatrix, projectionMatrix))
+			if (!customMaterial->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(),gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix))
 			{
 				return false;
 			}
 		}
-		else if (!i->GetMaterial()->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(), XMMatrixMultiply(rotationMatrix, worldMatrix), viewMatrix, projectionMatrix))
+		else if (!i->GetMaterial()->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix))
 		{
 			return false;
 		}
@@ -269,15 +264,15 @@ bool GraphicsClass::Render()
 	//	return false;
 
 	// 씬을 그리기 위해 버퍼를 지웁니다
-	m_Direct3D->BeginScene(0.0f, 0.3f, 0.8f, 1.0f);
+	m_Direct3D->BeginScene(0.2f, 0.3f, 0.8f, 1.0f);
 	// 카메라의 위치에 따라 뷰 행렬을 생성합니다
 
 
 	if (!RenderScene(m_Camera))
 		return false;
 
-	/*if (!RenderCanvas(m_Camera))
-		return false;*/
+	//if (!RenderCanvas(m_Camera))
+	//	return false;
 	
 	 //렌더링 된 장면을 화면에 표시합니다.
 	m_Direct3D->EndScene();

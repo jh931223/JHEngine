@@ -34,11 +34,13 @@ void InputComponent::Update()
 	axis=Normalize3(axis);
 
 
-	gameObject->euler += Input()->GetCursorAxis();
+	XMFLOAT3 euler = transform()->GetWorldRotation();
+	transform()->SetRotation(euler + Input()->GetCursorAxis());
 	XMVECTOR v = XMVectorSet(axis.x, axis.y, axis.z, 0.0f);
-	XMVECTOR q = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(gameObject->euler.x), XMConvertToRadians(gameObject->euler.y), XMConvertToRadians(gameObject->euler.z));
+
+	XMVECTOR q = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(euler.x), XMConvertToRadians(euler.y), XMConvertToRadians(euler.z));
 	XMMATRIX m=XMMatrixRotationQuaternion(q);
 	v = XMVector3Transform(v, m);
 	XMStoreFloat3(&axis, v);
-	gameObject->position += axis*0.1f;
+	transform()->TranslateW(axis*0.1f);
 }
