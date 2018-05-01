@@ -152,7 +152,7 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 
 	result = new MaterialClass;
 	result->SetShader(FindShader("TextureShader"));
-	result->GetParams()->SetTexture("Texture", FindTexture("tile"));
+	result->GetParams()->SetTexture("Texture", FindTexture("grass"));
 	materialMap["test"] = result;
 }
 

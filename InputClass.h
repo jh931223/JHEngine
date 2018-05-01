@@ -14,10 +14,12 @@ public:
 
 	bool IsKeyDown(unsigned int);
 	void MouseUpdate();
+	void ToggleCursor();
 	XMFLOAT3 GetCursorAxis();
 	XMFLOAT3 GetCursorPosition();
 private:
-	XMFLOAT3 centerOfScrren;
+	bool  useCursor;
+	XMFLOAT3 centerOfScreen;
 	bool m_keys[256];
 	XMFLOAT3 lastCursorPosition;
 };

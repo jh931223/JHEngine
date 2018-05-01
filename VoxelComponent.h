@@ -2,8 +2,8 @@
 #include "Component.h"
 #include <vector>
 #include "MeshClass.h"
+#include "Octree.h"
 class MeshRenderer;
-class TextureClass;
 class Voxel : public Component
 {
 public:
@@ -41,6 +41,8 @@ private:
 	byte * * * chunks;
 	std::vector<Mesh::VertexType> vertices;
 	std::vector<unsigned long> indices;
+	Octree<int>* octree;
+
 
 	const XMFLOAT3 edgeMiddle[12] =
 	{

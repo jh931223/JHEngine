@@ -5,6 +5,7 @@
 #include"MeshRenderer.h"
 #include"SystemClass.h"
 #include"TextureClass.h"
+#include"Octree.h"
 #include<vector>
 #include<map>
 Voxel::Voxel()
@@ -38,14 +39,17 @@ void Voxel::Initialize()
 	height = 32;
 	depth = 32;
 	unit = 1.0f;
-	tUnit = 1.0f;
-	tAmount = 1;
+	tUnit = 0.25f;
+	tAmount = 4;
 	mesh = new Mesh;
 	renderer->SetMesh(mesh);
 	useMarchingCube = true;
 
 	//LoadCube();
 	LoadHeightMapFromRaw(1025,1025,512,"../JHEngine/data/heightmap.r16");
+
+
+	octree = new Octree<int>(XMFLOAT3(32 * 0.5f, 32 * 0.5f, 32 * 0.5f), width, 6);
 }
 void Voxel::NewChunks()
 {
@@ -444,11 +448,12 @@ void Voxel::LoadHeightMapFromRaw(int _width,int _depth,int _height,const char* f
 	int top=0,bottom=0;
 	ReadRawEX16(data, filename, width, depth,top,bottom);
 	printf("%d, %d\n", top,bottom);
+	float h = (float)height / 65536;
 	for (int x = 0; x < width; x++)
 	{
 		for (int z = 0; z < depth; z++)
 		{
-			float convertY = ((float)data[x][depth-1-z] * ((float)height / 65536));
+			float convertY = ((float)data[x][depth-1-z] * h);
 			for (int y = 0; (y < (int)roundl(convertY)); y++)
 			{
 				chunks[x][y][z] = 1;

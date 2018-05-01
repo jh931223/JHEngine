@@ -14,6 +14,11 @@ InputComponent::~InputComponent()
 
 void InputComponent::Update()
 {
+	if (Input()->IsKeyDown(VK_CONTROL))
+	{
+		Input()->ToggleCursor();
+	}
+
 	XMFLOAT3 axis(0,0,0);
 	if (Input()->IsKeyDown(68))
 	{
