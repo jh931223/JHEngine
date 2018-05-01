@@ -33,6 +33,7 @@ private:
 	void NewChunks();
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
 	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height,int&,int&);
+	int ReadTXT(const char* filename);
 	int width, height, depth;
 	float unit;
 	float tUnit;

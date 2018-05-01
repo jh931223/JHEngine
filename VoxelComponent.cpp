@@ -46,7 +46,9 @@ void Voxel::Initialize()
 	useMarchingCube = true;
 
 	//LoadCube();
-	LoadHeightMapFromRaw(1025,1025,64,"../JHEngine/data/heightmap.r16");
+	int h = ReadTXT("../JHEngine/height.txt");
+	//printf("%d", h);
+	LoadHeightMapFromRaw(1025,1025,h,"../JHEngine/data/heightmap.r16");
 
 
 	octree = new Octree<int>(XMFLOAT3(32 * 0.5f, 32 * 0.5f, 32 * 0.5f), width, 6);
@@ -538,4 +540,15 @@ void Voxel::ReadRawEX16(unsigned short** &data, const char* filename, int _width
 				bottomY = data[i][j];
 		}
 	}
+}
+
+int Voxel::ReadTXT(const char * filename)
+{
+	FILE* pInput = NULL;
+	int size =1;
+	char str[100];
+	fopen_s(&pInput, filename, "rb");
+	fread(str, sizeof(str)-1, 1, pInput);
+	fclose(pInput);
+	return atoi(str);
 }
