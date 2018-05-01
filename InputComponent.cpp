@@ -47,5 +47,8 @@ void InputComponent::Update()
 	XMMATRIX m=XMMatrixRotationQuaternion(q);
 	v = XMVector3Transform(v, m);
 	XMStoreFloat3(&axis, v);
-	transform()->TranslateW(axis*0.1f);
+	float speed = 1.0f;
+	if (Input()->IsKeyDown(VK_SHIFT))
+		speed = 2.0f;
+	transform()->TranslateW(axis*0.1f*speed);
 }

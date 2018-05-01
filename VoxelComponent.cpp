@@ -46,7 +46,7 @@ void Voxel::Initialize()
 	useMarchingCube = true;
 
 	//LoadCube();
-	LoadHeightMapFromRaw(1025,1025,512,"../JHEngine/data/heightmap.r16");
+	LoadHeightMapFromRaw(1025,1025,64,"../JHEngine/data/heightmap.r16");
 
 
 	octree = new Octree<int>(XMFLOAT3(32 * 0.5f, 32 * 0.5f, 32 * 0.5f), width, 6);
