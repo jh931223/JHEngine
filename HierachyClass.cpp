@@ -87,7 +87,7 @@ void HierachyClass::Setup()
 	// º¹¼¿ »ý¼º
 	gobj = new GameObject("º¹¼¿·çÆ®");
 	GameObject* r = gobj;
-	r->transform->SetPosition(XMFLOAT3(0, -10, 0));
+	r->transform->SetPosition(XMFLOAT3(0, 0, 0));
 	AddGameObject(gobj);
 
 	gobj = new GameObject("º¹¼¿");
@@ -99,7 +99,7 @@ void HierachyClass::Setup()
 	voxel->renderer = renderer;
 	gobj->AddComponent(voxel);
 	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("test"));// ¸ÓÅ×¸®¾ó ¼³Á¤
-	gobj->transform->SetLocalPosition(XMFLOAT3(-10, 0, 0));
+	gobj->transform->SetLocalPosition(XMFLOAT3(0, 0, 0));
 	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
 }
 

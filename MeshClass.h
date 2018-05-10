@@ -21,6 +21,8 @@ public:
 	bool Initialize(ID3D11Device*, const char*);
 	bool InitializeBuffers(ID3D11Device*);
 	void Shutdown();
+	void ShutdownBuffers();
+	void ReleaseModel();
 	void Render(ID3D11DeviceContext*);
 	bool SetVertices(VertexType*, int);
 	bool SetIndices(unsigned long*,int);
@@ -31,11 +33,9 @@ public:
 
 
 private:
-	void ShutdownBuffers();
 	void RenderBuffers(ID3D11DeviceContext*);
 
 	bool LoadModel(const char*);
-	void ReleaseModel();
 
 private:
 	ID3D11Buffer* m_vertexBuffer = nullptr;

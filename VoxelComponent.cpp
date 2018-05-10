@@ -35,28 +35,27 @@ void Voxel::OnStart()
 
 void Voxel::Initialize()
 {
-	width = 32;
-	height = 32;
-	depth = 32;
 	unit = 1.0f;
 	tUnit = 0.25f;
 	tAmount = 4;
-	mesh = new Mesh;
-	renderer->SetMesh(mesh);
-	useMarchingCube = true;
+	useMarchingCube = false;
 
-	//LoadCube();
+	//LoadCube(32,32,32);
+	//LoadCube(32, 32, 32);
+	LoadOctree(32,XMFLOAT3(0,0,0));
 	int h = ReadTXT("../JHEngine/height.txt");
 	//printf("%d", h);
-	LoadHeightMapFromRaw(1025,1025,h,"../JHEngine/data/heightmap.r16");
+	//LoadOctree(1025,XMFLOAT3(0,0,0));
+	//LoadHeightMapFromRaw(1025,1025,128,"../JHEngine/data/heightmap.r16");
 
-
-	octree = new Octree<int>(XMFLOAT3(32 * 0.5f, 32 * 0.5f, 32 * 0.5f), width, 6);
 }
-void Voxel::NewChunks()
+void Voxel::NewChunks(int _width, int _depth, int _height)
 {
 	if (chunks)
 		ReleaseChunks();
+	height = _height;
+	width = _width;
+	depth = _depth;
 	chunks = new byte**[width];
 	for (int i = 0; i < width; i++)
 	{
@@ -64,7 +63,8 @@ void Voxel::NewChunks()
 		for (int j = 0; j < height; j++)
 		{
 			chunks[i][j] = new byte[depth];
-			memset(chunks[i][j], 0, depth);
+			for (int k = 0; k < depth; k++)
+				chunks[i][j][k] = 0;
 		}
 	}
 }
@@ -74,33 +74,30 @@ void Voxel::ReleaseChunks()
 	{
 		for (int i = 0; i < width; i++)
 		{
-			for (int j = 0; j < height; j++)
+			if (chunks[i]!=NULL)
 			{
-				delete[] chunks[i][j];
-				chunks[i][j] = NULL;
+				for (int j = 0; j < height; j++)
+				{
+					delete[] chunks[i][j];
+					chunks[i][j] = NULL;
+				}
+				delete[] chunks[i];
 			}
-			delete[] chunks[i];
 			chunks[i] = NULL;
 		}
 		delete[] chunks;
 		chunks = NULL;
 	}
-	if (mesh)
-	{
-		mesh->Shutdown();
-		delete mesh;
-	}
 }
-
-void Voxel::CreateFaceUp(int x, int y, int z, byte type, int& faceCount)
+void Voxel::CreateFaceUp(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
 	Mesh::VertexType v1, v2, v3, v4;
-	float offset = unit*0.5f;
-	v1.position = XMFLOAT3(x*unit - offset, y*unit + offset, z*unit - offset);
-	v2.position = XMFLOAT3(x*unit - offset, y*unit + offset, z*unit + offset);
-	v3.position = XMFLOAT3(x*unit + offset, y*unit + offset, z*unit + offset);
-	v4.position = XMFLOAT3(x*unit + offset, y*unit + offset, z*unit - offset);
+	float offset = _unit * 0.5f;
+	v1.position = XMFLOAT3(x - offset, y + offset, z - offset);
+	v2.position = XMFLOAT3(x - offset, y + offset, z + offset);
+	v3.position = XMFLOAT3(x + offset, y + offset, z + offset);
+	v4.position = XMFLOAT3(x + offset, y + offset, z - offset);
 
 	indices.push_back(faceCount * 4);
 	indices.push_back(faceCount * 4 + 1);
@@ -121,43 +118,14 @@ void Voxel::CreateFaceUp(int x, int y, int z, byte type, int& faceCount)
 	vertices.push_back(v4);
 	faceCount++;
 }
-void Voxel::CreateFaceDown(int x, int y, int z, byte type, int& faceCount)
+void Voxel::CreateFaceDown(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 	Mesh::VertexType v1, v2, v3, v4;
-	float offset = unit * 0.5f;
-	v1.position=XMFLOAT3(x*unit - offset, y*unit - offset, z*unit - offset);
-	v2.position=XMFLOAT3(x*unit - offset, y*unit - offset, z*unit + offset);
-	v3.position=XMFLOAT3(x*unit + offset, y*unit - offset, z*unit + offset);
-	v4.position=XMFLOAT3(x*unit + offset, y*unit - offset, z*unit - offset);
-
-	indices.push_back(faceCount * 4);
-	indices.push_back(faceCount * 4 + 2);
-	indices.push_back(faceCount * 4 + 1);
-	indices.push_back(faceCount * 4);
-	indices.push_back(faceCount * 4 + 3);
-	indices.push_back(faceCount * 4 + 2);
-
-	XMFLOAT2 uv = GetUV(type);
-	v1.texture=XMFLOAT2(uv.x, uv.y + tUnit);
-	v2.texture=XMFLOAT2(uv.x, uv.y);
-	v3.texture=XMFLOAT2(uv.x + tUnit, uv.y);
-	v4.texture=XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
-
-	vertices.push_back(v1);
-	vertices.push_back(v2);
-	vertices.push_back(v3);
-	vertices.push_back(v4);
-	faceCount++;
-}
-void Voxel::CreateFaceRight(int x, int y, int z, byte type, int& faceCount)
-{
-
-	Mesh::VertexType v1, v2, v3, v4;
-	float offset = unit * 0.5f;
-	v1.position = XMFLOAT3(x*unit + offset, y*unit - offset, z*unit + offset);
-	v2.position = XMFLOAT3(x*unit + offset, y*unit + offset, z*unit + offset);
-	v3.position = XMFLOAT3(x*unit + offset, y*unit + offset, z*unit - offset);
-	v4.position = XMFLOAT3(x*unit + offset, y*unit - offset, z*unit - offset);
+	float offset = _unit * 0.5f;
+	v1.position = XMFLOAT3(x - offset, y - offset, z - offset);
+	v2.position = XMFLOAT3(x - offset, y - offset, z + offset);
+	v3.position = XMFLOAT3(x + offset, y - offset, z + offset);
+	v4.position = XMFLOAT3(x + offset, y - offset, z - offset);
 
 	indices.push_back(faceCount * 4);
 	indices.push_back(faceCount * 4 + 2);
@@ -178,17 +146,46 @@ void Voxel::CreateFaceRight(int x, int y, int z, byte type, int& faceCount)
 	vertices.push_back(v4);
 	faceCount++;
 }
-void Voxel::CreateFaceLeft(int x, int y, int z, byte type, int& faceCount)
+void Voxel::CreateFaceRight(float x, float y, float z, float _unit, byte type, int& faceCount)
+{
+
+	Mesh::VertexType v1, v2, v3, v4;
+	float offset = _unit * 0.5f;
+	v1.position = XMFLOAT3(x + offset, y - offset, z + offset);
+	v2.position = XMFLOAT3(x + offset, y + offset, z + offset);
+	v3.position = XMFLOAT3(x + offset, y + offset, z - offset);
+	v4.position = XMFLOAT3(x + offset, y - offset, z - offset);
+
+	indices.push_back(faceCount * 4);
+	indices.push_back(faceCount * 4 + 2);
+	indices.push_back(faceCount * 4 + 1);
+	indices.push_back(faceCount * 4);
+	indices.push_back(faceCount * 4 + 3);
+	indices.push_back(faceCount * 4 + 2);
+
+	XMFLOAT2 uv = GetUV(type);
+	v1.texture = XMFLOAT2(uv.x, uv.y + tUnit);
+	v2.texture = XMFLOAT2(uv.x, uv.y);
+	v3.texture = XMFLOAT2(uv.x + tUnit, uv.y);
+	v4.texture = XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
+
+	vertices.push_back(v1);
+	vertices.push_back(v2);
+	vertices.push_back(v3);
+	vertices.push_back(v4);
+	faceCount++;
+}
+void Voxel::CreateFaceLeft(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
 	Mesh::VertexType v1, v2, v3, v4;
 
-	float offset = unit * 0.5f;
+	float offset = _unit * 0.5f;
 
-	v1.position = XMFLOAT3(x*unit - offset, y*unit - offset, z*unit + offset);
-	v2.position = XMFLOAT3(x*unit - offset, y*unit + offset, z*unit + offset);
-	v3.position = XMFLOAT3(x*unit - offset, y*unit + offset, z*unit - offset);
-	v4.position = XMFLOAT3(x*unit - offset, y*unit - offset, z*unit - offset);
+	v1.position = XMFLOAT3(x - offset, y - offset, z + offset);
+	v2.position = XMFLOAT3(x - offset, y + offset, z + offset);
+	v3.position = XMFLOAT3(x - offset, y + offset, z - offset);
+	v4.position = XMFLOAT3(x - offset, y - offset, z - offset);
 
 	indices.push_back(faceCount * 4);
 	indices.push_back(faceCount * 4 + 1);
@@ -210,15 +207,15 @@ void Voxel::CreateFaceLeft(int x, int y, int z, byte type, int& faceCount)
 
 	faceCount++;
 }
-void Voxel::CreateFaceForward(int x, int y, int z, byte type, int& faceCount)
+void Voxel::CreateFaceForward(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
 	Mesh::VertexType v1, v2, v3, v4;
-	float offset = unit * 0.5f;
-	v1.position=XMFLOAT3(x*unit - offset, y*unit- offset, z*unit+ offset);
-	v2.position=XMFLOAT3(x*unit - offset, y*unit+ offset, z*unit+ offset);
-	v3.position=XMFLOAT3(x*unit + offset, y*unit+ offset, z*unit+ offset);
-	v4.position=XMFLOAT3(x*unit + offset, y*unit- offset, z*unit+ offset);
+	float offset = _unit * 0.5f;
+	v1.position = XMFLOAT3(x - offset, y - offset, z + offset);
+	v2.position = XMFLOAT3(x - offset, y + offset, z + offset);
+	v3.position = XMFLOAT3(x + offset, y + offset, z + offset);
+	v4.position = XMFLOAT3(x + offset, y - offset, z + offset);
 
 	indices.push_back(faceCount * 4 + 2);
 	indices.push_back(faceCount * 4 + 1);
@@ -228,10 +225,10 @@ void Voxel::CreateFaceForward(int x, int y, int z, byte type, int& faceCount)
 	indices.push_back(faceCount * 4 + 2);
 
 	XMFLOAT2 uv = GetUV(type);
-	v1.texture=XMFLOAT2(uv.x, uv.y + tUnit);
-	v2.texture=XMFLOAT2(uv.x, uv.y);
-	v3.texture=XMFLOAT2(uv.x + tUnit, uv.y);
-	v4.texture=XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
+	v1.texture = XMFLOAT2(uv.x, uv.y + tUnit);
+	v2.texture = XMFLOAT2(uv.x, uv.y);
+	v3.texture = XMFLOAT2(uv.x + tUnit, uv.y);
+	v4.texture = XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
 
 	vertices.push_back(v1);
 	vertices.push_back(v2);
@@ -239,15 +236,15 @@ void Voxel::CreateFaceForward(int x, int y, int z, byte type, int& faceCount)
 	vertices.push_back(v4);
 	faceCount++;
 }
-void Voxel::CreateFaceBackward(int x, int y, int z, byte type, int& faceCount)
+void Voxel::CreateFaceBackward(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
 	Mesh::VertexType v1, v2, v3, v4;
-	float offset = unit * 0.5f;
-	v1.position=XMFLOAT3(x*unit- offset, y*unit- offset, z*unit- offset);
-	v2.position=XMFLOAT3(x*unit- offset, y*unit+ offset, z*unit- offset);
-	v3.position=XMFLOAT3(x*unit+ offset, y*unit+ offset, z*unit- offset);
-	v4.position=XMFLOAT3(x*unit+ offset, y*unit- offset, z*unit- offset);
+	float offset = _unit * 0.5f;
+	v1.position = XMFLOAT3(x - offset, y - offset, z - offset);
+	v2.position = XMFLOAT3(x - offset, y + offset, z - offset);
+	v3.position = XMFLOAT3(x + offset, y + offset, z - offset);
+	v4.position = XMFLOAT3(x + offset, y - offset, z - offset);
 
 	indices.push_back(faceCount * 4);
 	indices.push_back(faceCount * 4 + 1);
@@ -257,10 +254,10 @@ void Voxel::CreateFaceBackward(int x, int y, int z, byte type, int& faceCount)
 	indices.push_back(faceCount * 4);
 
 	XMFLOAT2 uv = GetUV(type);
-	v1.texture=XMFLOAT2(uv.x, uv.y + tUnit);
-	v2.texture=XMFLOAT2(uv.x, uv.y);
-	v3.texture=XMFLOAT2(uv.x + tUnit, uv.y);
-	v4.texture=XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
+	v1.texture = XMFLOAT2(uv.x, uv.y + tUnit);
+	v2.texture = XMFLOAT2(uv.x, uv.y);
+	v3.texture = XMFLOAT2(uv.x + tUnit, uv.y);
+	v4.texture = XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
 
 	vertices.push_back(v1);
 	vertices.push_back(v2);
@@ -268,11 +265,11 @@ void Voxel::CreateFaceBackward(int x, int y, int z, byte type, int& faceCount)
 	vertices.push_back(v4);
 	faceCount++;
 }
-void Voxel::CreateFaceMarchingCube(int _case, int x, int y, int z, byte type)
+void Voxel::CreateFaceMarchingCube(int _case, int x, int y, int z, int _unit, byte type)
 {
 	if (_case == 0 || _case == 255)
 		return;
-	float offset = unit * 0.5f;
+	float offset = _unit * 0.5f;
 
 	Mesh::VertexType vert[12] = { XMFLOAT3(0,0,0) };
 	XMFLOAT2 uv = GetUV(type);
@@ -288,14 +285,48 @@ void Voxel::CreateFaceMarchingCube(int _case, int x, int y, int z, byte type)
 		if (triTable[_case][i * 3] < 0)break;
 		for (int j = 2; j >= 0; j--)
 		{
-			int edge = triTable[_case][i*3+j];
-			vert[edge].texture=(j==0)? XMFLOAT2(uv.x + tUnit, uv.y + tUnit):(j==1)? XMFLOAT2(uv.x + tUnit*0.5f, uv.y): XMFLOAT2(uv.x, uv.y + tUnit);
+			int edge = triTable[_case][i * 3 + j];
+			vert[edge].texture = (j == 0) ? XMFLOAT2(uv.x + tUnit, uv.y + tUnit) : (j == 1) ? XMFLOAT2(uv.x + tUnit * 0.5f, uv.y) : XMFLOAT2(uv.x, uv.y + tUnit);
 			indices.push_back(vertices.size());
 			vertices.push_back(vert[edge]);
 		}
 	}
 
 
+}
+void Voxel::GenerateOctreeCell(Octree<int>::OctreeNode<int>* current,int& faceCount)
+{
+	if (current)
+	{
+		if (!current->IsLeaf())
+		{
+			for (int i = 0; i < 8; i++)
+			{
+				GenerateOctreeCell(current->GetChild(i),faceCount);
+			}
+		}
+		else
+		{
+			if (current->GetValue())
+			{
+				int value = current->GetValue();
+				XMFLOAT3 position = current->GetPosition();
+				float size = current->GetCellSize();
+				if (!octree->GetValueOfPosition(position + XMFLOAT3(0, size, 0)))
+					CreateFaceUp(position.x, position.y, position.z, size, value, faceCount);
+				if (!octree->GetValueOfPosition(position + XMFLOAT3(0, -size, 0)))
+					CreateFaceDown(position.x, position.y, position.z, size, value, faceCount);
+				if (!octree->GetValueOfPosition(position + XMFLOAT3(size, 0, 0)))
+					CreateFaceRight(position.x, position.y, position.z, size, value, faceCount);
+				if (!octree->GetValueOfPosition(position + XMFLOAT3(-size, 0, 0)))
+					CreateFaceLeft(position.x, position.y, position.z, size, value, faceCount);
+				if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, size)))
+					CreateFaceForward(position.x, position.y, position.z, size, value, faceCount);
+				if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, -size)))
+					CreateFaceBackward(position.x, position.y, position.z, size, value, faceCount);
+			}
+		}
+	}
 }
 void Voxel::GenerateMarchingCube()
 {
@@ -340,7 +371,7 @@ void Voxel::GenerateMarchingCube()
 		{
 			for (int z = 0; z < cSize.z; z++)
 			{
-				CreateFaceMarchingCube(myCube[x][y][z], x, y, z, -1);
+				CreateFaceMarchingCube(myCube[x][y][z], x, y, z,unit, -1);
 				chunkTest++;
 				if (chunkTest >=tAmount)
 					chunkTest = 1;
@@ -378,27 +409,27 @@ void Voxel::GenerateVoxel()
 					continue;
 				if (GetChunk(x - 1, y, z) == 0)//LEFT
 				{
-					CreateFaceLeft(x, y, z, myBlock, faceCount);
+					CreateFaceLeft(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
 				}
 				if (GetChunk(x + 1, y, z) == 0)//RIGHT
 				{
-					CreateFaceRight(x, y, z, myBlock, faceCount);
+					CreateFaceRight(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
 				}
 				if (GetChunk(x, y + 1, z) == 0)//UP
 				{
-					CreateFaceUp(x, y, z, myBlock, faceCount);
+					CreateFaceUp(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
 				}
 				if (GetChunk(x, y - 1, z) == 0)//DOWN
 				{
-					CreateFaceDown(x, y, z, myBlock, faceCount);
+					CreateFaceDown(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
 				}
 				if (GetChunk(x, y, z + 1) == 0)//FORWARD
 				{
-					CreateFaceForward(x, y, z, myBlock, faceCount);
+					CreateFaceForward(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
 				}
 				if (GetChunk(x, y, z - 1) == 0)//BACKWARD
 				{
-					CreateFaceBackward(x, y, z, myBlock, faceCount);
+					CreateFaceBackward(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
 				}
 			}
 		}
@@ -424,6 +455,14 @@ byte Voxel::GetChunk(int x, int y, int z)
 
 void Voxel::UpdateMesh()
 {
+	if (mesh)
+	{
+		mesh->ShutdownBuffers();
+		delete mesh;
+		mesh = NULL;
+	}
+	mesh = new Mesh();
+	renderer->SetMesh(mesh);
 	vertices.clear();
 	indices.clear();
 	if (useMarchingCube)
@@ -439,14 +478,47 @@ void Voxel::UpdateMesh()
 	//mesh->SetVertices(NULL, 0);
 	//mesh->SetIndices(NULL, 0);
 }
+void Voxel::UpdateOctreeMesh()
+{
+	if (!octree)
+	{
+		return;
+	}
+	//int k = 0;
+	//for (int i = 0; i < 8; i++)
+	//	k += octree->root->GetChild(i)->GetValue();
+	//if (k == 0)
+	//	return;
+	if (mesh)
+	{
+		mesh->ShutdownBuffers();
+		delete mesh;
+		mesh = NULL;
+	}
+	mesh = new Mesh();
+	renderer->SetMesh(mesh);
+	vertices.clear();
+	indices.clear();
+	int faceCount = 0;
+	GenerateOctreeCell(octree->root, faceCount);
+	//if (useMarchingCube)
+	//	GenerateMarchingCube();
+	//else
+	//	GenerateVoxel();
+	mesh->SetVertices(&vertices[0], vertices.size());
+	mesh->SetIndices(&indices[0], indices.size());
+	mesh->RecalculateNormals();
+	mesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
+	//vertices.clear();
+	//indices.clear();
+	//mesh->SetVertices(NULL, 0);
+	//mesh->SetIndices(NULL, 0);
+}
 
 void Voxel::LoadHeightMapFromRaw(int _width,int _depth,int _height,const char* filename)
 {
 	unsigned short** data = nullptr;
-	height = _height;
-	width = _width;
-	depth = _depth;
-	NewChunks();
+	NewChunks(_width, _depth, _height);
 	int top=0,bottom=0;
 	ReadRawEX16(data, filename, width, depth,top,bottom);
 	printf("%d, %d\n", top,bottom);
@@ -458,7 +530,8 @@ void Voxel::LoadHeightMapFromRaw(int _width,int _depth,int _height,const char* f
 			float convertY = ((float)data[x][depth-1-z] * h);
 			for (int y = 0; (y < (int)roundl(convertY)); y++)
 			{
-				chunks[x][y][z] = 1;
+				octree->root->Insert(XMFLOAT3(x, y, z), 1);
+				//chunks[x][y][z] = 1;
 			}
 		}
 	}
@@ -466,12 +539,13 @@ void Voxel::LoadHeightMapFromRaw(int _width,int _depth,int _height,const char* f
 		delete[] data[i];
 	delete[] data;
 	printf("%d개 생성 완료", width*depth*height);
-	UpdateMesh();
+	//UpdateMesh();
+	UpdateOctreeMesh();
 }
 
-void Voxel::LoadCube()
+void Voxel::LoadCube(int _width, int _depth, int _height)
 {
-	NewChunks();
+	NewChunks(_width, _depth, _height);
 	int c = 1;
 	for (int x = 0; x < width; x++)
 	{
@@ -493,6 +567,51 @@ void Voxel::LoadCube()
 			c = 1;
 	}
 	UpdateMesh();
+}
+
+void Voxel::LoadOctree(int _width, XMFLOAT3 basePosition)
+{
+	width = _width;
+	height = _width;
+	depth = _width;
+	ReleaseChunks();
+	int i = 0;
+	int n = width;
+	while ((n = n >> 1))
+		++i;
+	octree = new Octree<int>(XMFLOAT3(width * 0.5f, width * 0.5f, width * 0.5f) + transform()->GetWorldPosition(), width, i-1);
+	i = 0;
+	XMVECTOR v1, v2;
+	float dis;
+	float LOD[3] = { 20,30,1000 };
+	int lodLevelSize = 3;
+	int lodLevel=0;
+	v1= XMVectorSet(basePosition.x, basePosition.y, basePosition.z, 1);
+	for (int x = 0; x < width; x++)
+	{
+		for (int y = 0; y < height; y++)
+		{
+			for (int z = 0; z < depth; z++)
+			{
+				v2=XMVectorSet(x, y, z, 1);
+				
+				dis= XMVectorGetX(XMVector3Length(XMVectorSubtract(v2, v1)));
+				for (lodLevel = 0; lodLevel < lodLevelSize; lodLevel++)
+					if (LOD[lodLevel] >= dis)
+					{
+						break;
+					}
+				if (rand() % 20 == 1)
+				{
+					octree->root->Insert(XMFLOAT3(x + 0.5f, y + 0.5f, z + 0.5f), 1, lodLevel);
+					//printf("lodLevel %d %f\n", lodLevel, dis);
+					i++;
+				}
+			}
+		}
+	}
+	printf("%d개\n", i);
+	UpdateOctreeMesh();
 }
 
 void Voxel::ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height)

@@ -24,10 +24,13 @@ Mesh::Mesh(const Mesh& other)
 
 Mesh::~Mesh()
 {
-	if (vertices)
-		delete vertices;
-	if (indices)
-		delete indices;
+	if (m_vertexBuffer)
+	{
+		if (vertices)
+			delete vertices;
+		if (indices)
+			delete indices;
+	}
 }
 
 
