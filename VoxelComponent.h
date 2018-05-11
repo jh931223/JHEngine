@@ -36,6 +36,8 @@ private:
 	void NewChunks(int _width,int,int);
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
 	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height,int&,int&);
+	int GetLODLevel(XMFLOAT3 basePos, XMFLOAT3 targetPos);
+	void SetLODLevel(int level,float distance);
 	int ReadTXT(const char* filename);
 	int width, height, depth;
 	float unit;
@@ -46,7 +48,8 @@ private:
 	std::vector<Mesh::VertexType> vertices;
 	std::vector<unsigned long> indices;
 	Octree<int>* octree;
-
+	int LODDistance[4]{ 0,0,0,0 };
+	XMFLOAT3 lastBasePosition;
 
 	const XMFLOAT3 edgeMiddle[12] =
 	{

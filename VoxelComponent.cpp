@@ -5,9 +5,11 @@
 #include"MeshRenderer.h"
 #include"SystemClass.h"
 #include"TextureClass.h"
+#include"CameraComponent.h"
 #include"Octree.h"
 #include<vector>
 #include<map>
+#include<time.h>
 Voxel::Voxel()
 {
 }
@@ -22,6 +24,11 @@ Voxel ::~Voxel()
 
 void Voxel::Update()
 {
+	if (GetDistance(lastBasePosition, CameraComponent::mainCamera()->transform()->GetWorldPosition()) > 10)
+	{
+		lastBasePosition = CameraComponent::mainCamera()->transform()->GetWorldPosition();
+		LoadOctree(32, lastBasePosition);
+	}
 	if (transform()->parent)
 	{
 		//transform()->parent->RotateW(XMFLOAT3(0, 0.1f, 0));
@@ -42,11 +49,16 @@ void Voxel::Initialize()
 
 	//LoadCube(32,32,32);
 	//LoadCube(32, 32, 32);
-	LoadOctree(32,XMFLOAT3(0,0,0));
+	SetLODLevel(0, 40);
+	SetLODLevel(1, 70);
+	SetLODLevel(2, 100);
+	SetLODLevel(3, 10000000);
+	lastBasePosition = CameraComponent::mainCamera()->transform()->GetWorldPosition();
+	LoadOctree(16,lastBasePosition);
 	int h = ReadTXT("../JHEngine/height.txt");
 	//printf("%d", h);
 	//LoadOctree(1025,XMFLOAT3(0,0,0));
-	//LoadHeightMapFromRaw(1025,1025,128,"../JHEngine/data/heightmap.r16");
+	//LoadHeightMapFromRaw(1025,1025,32,"../JHEngine/data/heightmap.r16");
 
 }
 void Voxel::NewChunks(int _width, int _depth, int _height)
@@ -307,24 +319,25 @@ void Voxel::GenerateOctreeCell(Octree<int>::OctreeNode<int>* current,int& faceCo
 		}
 		else
 		{
-			if (current->GetValue())
+			if (!current->GetValue())
 			{
-				int value = current->GetValue();
-				XMFLOAT3 position = current->GetPosition();
-				float size = current->GetCellSize();
-				if (!octree->GetValueOfPosition(position + XMFLOAT3(0, size, 0)))
-					CreateFaceUp(position.x, position.y, position.z, size, value, faceCount);
-				if (!octree->GetValueOfPosition(position + XMFLOAT3(0, -size, 0)))
-					CreateFaceDown(position.x, position.y, position.z, size, value, faceCount);
-				if (!octree->GetValueOfPosition(position + XMFLOAT3(size, 0, 0)))
-					CreateFaceRight(position.x, position.y, position.z, size, value, faceCount);
-				if (!octree->GetValueOfPosition(position + XMFLOAT3(-size, 0, 0)))
-					CreateFaceLeft(position.x, position.y, position.z, size, value, faceCount);
-				if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, size)))
-					CreateFaceForward(position.x, position.y, position.z, size, value, faceCount);
-				if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, -size)))
-					CreateFaceBackward(position.x, position.y, position.z, size, value, faceCount);
+				return;
 			}
+			int value = current->GetValue();
+			XMFLOAT3 position = current->GetPosition();
+			float size = current->GetCellSize();
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, size, 0)))
+				CreateFaceUp(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, -size, 0)))
+				CreateFaceDown(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(size, 0, 0)))
+				CreateFaceRight(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(-size, 0, 0)))
+				CreateFaceLeft(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, size)))
+				CreateFaceForward(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, -size)))
+				CreateFaceBackward(position.x, position.y, position.z, size, value, faceCount);
 		}
 	}
 }
@@ -571,6 +584,7 @@ void Voxel::LoadCube(int _width, int _depth, int _height)
 
 void Voxel::LoadOctree(int _width, XMFLOAT3 basePosition)
 {
+	ULONG tick=GetTickCount64();
 	width = _width;
 	height = _width;
 	depth = _width;
@@ -579,39 +593,28 @@ void Voxel::LoadOctree(int _width, XMFLOAT3 basePosition)
 	int n = width;
 	while ((n = n >> 1))
 		++i;
-	octree = new Octree<int>(XMFLOAT3(width * 0.5f, width * 0.5f, width * 0.5f) + transform()->GetWorldPosition(), width, i-1);
+	octree = new Octree<int>(XMFLOAT3(width * 0.5f, width * 0.5f, width * 0.5f), width, i-1);
 	i = 0;
-	XMVECTOR v1, v2;
-	float dis;
-	float LOD[3] = { 20,30,1000 };
-	int lodLevelSize = 3;
-	int lodLevel=0;
-	v1= XMVectorSet(basePosition.x, basePosition.y, basePosition.z, 1);
-	for (int x = 0; x < width; x++)
+	int lodLevel = 0;
+	for (int x = 0; x < width; x ++)
 	{
-		for (int y = 0; y < height; y++)
+		for (int y = 0; y < height; y ++)
 		{
-			for (int z = 0; z < depth; z++)
+			for (int z = 0; z < depth; z ++)
 			{
-				v2=XMVectorSet(x, y, z, 1);
-				
-				dis= XMVectorGetX(XMVector3Length(XMVectorSubtract(v2, v1)));
-				for (lodLevel = 0; lodLevel < lodLevelSize; lodLevel++)
-					if (LOD[lodLevel] >= dis)
-					{
-						break;
-					}
-				if (rand() % 20 == 1)
+				lodLevel=GetLODLevel(basePosition, XMFLOAT3(x*unit + 0.1f, y*unit + 0.1f, z*unit + 0.1f));
+				if (rand() % 2 == 1)
 				{
-					octree->root->Insert(XMFLOAT3(x + 0.5f, y + 0.5f, z + 0.5f), 1, lodLevel);
+					octree->root->Insert(XMFLOAT3(x*unit+0.1f, y*unit + 0.1f, z*unit + 0.1f), 1, lodLevel);
 					//printf("lodLevel %d %f\n", lodLevel, dis);
 					i++;
 				}
 			}
 		}
 	}
-	printf("%d°³\n", i);
+	//printf("%d°³\n", i);
 	UpdateOctreeMesh();
+	printf("%dms\n", GetTickCount64() - tick);
 }
 
 void Voxel::ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height)
@@ -659,6 +662,29 @@ void Voxel::ReadRawEX16(unsigned short** &data, const char* filename, int _width
 				bottomY = data[i][j];
 		}
 	}
+}
+
+int Voxel::GetLODLevel(XMFLOAT3 basePos, XMFLOAT3 targetPos)
+{
+	XMVECTOR v1, v2;
+	float dis;
+	v1 = XMVectorSet(basePos.x, basePos.y, basePos.z, 1);
+	v2 = XMVectorSet(targetPos.x, targetPos.y, targetPos.z, 1);
+
+	dis = XMVectorGetX(XMVector3Length(XMVectorSubtract(v2, v1)));
+	for (int i = 0; i < 4; i++)
+		if (LODDistance[i] >= dis)
+		{
+			return i;
+		}
+	return 3;
+}
+
+void Voxel::SetLODLevel(int level, float distance)
+{
+	if (level < 0 || level >= 4)
+		return;
+	LODDistance[level] = distance;
 }
 
 int Voxel::ReadTXT(const char * filename)
