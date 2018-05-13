@@ -54,7 +54,7 @@ void Voxel::Initialize()
 	SetLODLevel(2, 100);
 	SetLODLevel(3, 10000000);
 	lastBasePosition = CameraComponent::mainCamera()->transform()->GetWorldPosition();
-	LoadOctree(16,lastBasePosition);
+	LoadOctree(64,lastBasePosition);
 	int h = ReadTXT("../JHEngine/height.txt");
 	//printf("%d", h);
 	//LoadOctree(1025,XMFLOAT3(0,0,0));
@@ -584,7 +584,6 @@ void Voxel::LoadCube(int _width, int _depth, int _height)
 
 void Voxel::LoadOctree(int _width, XMFLOAT3 basePosition)
 {
-	ULONG tick=GetTickCount64();
 	width = _width;
 	height = _width;
 	depth = _width;
@@ -613,6 +612,7 @@ void Voxel::LoadOctree(int _width, XMFLOAT3 basePosition)
 		}
 	}
 	//printf("%d°³\n", i);
+	ULONG tick = GetTickCount64();
 	UpdateOctreeMesh();
 	printf("%dms\n", GetTickCount64() - tick);
 }
