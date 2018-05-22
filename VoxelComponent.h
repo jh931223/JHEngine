@@ -19,16 +19,20 @@ public:
 	void CreateFaceForward(float x, float y, float z, float _unit, byte, int&);
 	void CreateFaceBackward(float x, float y, float z, float _unit, byte, int&);
 	void CreateFaceMarchingCube(int _case,int x, int y, int z,int,byte);
-	void GenerateOctreeCell(Octree<int>::OctreeNode<int>*,int&);
-	void GenerateMarchingCube();
-	void GenerateVoxel();
+	void GenerateOctreeFaces(Octree<int>::OctreeNode<int>*,int&);
+	void GenerateOctreeFaces2(Octree<int>::OctreeNode<int>*, int&);
+	void GenerateMarchingCubeFaces();
+	void GenerateVoxelFaces();
 	void LoadHeightMapFromRaw(int,int,int,const char*);
 	void LoadCube(int,int,int);
-	void LoadOctree(int,XMFLOAT3);
+	void SetChunk(XMFLOAT3,BYTE);
+	void BuildOctree(int, XMFLOAT3);
 	XMFLOAT2 GetUV(byte);
 	byte GetChunk(int x, int y, int z);
 	void UpdateMesh();
+	void UpdateVoxelMesh();
 	void UpdateOctreeMesh();
+	void UpdateMarchingCubeMesh();
 	Mesh* mesh;
 	MeshRenderer* renderer;
 private:
@@ -39,17 +43,20 @@ private:
 	int GetLODLevel(XMFLOAT3 basePos, XMFLOAT3 targetPos);
 	void SetLODLevel(int level,float distance);
 	int ReadTXT(const char* filename);
-	int width, height, depth;
+	int width, height, depth, octreeLength, octreeDepth;
 	float unit;
 	float tUnit;
 	int tAmount;
 	bool useMarchingCube;
+	bool useOctree;
 	byte * * * chunks;
 	std::vector<Mesh::VertexType> vertices;
 	std::vector<unsigned long> indices;
 	Octree<int>* octree;
 	int LODDistance[4]{ 0,0,0,0 };
 	XMFLOAT3 lastBasePosition;
+
+	bool chunkUpdated;
 
 	const XMFLOAT3 edgeMiddle[12] =
 	{

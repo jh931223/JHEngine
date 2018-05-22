@@ -17,8 +17,6 @@ Voxel::Voxel()
 Voxel ::~Voxel()
 {
 	ReleaseChunks();
-	mesh->SetVertices(NULL,0);
-	mesh->SetIndices(NULL,0);
 	mesh->Shutdown();
 }
 
@@ -27,7 +25,15 @@ void Voxel::Update()
 	if (GetDistance(lastBasePosition, CameraComponent::mainCamera()->transform()->GetWorldPosition()) > 10)
 	{
 		lastBasePosition = CameraComponent::mainCamera()->transform()->GetWorldPosition();
-		LoadOctree(32, lastBasePosition);
+		if(useOctree)
+			BuildOctree(width, lastBasePosition);
+		UpdateMesh();
+		chunkUpdated = false;
+	}
+	else if (chunkUpdated)
+	{
+		UpdateMesh();
+		chunkUpdated = false;
 	}
 	if (transform()->parent)
 	{
@@ -46,19 +52,24 @@ void Voxel::Initialize()
 	tUnit = 0.25f;
 	tAmount = 4;
 	useMarchingCube = false;
-
+	useOctree = true;
 	//LoadCube(32,32,32);
-	//LoadCube(32, 32, 32);
-	SetLODLevel(0, 40);
-	SetLODLevel(1, 70);
-	SetLODLevel(2, 100);
-	SetLODLevel(3, 10000000);
+	SetLODLevel(0, 50);
+	SetLODLevel(1, 100);
+	SetLODLevel(2, 200);
+	SetLODLevel(3, 100000);
 	lastBasePosition = CameraComponent::mainCamera()->transform()->GetWorldPosition();
-	LoadOctree(64,lastBasePosition);
+	
+	LoadCube(64, 64, 64);
 	int h = ReadTXT("../JHEngine/height.txt");
+
+
 	//printf("%d", h);
 	//LoadOctree(1025,XMFLOAT3(0,0,0));
-	//LoadHeightMapFromRaw(1025,1025,32,"../JHEngine/data/heightmap.r16");
+	//LoadHeightMapFromRaw(1025,1025,128,"../JHEngine/data/heightmap.r16");
+	if(useOctree)
+		BuildOctree(width, lastBasePosition);
+	UpdateMesh();
 
 }
 void Voxel::NewChunks(int _width, int _depth, int _height)
@@ -306,7 +317,7 @@ void Voxel::CreateFaceMarchingCube(int _case, int x, int y, int z, int _unit, by
 
 
 }
-void Voxel::GenerateOctreeCell(Octree<int>::OctreeNode<int>* current,int& faceCount)
+void Voxel::GenerateOctreeFaces(Octree<int>::OctreeNode<int>* current,int& faceCount)
 {
 	if (current)
 	{
@@ -314,7 +325,7 @@ void Voxel::GenerateOctreeCell(Octree<int>::OctreeNode<int>* current,int& faceCo
 		{
 			for (int i = 0; i < 8; i++)
 			{
-				GenerateOctreeCell(current->GetChild(i),faceCount);
+				GenerateOctreeFaces(current->GetChild(i),faceCount);
 			}
 		}
 		else
@@ -341,7 +352,31 @@ void Voxel::GenerateOctreeCell(Octree<int>::OctreeNode<int>* current,int& faceCo
 		}
 	}
 }
-void Voxel::GenerateMarchingCube()
+void Voxel::GenerateOctreeFaces2(Octree<int>::OctreeNode<int>* node, int& faceCount)
+{
+	if (node)
+	{
+		int value = node->GetValue();
+		if (value > 0)
+		{
+			XMFLOAT3 position = node->GetPosition();
+			float size = node->GetCellSize();
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, size, 0)))
+				CreateFaceUp(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, -size, 0)))
+				CreateFaceDown(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(size, 0, 0)))
+				CreateFaceRight(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(-size, 0, 0)))
+				CreateFaceLeft(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, size)))
+				CreateFaceForward(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, -size)))
+				CreateFaceBackward(position.x, position.y, position.z, size, value, faceCount);
+		}
+	}
+}
+void Voxel::GenerateMarchingCubeFaces()
 {
 	int faceCount = 0;
 	unsigned short ***myCube;
@@ -407,7 +442,7 @@ void Voxel::GenerateMarchingCube()
 	}
 	delete[] myCube;
 }
-void Voxel::GenerateVoxel()
+void Voxel::GenerateVoxelFaces()
 {
 	int faceCount = 0;
 	byte myBlock;
@@ -468,24 +503,43 @@ byte Voxel::GetChunk(int x, int y, int z)
 
 void Voxel::UpdateMesh()
 {
+	ULONG tick = GetTickCount64();
+	if (useOctree)
+	{
+		UpdateOctreeMesh();
+	}
+	else
+	{
+		if (!useMarchingCube)
+		{
+			UpdateVoxelMesh();
+		}
+		else
+		{
+			UpdateMarchingCubeMesh();
+		}
+	}
+	printf("Update Mesh : %dms\n", GetTickCount64() - tick);
+}
+
+void Voxel::UpdateVoxelMesh()
+{
+	Mesh* newMesh = new Mesh();
 	if (mesh)
 	{
-		mesh->ShutdownBuffers();
+		mesh->Shutdown();
 		delete mesh;
 		mesh = NULL;
 	}
-	mesh = new Mesh();
-	renderer->SetMesh(mesh);
+	GenerateVoxelFaces();
+	newMesh->SetVertices(&vertices[0],vertices.size());
+	newMesh->SetIndices(&indices[0], indices.size());
+	newMesh->RecalculateNormals();
+	newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
 	vertices.clear();
 	indices.clear();
-	if (useMarchingCube)
-		GenerateMarchingCube();
-	else
-		GenerateVoxel();
-	mesh->SetVertices(&vertices[0],vertices.size());
-	mesh->SetIndices(&indices[0], indices.size());
-	mesh->RecalculateNormals();
-	mesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
+	mesh = newMesh;
+	renderer->SetMesh(newMesh);
 	//vertices.clear();
 	//indices.clear();
 	//mesh->SetVertices(NULL, 0);
@@ -497,35 +551,59 @@ void Voxel::UpdateOctreeMesh()
 	{
 		return;
 	}
-	//int k = 0;
-	//for (int i = 0; i < 8; i++)
-	//	k += octree->root->GetChild(i)->GetValue();
-	//if (k == 0)
-	//	return;
+	if (mesh)
+	{
+		mesh->Shutdown();
+		delete mesh;
+		mesh = NULL;
+	}
+	Mesh* newMesh = new Mesh();
+	int faceCount = 0;
+	bool type = false;
+	if(type)
+		GenerateOctreeFaces(octree->root, faceCount);
+	else
+	{
+		std::vector<Octree<int>::OctreeNode<int>*> leafs;
+		octree->root->GetLeafs(leafs);
+		for (auto i : leafs)
+		{
+			GenerateOctreeFaces2(i, faceCount);
+		}
+	}
+
+	newMesh->SetVertices(&vertices[0], vertices.size());
+	newMesh->SetIndices(&indices[0], indices.size());
+	newMesh->RecalculateNormals();
+	newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
+	vertices.clear();
+	indices.clear();
+	mesh = newMesh;
+	renderer->SetMesh(newMesh);
+	//vertices.clear();
+	//indices.clear();
+	//mesh->SetVertices(NULL, 0);
+	//mesh->SetIndices(NULL, 0);
+}
+
+void Voxel::UpdateMarchingCubeMesh()
+{
 	if (mesh)
 	{
 		mesh->ShutdownBuffers();
 		delete mesh;
 		mesh = NULL;
 	}
-	mesh = new Mesh();
-	renderer->SetMesh(mesh);
+	Mesh* newMesh = new Mesh();
+	GenerateMarchingCubeFaces();
+	newMesh->SetVertices(&vertices[0], vertices.size());
+	newMesh->SetIndices(&indices[0], indices.size());
+	newMesh->RecalculateNormals();
+	newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
 	vertices.clear();
 	indices.clear();
-	int faceCount = 0;
-	GenerateOctreeCell(octree->root, faceCount);
-	//if (useMarchingCube)
-	//	GenerateMarchingCube();
-	//else
-	//	GenerateVoxel();
-	mesh->SetVertices(&vertices[0], vertices.size());
-	mesh->SetIndices(&indices[0], indices.size());
-	mesh->RecalculateNormals();
-	mesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
-	//vertices.clear();
-	//indices.clear();
-	//mesh->SetVertices(NULL, 0);
-	//mesh->SetIndices(NULL, 0);
+	mesh = newMesh;
+	renderer->SetMesh(newMesh);
 }
 
 void Voxel::LoadHeightMapFromRaw(int _width,int _depth,int _height,const char* filename)
@@ -543,17 +621,15 @@ void Voxel::LoadHeightMapFromRaw(int _width,int _depth,int _height,const char* f
 			float convertY = ((float)data[x][depth-1-z] * h);
 			for (int y = 0; (y < (int)roundl(convertY)); y++)
 			{
-				octree->root->Insert(XMFLOAT3(x, y, z), 1);
-				//chunks[x][y][z] = 1;
+				//octree->root->Insert(XMFLOAT3(x, y, z), 1);
+				chunks[x][y][z] = 1;
 			}
 		}
 	}
 	for (int i = 0; i < width; i++)
 		delete[] data[i];
 	delete[] data;
-	printf("%d개 생성 완료", width*depth*height);
-	//UpdateMesh();
-	UpdateOctreeMesh();
+	printf("%d byte chunk data 생성 완료\n", width*depth*height);
 }
 
 void Voxel::LoadCube(int _width, int _depth, int _height)
@@ -566,34 +642,54 @@ void Voxel::LoadCube(int _width, int _depth, int _height)
 		{
 			for (int y = 0; y < height; y++)
 			{
-				chunks[x][y][z] = c;
-				c++;
-				if (c == tAmount + 1)
-					c = 1;
+				chunks[x][y][z] = rand()%1+1;
 			}
-			c++;
-			if (c == tAmount + 1)
-				c = 1;
 		}
-		c++;
-		if (c == tAmount + 1)
-			c = 1;
 	}
-	UpdateMesh();
 }
 
-void Voxel::LoadOctree(int _width, XMFLOAT3 basePosition)
+void Voxel::SetChunk(XMFLOAT3 position, BYTE value)
 {
-	width = _width;
-	height = _width;
-	depth = _width;
-	ReleaseChunks();
-	int i = 0;
-	int n = width;
-	while ((n = n >> 1))
-		++i;
-	octree = new Octree<int>(XMFLOAT3(width * 0.5f, width * 0.5f, width * 0.5f), width, i-1);
-	i = 0;
+	position -= transform()->GetWorldPosition();
+	int x = (int)(position.x / unit);
+	int y = (int)(position.y / unit);
+	int z = (int)(position.z / unit);
+	if (x >= width || x < 0)
+		return;
+	if (z >= depth || z < 0)
+		return;
+	if (y >= height || y < 0)
+		return;
+	chunks[x][y][z] = value;
+	if (useOctree)
+	{
+		int lodLevel = GetLODLevel(lastBasePosition, XMFLOAT3(x*unit + 0.1f, y*unit + 0.1f, z*unit + 0.1f));
+		octree->root->Insert(position, value, lodLevel);
+	}
+	chunkUpdated = true;
+}
+
+void Voxel::BuildOctree(int _octreeLength, XMFLOAT3 basePosition)
+{
+	ULONG tick = GetTickCount64();
+	if (octreeLength != _octreeLength)
+	{
+		octreeLength = _octreeLength;
+		int i = 0;
+		int n = octreeLength;
+		while ((n = n >> 1))
+			++i;
+		octreeDepth = i - 1;
+		if (octree)
+		{
+			delete octree;
+		}
+		octree = new Octree<int>(XMFLOAT3(octreeLength * 0.5f, octreeLength * 0.5f, octreeLength * 0.5f), octreeLength, octreeDepth);
+	}
+	else
+	{
+		octree->root->RemoveChilds();	
+	}
 	int lodLevel = 0;
 	for (int x = 0; x < width; x ++)
 	{
@@ -601,20 +697,15 @@ void Voxel::LoadOctree(int _width, XMFLOAT3 basePosition)
 		{
 			for (int z = 0; z < depth; z ++)
 			{
-				lodLevel=GetLODLevel(basePosition, XMFLOAT3(x*unit + 0.1f, y*unit + 0.1f, z*unit + 0.1f));
-				if (rand() % 2 == 1)
+				lodLevel=GetLODLevel(basePosition, XMFLOAT3(x*unit, y*unit, z*unit));
+				if (GetChunk(x,y,z))
 				{
-					octree->root->Insert(XMFLOAT3(x*unit+0.1f, y*unit + 0.1f, z*unit + 0.1f), 1, lodLevel);
-					//printf("lodLevel %d %f\n", lodLevel, dis);
-					i++;
+					octree->root->Insert(XMFLOAT3(x*unit, y*unit, z*unit), chunks[x][y][z], lodLevel);
 				}
 			}
 		}
 	}
-	//printf("%d개\n", i);
-	ULONG tick = GetTickCount64();
-	UpdateOctreeMesh();
-	printf("%dms\n", GetTickCount64() - tick);
+	printf("Build Octree : %dms\n", GetTickCount64() - tick);
 }
 
 void Voxel::ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height)

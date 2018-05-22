@@ -26,10 +26,6 @@ Mesh::~Mesh()
 {
 	if (m_vertexBuffer)
 	{
-		if (vertices)
-			delete vertices;
-		if (indices)
-			delete indices;
 	}
 }
 
@@ -130,6 +126,10 @@ bool Mesh::InitializeBuffers(ID3D11Device* device)
 	{
 		return false;
 	}
+
+	vertices = 0;
+	indices = 0;
+	
 	return true;
 }
 

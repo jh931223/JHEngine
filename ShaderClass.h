@@ -62,7 +62,7 @@ public:
 protected:
 	virtual bool InitializeShader(ID3D11Device*, HWND, const WCHAR*, const WCHAR*) = 0;
 	virtual void ShutdownShader() = 0;
-	virtual bool SetShaderParameters(ID3D11DeviceContext*, XMMATRIX, XMMATRIX, XMMATRIX, PARAM*) = 0;
+	virtual bool DrawCall(ID3D11DeviceContext*, XMMATRIX, XMMATRIX, XMMATRIX, PARAM*) = 0;
 	virtual void RenderShader(ID3D11DeviceContext*, int)=0;
 
 protected:
