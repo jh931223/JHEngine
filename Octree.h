@@ -11,154 +11,196 @@ enum OctreeIndex
 	UpperRightBackward = 6, //110
 	UpperRightForward = 7, //111
 };
+template<typename T>class OctreeNode
+{
+	float cellSize;
+	int depth;
+	bool isFull;
+	XMFLOAT3 cellPosition;
+	T value;
+public:
+	OctreeNode<T>** childNodes;
+	OctreeNode * parent;
+	OctreeNode(XMFLOAT3 pos, float unit, int _depth, OctreeNode* _parent)
+	{
+		cellPosition = pos;
+		cellSize = unit;
+		depth = _depth;
+		parent = _parent;
+	}
+	~OctreeNode()
+	{
+		RemoveChilds();
+	}
+	void Insert(XMFLOAT3 targetPos, T _value, int LOD_Level = 0, bool merge = false)
+	{
+		OctreeNode<T>* n = Subdivide(this, targetPos, _value, depth - LOD_Level, merge);
+		if (n)
+			n->SetValue(_value);
+	}
+	void SetValue(T _value)
+	{
+		value = _value;
+	}
+	void RemoveChilds()
+	{
+		if (childNodes)
+		{
+			for (int i = 0; i < 8; i++)
+				delete childNodes[i];
+			delete[] childNodes;
+		}
+		childNodes = 0;
+	}
+	XMFLOAT3 GetPosition()
+	{
+		return cellPosition;
+	}
+	T GetValue()
+	{
+		return value;
+	}
+	float GetCellSize()
+	{
+		return cellSize;
+	}
+	unsigned int GetDepth()
+	{
+		return depth;
+	}
+	OctreeNode<T>* GetChild(int _index)
+	{
+		if (!childNodes)
+			return NULL;
+		return childNodes[_index];
+	}
+	OctreeNode<T>** GetChilds()
+	{
+		return childNodes;
+	}
+	bool IsFull()
+	{
+		if (GetValue())
+			return true;
+		if (childNodes)
+		{
+			for (int i = 0; i < 8; i++)
+			{
+				if (!childNodes[i]->IsFull())
+				{
+					break;
+				}
+			}
+		}
+		return false;
+	}
+	static OctreeNode<T>* Subdivide(OctreeNode<T>* node, XMFLOAT3 targetPos, T _value, int _depth = 0, bool merge = false)
+	{
+		if (node == NULL)
+		{
+			return NULL;
+		}
+		int idx = Octree<T>::GetIndexOfPosition(targetPos, node->GetPosition());
+		if (node->IsLeaf())
+		{
+			if (_value == 0)
+				return NULL;
+			node->childNodes = new OctreeNode<T>*[8];
+			float newSize = node->GetCellSize() * 0.5f;
+			float newHalfSize = newSize * 0.5f;
+			for (int i = 0; i < 8; i++)
+			{
+				XMFLOAT3 newPos = node->GetPosition();
+				if (i & 2)newPos.y += newHalfSize;
+				else newPos.y -= newHalfSize;
+				if (i & 4)newPos.x += newHalfSize;
+				else newPos.x -= newHalfSize;
+				if (i & 1)newPos.z += newHalfSize;
+				else newPos.z -= newHalfSize;
+				node->childNodes[i] = new OctreeNode<T>(newPos, newSize, _depth, node);
+			}
+		}
+		if (_depth == 0)
+		{
+			if (!node->GetChild(idx)->IsLeaf())
+				node->GetChild(idx)->RemoveChilds();
+			node->GetChild(idx)->SetValue(_value);
+			if (merge)
+			{
+				for (int i = 0; i < 8; i++)
+				{
+					if (node->GetChild(i)->GetValue() != _value)
+						break;
+					if (i == 7)
+					{
+						if (!node->parent)
+						{
+							node->RemoveChilds();
+							node->SetValue(_value);
+							return node;
+						}
+						return Subdivide(node->parent, targetPos, _value, 0, merge);
+					}
+				}
+			}
+			return node->GetChild(idx);
+		}
+		return Subdivide(node->GetChild(idx), targetPos, _value, _depth - 1, merge);
+	}
+	static OctreeNode<T>* Subdivide2(OctreeNode<T>* node, XMFLOAT3 targetPos, int _depth = 0, bool merge = false)
+	{
+		if (node == NULL)
+		{
+			return NULL;
+		}
+		int idx = Octree<T>::GetIndexOfPosition(targetPos, node->GetPosition());
+		if (node->IsLeaf())
+		{
+			node->childNodes = new OctreeNode<T>*[8];
+			float newSize = node->GetCellSize() * 0.5f;
+			float newHalfSize = newSize * 0.5f;
+			for (int i = 0; i < 8; i++)
+			{
+				XMFLOAT3 newPos = node->GetPosition();
+				if (i & 2)newPos.y += newHalfSize;
+				else newPos.y -= newHalfSize;
+				if (i & 4)newPos.x += newHalfSize;
+				else newPos.x -= newHalfSize;
+				if (i & 1)newPos.z += newHalfSize;
+				else newPos.z -= newHalfSize;
+				node->childNodes[i] = new OctreeNode<T>(newPos, newSize, _depth, node);
+			}
+		}
+		if (_depth == 0)
+		{
+			if (!node->GetChild(idx)->IsLeaf())
+				node->GetChild(idx)->RemoveChilds();
+			return node->GetChild(idx);
+		}
+		return Subdivide2(node->GetChild(idx), targetPos, _depth - 1, merge);
+	}
+	void GetLeafs(std::vector<OctreeNode<T>*>& _nodeArray)
+	{
+		if (IsLeaf())
+			_nodeArray.push_back(this);
+		else
+		{
+			for (int i = 0; i<8; i++)
+			{
+				childNodes[i]->GetLeafs(_nodeArray);
+			}
+		}
+	}
+	bool IsLeaf()
+	{
+		return childNodes == NULL;
+	}
+};
+
 template<typename T> class Octree
 {
 public:
-	template<typename T>class OctreeNode
-	{
-		float cellSize;
-		int depth;
-		bool isFull;
-		XMFLOAT3 cellPosition;
-		T value;
-	public:
-		OctreeNode<T>** childNodes;
-		OctreeNode * parent;
-		OctreeNode(XMFLOAT3 pos, float unit,int _depth,OctreeNode* _parent)
-		{
-			cellPosition = pos;
-			cellSize = unit;
-			depth = _depth;
-			parent = _parent;
-		}
-		~OctreeNode()
-		{
-			RemoveChilds();
-		}
-		void Insert(XMFLOAT3 targetPos, T _value,int LOD_Level=0,bool merge=false)
-		{
-			Subdivide(this,targetPos, _value, depth- LOD_Level,merge);
-		}
-		void SetValue(T _value)
-		{
-			value = _value;
-		}
-		void RemoveChilds()
-		{
-			if (childNodes)
-			{
-				for (int i = 0; i < 8; i++)
-					delete childNodes[i];
-				delete[] childNodes;
-			}
-			childNodes = 0;
-		}
-		XMFLOAT3 GetPosition()
-		{
-			return cellPosition;
-		}
-		T GetValue()
-		{
-			return value;
-		}
-		float GetCellSize()
-		{
-			return cellSize;
-		}
-		unsigned int GetDepth()
-		{
-			return depth;
-		}
-		OctreeNode<T>* GetChild(int _index)
-		{
-			if (!childNodes)
-				return NULL;
-			return childNodes[_index];
-		}
-		OctreeNode<T>** GetChilds()
-		{
-			return childNodes;
-		}
-		bool IsFull()
-		{
-			if (GetValue())
-				return true;
-			if (childNodes)
-			{
-				for (int i = 0; i < 8; i++)
-				{
-					if (!childNodes[i]->IsFull())
-					{
-						break;
-					}
-				}
-			}
-			return false;
-		}
-		static void Subdivide(OctreeNode<T>* node, XMFLOAT3 targetPos, T _value, int _depth = 0, bool merge = false)
-		{
-			if (node == NULL)
-				return;
-			int idx = GetIndexOfPosition(targetPos, node->GetPosition());
-			if (node->IsLeaf())
-			{
-				if (_value == 0)
-					return;
-				node->childNodes = new OctreeNode<T>*[8];
-				float newSize = node->GetCellSize() * 0.5f;
-				float newHalfSize = newSize * 0.5f;
-				for (int i = 0; i < 8; i++)
-				{
-					XMFLOAT3 newPos = node->GetPosition();
-					if (i & 2)newPos.y += newHalfSize;
-					else newPos.y -= newHalfSize;
-					if (i & 4)newPos.x += newHalfSize;
-					else newPos.x -= newHalfSize;
-					if (i & 1)newPos.z += newHalfSize;
-					else newPos.z -= newHalfSize;
-					node->childNodes[i] = new OctreeNode<T>(newPos, newSize, _depth,node);
-				}
-			}
-			if (_depth == 0)
-			{
-				if (!node->GetChild(idx)->IsLeaf())
-					node->GetChild(idx)->RemoveChilds();
-				node->GetChild(idx)->SetValue(_value);
-				if (merge)
-				{
-					for (int i = 0; i < 8; i++)
-					{
-						if (node->GetChild(i)->GetValue() != _value)
-						{
-							break;
-						}
-						if (i == 7)
-						{
-							return Subdivide(node->parent, targetPos, _value, 0, merge);
-						}
-					}
-				}
-				return;
-			}
-			return Subdivide(node->GetChild(idx),targetPos, _value, _depth - 1, merge);
-		}
-		void GetLeafs(std::vector<OctreeNode<T>*>& _nodeArray)
-		{
-			if (IsLeaf())
-				_nodeArray.push_back(this);
-			else
-			{
-				for (int i=0;i<8;i++)
-				{
-					childNodes[i]->GetLeafs(_nodeArray);
-				}
-			}
-		}
-		bool IsLeaf()
-		{
-			return childNodes==NULL;
-		}
-	};
+	
 
 	OctreeNode<T>* root;
 	int depth;

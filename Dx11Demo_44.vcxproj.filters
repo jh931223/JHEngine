@@ -134,6 +134,12 @@
     <ClInclude Include="Octree.h">
       <Filter>Scripts</Filter>
     </ClInclude>
+    <ClInclude Include="OctreeManagerComponent.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="PerlinNoise.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InputComponent.cpp">
@@ -213,8 +219,16 @@
     <ClCompile Include="Transform.cpp">
       <Filter>EngineFrameworks\Source\Frameworks</Filter>
     </ClCompile>
-    <ClCompile Include="Component.cpp" />
     <ClCompile Include="Octree.cpp">
+      <Filter>Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="OctreeManagerComponent.cpp">
+      <Filter>Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="Component.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks</Filter>
+    </ClCompile>
+    <ClCompile Include="PerlinNoise.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
   </ItemGroup>

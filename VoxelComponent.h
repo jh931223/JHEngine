@@ -19,13 +19,15 @@ public:
 	void CreateFaceForward(float x, float y, float z, float _unit, byte, int&);
 	void CreateFaceBackward(float x, float y, float z, float _unit, byte, int&);
 	void CreateFaceMarchingCube(int _case,int x, int y, int z,int,byte);
-	void GenerateOctreeFaces(Octree<int>::OctreeNode<int>*,int&);
-	void GenerateOctreeFaces2(Octree<int>::OctreeNode<int>*, int&);
-	void GenerateOctreeFaces3(Octree<int>::OctreeNode<int>*, int&);
+	void GenerateOctreeFaces(OctreeNode<int>*,int&);
+	void GenerateOctreeFaces2(OctreeNode<int>*, int&);
+	void GenerateOctreeFaces3(OctreeNode<int>*, int&);
 	void GenerateMarchingCubeFaces();
+	void GenerateMarchingCubeOctreeFaces();
 	void GenerateVoxelFaces();
 	void LoadHeightMapFromRaw(int,int,int,const char*);
 	void LoadCube(int,int,int);
+	void LoadPerlin(int _width,int _height, int _depth, int _maxHeight,float refinement);
 	void SetChunk(XMFLOAT3,BYTE);
 	void BuildOctree(int, XMFLOAT3);
 	XMFLOAT2 GetUV(byte);
@@ -50,6 +52,7 @@ private:
 	int tAmount;
 	bool useMarchingCube;
 	bool useOctree;
+	bool octreeMerge;
 	byte * * * chunks;
 	std::vector<Mesh::VertexType> vertices;
 	std::vector<unsigned long> indices;
