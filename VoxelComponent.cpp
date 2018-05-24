@@ -43,6 +43,7 @@ void Voxel::Update()
 
 void Voxel::OnStart()
 {
+	transform()->SetPosition(XMFLOAT3(0, 0, 0));
 	Initialize();
 }
 
@@ -51,21 +52,22 @@ void Voxel::Initialize()
 	unit = 1.0f;
 	tUnit = 0.25f;
 	tAmount = 4;
-	useMarchingCube = false;
-	useOctree = true;
+	useMarchingCube = true;
+	useOctree = false;
 	//LoadCube(32,32,32);
 	SetLODLevel(0, 50);
 	SetLODLevel(1, 100);
 	SetLODLevel(2, 200);
-	SetLODLevel(3, 100000);
+	SetLODLevel(3, 300);
 	lastBasePosition = CameraComponent::mainCamera()->transform()->GetWorldPosition();
 	
-	LoadCube(64, 64, 64);
+	octreeType = 0;
+
+	LoadCube(16, 16, 16);
 	int h = ReadTXT("../JHEngine/height.txt");
 
+	printf("TEST : %d\n", 1 << 4 + 2);
 
-	//printf("%d", h);
-	//LoadOctree(1025,XMFLOAT3(0,0,0));
 	//LoadHeightMapFromRaw(1025,1025,128,"../JHEngine/data/heightmap.r16");
 	if(useOctree)
 		BuildOctree(width, lastBasePosition);
@@ -321,14 +323,7 @@ void Voxel::GenerateOctreeFaces(Octree<int>::OctreeNode<int>* current,int& faceC
 {
 	if (current)
 	{
-		if (!current->IsLeaf())
-		{
-			for (int i = 0; i < 8; i++)
-			{
-				GenerateOctreeFaces(current->GetChild(i),faceCount);
-			}
-		}
-		else
+		if(current->GetValue()>0)
 		{
 			if (!current->GetValue())
 			{
@@ -337,18 +332,26 @@ void Voxel::GenerateOctreeFaces(Octree<int>::OctreeNode<int>* current,int& faceC
 			int value = current->GetValue();
 			XMFLOAT3 position = current->GetPosition();
 			float size = current->GetCellSize();
-			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, size, 0)))
+			int depth = current->GetDepth();
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, size, 0), depth))
 				CreateFaceUp(position.x, position.y, position.z, size, value, faceCount);
-			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, -size, 0)))
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, -size, 0), depth))
 				CreateFaceDown(position.x, position.y, position.z, size, value, faceCount);
-			if (!octree->GetValueOfPosition(position + XMFLOAT3(size, 0, 0)))
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(size, 0, 0), depth))
 				CreateFaceRight(position.x, position.y, position.z, size, value, faceCount);
-			if (!octree->GetValueOfPosition(position + XMFLOAT3(-size, 0, 0)))
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(-size, 0, 0), depth))
 				CreateFaceLeft(position.x, position.y, position.z, size, value, faceCount);
-			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, size)))
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, size), depth))
 				CreateFaceForward(position.x, position.y, position.z, size, value, faceCount);
-			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, -size)))
+			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, -size), depth))
 				CreateFaceBackward(position.x, position.y, position.z, size, value, faceCount);
+		}
+		if (!current->IsLeaf())
+		{
+			for (int i = 0; i < 8; i++)
+			{
+				GenerateOctreeFaces(current->GetChild(i), faceCount);
+			}
 		}
 	}
 }
@@ -372,6 +375,31 @@ void Voxel::GenerateOctreeFaces2(Octree<int>::OctreeNode<int>* node, int& faceCo
 			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, size)))
 				CreateFaceForward(position.x, position.y, position.z, size, value, faceCount);
 			if (!octree->GetValueOfPosition(position + XMFLOAT3(0, 0, -size)))
+				CreateFaceBackward(position.x, position.y, position.z, size, value, faceCount);
+		}
+	}
+}
+void Voxel::GenerateOctreeFaces3(Octree<int>::OctreeNode<int>* node, int& faceCount)
+{
+	if (node)
+	{
+		int value = node->GetValue();
+		int depth = node->GetDepth();
+		if (value > 0)
+		{
+			XMFLOAT3 position = node->GetPosition();
+			float size = node->GetCellSize();
+			if (!octree->GetValueOfPositionByLevel(position + XMFLOAT3(0, size, 0),depth))
+				CreateFaceUp(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPositionByLevel(position + XMFLOAT3(0, -size, 0), depth))
+				CreateFaceDown(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPositionByLevel(position + XMFLOAT3(size, 0, 0), depth))
+				CreateFaceRight(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPositionByLevel(position + XMFLOAT3(-size, 0, 0), depth))
+				CreateFaceLeft(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPositionByLevel(position + XMFLOAT3(0, 0, size), depth))
+				CreateFaceForward(position.x, position.y, position.z, size, value, faceCount);
+			if (!octree->GetValueOfPositionByLevel(position + XMFLOAT3(0, 0, -size), depth))
 				CreateFaceBackward(position.x, position.y, position.z, size, value, faceCount);
 		}
 	}
@@ -559,16 +587,23 @@ void Voxel::UpdateOctreeMesh()
 	}
 	Mesh* newMesh = new Mesh();
 	int faceCount = 0;
-	bool type = false;
-	if(type)
+	int type = octreeType;
+	if(type==0)
 		GenerateOctreeFaces(octree->root, faceCount);
-	else
+	else if(type==1)
 	{
 		std::vector<Octree<int>::OctreeNode<int>*> leafs;
 		octree->root->GetLeafs(leafs);
 		for (auto i : leafs)
 		{
 			GenerateOctreeFaces2(i, faceCount);
+		}
+	}
+	else
+	{
+		for (int i = 0; i < octree->nodeSize; i++)
+		{
+			GenerateOctreeFaces3(octree->GetNormalizedNodes()[i], faceCount);
 		}
 	}
 
@@ -642,7 +677,7 @@ void Voxel::LoadCube(int _width, int _depth, int _height)
 		{
 			for (int y = 0; y < height; y++)
 			{
-				chunks[x][y][z] = rand()%1+1;
+				chunks[x][y][z] = 1;
 			}
 		}
 	}
@@ -664,7 +699,9 @@ void Voxel::SetChunk(XMFLOAT3 position, BYTE value)
 	if (useOctree)
 	{
 		int lodLevel = GetLODLevel(lastBasePosition, XMFLOAT3(x*unit + 0.1f, y*unit + 0.1f, z*unit + 0.1f));
-		octree->root->Insert(position, value, lodLevel);
+		if (lodLevel < 0)
+			lodLevel = octreeDepth;
+		octree->root->Insert(XMFLOAT3(x*unit, y*unit, z*unit), chunks[x][y][z], lodLevel);
 	}
 	chunkUpdated = true;
 }
@@ -672,6 +709,38 @@ void Voxel::SetChunk(XMFLOAT3 position, BYTE value)
 void Voxel::BuildOctree(int _octreeLength, XMFLOAT3 basePosition)
 {
 	ULONG tick = GetTickCount64();
+	//if (octreeType == 2)
+	//{
+	//	if (octree)
+	//	{
+	//		delete octree;
+	//	}
+	//	octreeLength = _octreeLength;
+	//	int i = 0;
+	//	int n = octreeLength;
+	//	while ((n = n >> 1))
+	//		++i;
+	//	octreeDepth = i - 1;
+	//	octree = new Octree<int>(XMFLOAT3(0, 0, 0), unit, octreeDepth,true);
+	//	int lodLevel = 0;
+	//	for (int x = 0; x < width; x++)
+	//	{
+	//		for (int y = 0; y < height; y++)
+	//		{
+	//			for (int z = 0; z < depth; z++)
+	//			{
+	//				lodLevel = GetLODLevel(basePosition, XMFLOAT3(x*unit, y*unit, z*unit));
+	//				if (lodLevel>=0&&GetChunk(x, y, z))
+	//				{
+	//					int depth = octreeDepth - lodLevel;
+	//					octree->Insert(XMFLOAT3(x*unit, y*unit, z*unit), chunks[x][y][z], depth);
+	//				}
+	//			}
+	//		}
+	//	}
+	// return;
+	//}
+	bool merge = false;
 	if (octreeLength != _octreeLength)
 	{
 		octreeLength = _octreeLength;
@@ -684,23 +753,26 @@ void Voxel::BuildOctree(int _octreeLength, XMFLOAT3 basePosition)
 		{
 			delete octree;
 		}
-		octree = new Octree<int>(XMFLOAT3(octreeLength * 0.5f, octreeLength * 0.5f, octreeLength * 0.5f), octreeLength, octreeDepth);
+		octree = new Octree<int>(XMFLOAT3(octreeLength * 0.5f, octreeLength * 0.5f, octreeLength * 0.5f), octreeLength, octreeDepth, merge);
 	}
 	else
 	{
-		octree->root->RemoveChilds();	
+		octree->root->RemoveChilds();
 	}
 	int lodLevel = 0;
-	for (int x = 0; x < width; x ++)
+	for (int x = 0; x < width; x++)
 	{
-		for (int y = 0; y < height; y ++)
+		for (int y = 0; y < height; y++)
 		{
-			for (int z = 0; z < depth; z ++)
+			for (int z = 0; z < depth; z++)
 			{
-				lodLevel=GetLODLevel(basePosition, XMFLOAT3(x*unit, y*unit, z*unit));
-				if (GetChunk(x,y,z))
+				if (GetChunk(x, y, z))
 				{
-					octree->root->Insert(XMFLOAT3(x*unit, y*unit, z*unit), chunks[x][y][z], lodLevel);
+					XMFLOAT3 pos = XMFLOAT3(x*unit, y*unit, z*unit);
+					lodLevel = GetLODLevel(basePosition, pos);
+					if (lodLevel < 0)
+						lodLevel = octreeDepth;
+					octree->root->Insert(XMFLOAT3(x*unit, y*unit, z*unit), chunks[x][y][z], lodLevel, merge);
 				}
 			}
 		}
@@ -763,17 +835,17 @@ int Voxel::GetLODLevel(XMFLOAT3 basePos, XMFLOAT3 targetPos)
 	v2 = XMVectorSet(targetPos.x, targetPos.y, targetPos.z, 1);
 
 	dis = XMVectorGetX(XMVector3Length(XMVectorSubtract(v2, v1)));
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 8; i++)
 		if (LODDistance[i] >= dis)
 		{
 			return i;
 		}
-	return 3;
+	return -1;
 }
 
 void Voxel::SetLODLevel(int level, float distance)
 {
-	if (level < 0 || level >= 4)
+	if (level < 0 || level >= 8)
 		return;
 	LODDistance[level] = distance;
 }

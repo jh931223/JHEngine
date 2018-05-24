@@ -21,6 +21,7 @@ public:
 	void CreateFaceMarchingCube(int _case,int x, int y, int z,int,byte);
 	void GenerateOctreeFaces(Octree<int>::OctreeNode<int>*,int&);
 	void GenerateOctreeFaces2(Octree<int>::OctreeNode<int>*, int&);
+	void GenerateOctreeFaces3(Octree<int>::OctreeNode<int>*, int&);
 	void GenerateMarchingCubeFaces();
 	void GenerateVoxelFaces();
 	void LoadHeightMapFromRaw(int,int,int,const char*);
@@ -53,7 +54,8 @@ private:
 	std::vector<Mesh::VertexType> vertices;
 	std::vector<unsigned long> indices;
 	Octree<int>* octree;
-	int LODDistance[4]{ 0,0,0,0 };
+	int octreeType;
+	int LODDistance[8]{ 0, };
 	XMFLOAT3 lastBasePosition;
 
 	bool chunkUpdated;
