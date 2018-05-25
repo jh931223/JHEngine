@@ -81,8 +81,8 @@ void HierachyClass::Setup()
 	AddGameObject(gobj);
 	CameraComponent* m_Camera = new CameraComponent;
 	gobj->AddComponent(m_Camera);
-	m_Camera->transform()->SetPosition(XMFLOAT3(0.0f, 7.0f, -10.0f));
-	m_Camera->transform()->SetRotation(XMFLOAT3(35.0f, 0.0f, 0.0f));
+	m_Camera->transform()->SetPosition(XMFLOAT3(0.0f, 0.0f, -10.0f));
+	m_Camera->transform()->SetRotation(XMFLOAT3(0.0f, 0.0f, 0.0f));
 	gobj->AddComponent(new InputComponent);
 	// º¹¼¿ »ý¼º
 	gobj = new GameObject("º¹¼¿·çÆ®");
