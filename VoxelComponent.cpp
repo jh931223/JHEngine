@@ -55,7 +55,7 @@ void Voxel::Initialize()
 	unit = 1.0f;
 	tUnit = 0.25f;
 	tAmount = 4;
-	useMarchingCube = false;
+	useMarchingCube = true;
 	useOctree = false;
 	octreeMerge = false;
 	//LoadCube(32,32,32);
@@ -67,8 +67,8 @@ void Voxel::Initialize()
 	
 	octreeType = 0;
 
-	LoadCube(16, 16, 16);
-	//LoadPerlin(128, 128, 128,32, 0.3);
+	//LoadCube(16, 16, 16);
+	LoadPerlin(128, 128, 128,32, 0.3);
 	int h = ReadTXT("../JHEngine/height.txt");
 
 
@@ -779,7 +779,7 @@ void Voxel::LoadPerlin(int _width,int _height, int _depth, int _maxHeight, float
 
 void Voxel::SetChunk(int x, int y, int z, BYTE value)
 {
-	chunksArray[x + y * width + z * width*height];
+	chunksArray[x + y * width + z * width*height]=value;
 }
 
 void Voxel::SetOctree(XMFLOAT3 position, BYTE value)
