@@ -109,7 +109,7 @@ void Voxel::ReleaseChunks()
 void Voxel::CreateFaceUp(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
-	Mesh::VertxBuffer v1, v2, v3, v4;
+	VertxBuffer v1, v2, v3, v4;
 	float offset = _unit * 0.5f;
 	v1.position = XMFLOAT3(x - offset, y + offset, z - offset);
 	v2.position = XMFLOAT3(x - offset, y + offset, z + offset);
@@ -137,7 +137,7 @@ void Voxel::CreateFaceUp(float x, float y, float z, float _unit, byte type, int&
 }
 void Voxel::CreateFaceDown(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
-	Mesh::VertxBuffer v1, v2, v3, v4;
+	VertxBuffer v1, v2, v3, v4;
 	float offset = _unit * 0.5f;
 	v1.position = XMFLOAT3(x - offset, y - offset, z - offset);
 	v2.position = XMFLOAT3(x - offset, y - offset, z + offset);
@@ -166,7 +166,7 @@ void Voxel::CreateFaceDown(float x, float y, float z, float _unit, byte type, in
 void Voxel::CreateFaceRight(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
-	Mesh::VertxBuffer v1, v2, v3, v4;
+	VertxBuffer v1, v2, v3, v4;
 	float offset = _unit * 0.5f;
 	v1.position = XMFLOAT3(x + offset, y - offset, z + offset);
 	v2.position = XMFLOAT3(x + offset, y + offset, z + offset);
@@ -195,7 +195,7 @@ void Voxel::CreateFaceRight(float x, float y, float z, float _unit, byte type, i
 void Voxel::CreateFaceLeft(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
-	Mesh::VertxBuffer v1, v2, v3, v4;
+	VertxBuffer v1, v2, v3, v4;
 
 	float offset = _unit * 0.5f;
 
@@ -227,7 +227,7 @@ void Voxel::CreateFaceLeft(float x, float y, float z, float _unit, byte type, in
 void Voxel::CreateFaceForward(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
-	Mesh::VertxBuffer v1, v2, v3, v4;
+	VertxBuffer v1, v2, v3, v4;
 	float offset = _unit * 0.5f;
 	v1.position = XMFLOAT3(x - offset, y - offset, z + offset);
 	v2.position = XMFLOAT3(x - offset, y + offset, z + offset);
@@ -256,7 +256,7 @@ void Voxel::CreateFaceForward(float x, float y, float z, float _unit, byte type,
 void Voxel::CreateFaceBackward(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
-	Mesh::VertxBuffer v1, v2, v3, v4;
+	VertxBuffer v1, v2, v3, v4;
 	float offset = _unit * 0.5f;
 	v1.position = XMFLOAT3(x - offset, y - offset, z - offset);
 	v2.position = XMFLOAT3(x - offset, y + offset, z - offset);
@@ -288,7 +288,7 @@ void Voxel::CreateFaceMarchingCube(int _case, float x, float y, float z, int _un
 		return;
 	float offset = _unit * 0.5f;
 
-	Mesh::VertxBuffer vert[12] = { XMFLOAT3(0,0,0) };
+	VertxBuffer vert[12] = { XMFLOAT3(0,0,0) };
 	XMFLOAT2 uv = GetUV(type);
 	for (int i = 0; i < 12; i++)
 	{
@@ -478,7 +478,7 @@ void Voxel::GenerateMarchingCubeFaces()
 		{
 			if (gVertBuffer[i].w == 1)
 			{
-				Mesh::VertxBuffer vert;
+				VertxBuffer vert;
 				vert.position = XMFLOAT3(gVertBuffer[i].x, gVertBuffer[i].y, gVertBuffer[i].z);
 				vert.texture = XMFLOAT2(gTexBuffer[i].x, gTexBuffer[i].y);
 				indices.push_back(vertices.size());
@@ -649,7 +649,7 @@ void Voxel::GenerateVoxelFaces()
 	}
 }
 
-void Voxel::CalcNormal(Mesh::VertxBuffer& v1, Mesh::VertxBuffer& v2, Mesh::VertxBuffer& v3)
+void Voxel::CalcNormal(VertxBuffer& v1, VertxBuffer& v2, VertxBuffer& v3)
 {
 	XMFLOAT3 f1 = v1.position - v2.position;
 	f1 = Normalize3(f1);

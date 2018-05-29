@@ -139,23 +139,23 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,MaterialClass* customM
 		GameObject* gameObject = i->gameObject;
 
 		//  yaw, pitch, roll 값을 통해 회전 행렬을 만듭니다.
-
-		i->GetMesh()->Render(m_Direct3D->GetDeviceContext());
-		if (lights.size() == 0)
-		{
-			return false;
-		}
-		if (customMaterial != nullptr)
-		{
-			if (!customMaterial->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(),gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix))
-			{
-				return false;
-			}
-		}
-		else if (!i->GetMaterial()->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix))
-		{
-			return false;
-		}
+		i->Render(m_Direct3D->GetDeviceContext(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix);
+		//i->GetMesh()->Render(m_Direct3D->GetDeviceContext());
+		//if (lights.size() == 0)
+		//{
+		//	return false;
+		//}
+		//if (customMaterial != nullptr)
+		//{
+		//	if (!customMaterial->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(),gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix))
+		//	{
+		//		return false;
+		//	}
+		//}
+		//else if (!i->GetMaterial()->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix))
+		//{
+		//	return false;
+		//}
 	}
 	return true;
 }

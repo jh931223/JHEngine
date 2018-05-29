@@ -18,6 +18,7 @@ public:
 	void SetMesh(Mesh* _mesh);
 	MaterialClass* GetMaterial();
 	void SetMaterial(MaterialClass* _material);
+	void Render(ID3D11DeviceContext*, XMMATRIX, XMMATRIX, XMMATRIX);
 	// Component을(를) 통해 상속됨
 	void Update();
 

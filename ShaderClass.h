@@ -45,7 +45,7 @@ public:
 
 	virtual bool Initialize(ID3D11Device*, HWND) = 0;
 	virtual void Shutdown() = 0;
-	virtual bool Render(ID3D11DeviceContext*, int, XMMATRIX, XMMATRIX, XMMATRIX, PARAM*) = 0;
+	virtual bool Render(ID3D11DeviceContext*, int, XMMATRIX, XMMATRIX, XMMATRIX) = 0;
 	void OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND hwnd, const WCHAR* shaderFilename)
 	{
 		// 에러 메시지를 출력창에 표시합니다.
@@ -58,11 +58,14 @@ public:
 		// 컴파일 에러가 있음을 팝업 메세지로 알려줍니다.
 		MessageBox(hwnd, L"Error compiling shader.", shaderFilename, MB_OK);
 	}
-
+	PARAM* GetParameters()
+	{
+		return &m_shaderParameters;
+	}
 protected:
 	virtual bool InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename, const WCHAR* gsFileName=NULL) = 0;
 	virtual void ShutdownShader() = 0;
-	virtual bool DrawCall(ID3D11DeviceContext*, XMMATRIX, XMMATRIX, XMMATRIX, PARAM*) = 0;
+	virtual bool DrawCall(ID3D11DeviceContext*, XMMATRIX, XMMATRIX, XMMATRIX) = 0;
 	virtual void RenderShader(ID3D11DeviceContext*, int)=0;
 	bool CreateVertexLayout(ID3D11Device* device, ID3D10Blob* vertexShaderBuffer)
 	{
@@ -81,6 +84,7 @@ protected:
 	}
 
 protected:
+	PARAM m_shaderParameters;
 	ID3D11VertexShader * m_vertexShader = nullptr;
 	ID3D11PixelShader* m_pixelShader = nullptr;
 	ID3D11GeometryShader* m_geometryShader = nullptr;

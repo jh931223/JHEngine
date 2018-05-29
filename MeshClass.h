@@ -1,16 +1,16 @@
 #pragma once
 #include<vector>
 
+struct VertxBuffer
+{
+	XMFLOAT3 position;
+	XMFLOAT2 texture;
+	XMFLOAT3 normal;
+	void SetPosition(float x, float y, float z) { position = XMFLOAT3(x, y, z); }
+};
 class Mesh
 {
 public:
-	struct VertxBuffer
-	{
-		XMFLOAT3 position;
-		XMFLOAT2 texture;
-		XMFLOAT3 normal;
-		void SetPosition(float x, float y, float z) { position = XMFLOAT3(x, y, z); }
-	};
 
 
 public:
@@ -31,7 +31,8 @@ public:
 
 	int GetIndexCount();
 	VertxBuffer* vertices;
-
+	ID3D11Buffer* const* GetVertexBuffer();
+	ID3D11Buffer* GetIndexBuffer();
 
 private:
 	void RenderBuffers(ID3D11DeviceContext*);

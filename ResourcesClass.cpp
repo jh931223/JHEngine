@@ -131,7 +131,7 @@ void ResourcesClass::InitializeTexture(HWND hwnd)
 void ResourcesClass::InitializeMaterial(HWND hwnd)
 {
 	MaterialClass* result = new MaterialClass;
-	result->SetShader(FindShader("ShadowShader"));
+	result->SetShader(new ShadowShaderClass,hwnd);
 	result->GetParams()->SetTexture("Texture", FindTexture("stone"));
 	result->GetParams()->SetRenderTexture("DepthMapTexture", FindRenderTexture("rt_Shadow"));
 	result->GetParams()->SetFloat4("ambientColor", XMFLOAT4(1.0, 1.0, 1, 1));
@@ -139,7 +139,7 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	materialMap["cube"] = result;
 
 	result = new MaterialClass;
-	result->SetShader(FindShader("ShadowShader"));
+	result->SetShader(new ShadowShaderClass, hwnd);
 	result->GetParams()->SetTexture("Texture", FindTexture("floor"));
 	result->GetParams()->SetRenderTexture("DepthMapTexture", FindRenderTexture("rt_Shadow"));
 	result->GetParams()->SetFloat4("ambientColor", XMFLOAT4(1,1.0,1,1));
@@ -147,11 +147,11 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	materialMap["floor"] = result;
 
 	result = new MaterialClass;
-	result->SetShader(FindShader("DepthShader"));
+	result->SetShader(new DepthShaderClass, hwnd);
 	materialMap["depthMap"] = result;
 
 	result = new MaterialClass;
-	result->SetShader(FindShader("TextureShader"));
+	result->SetShader(new TextureShaderClass, hwnd);
 	result->GetParams()->SetTexture("Texture", FindTexture("tile"));
 	materialMap["test"] = result;
 }

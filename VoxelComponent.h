@@ -25,7 +25,7 @@ public:
 	void GenerateMarchingCubeOctreeFaces();
 	void GenerateMarchingCubeOctreeFaces2();
 	void GenerateVoxelFaces();
-	void CalcNormal(Mesh::VertxBuffer& v1, Mesh::VertxBuffer& v2, Mesh::VertxBuffer& v3);
+	void CalcNormal(VertxBuffer& v1, VertxBuffer& v2, VertxBuffer& v3);
 	void LoadHeightMapFromRaw(int,int,int,const char*);
 	void LoadCube(int,int,int);
 	void LoadPerlin(int _width,int _height, int _depth, int _maxHeight,float refinement);
@@ -59,7 +59,7 @@ private:
 	bool octreeMerge;
 	bool useGPGPU;
 	byte * chunksArray;
-	std::vector<Mesh::VertxBuffer> vertices;
+	std::vector<VertxBuffer> vertices;
 	std::vector<unsigned long> indices;
 	Octree<int>* octree;
 	int octreeType;

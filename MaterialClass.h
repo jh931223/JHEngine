@@ -11,9 +11,12 @@ public:
 	MaterialClass();
 	~MaterialClass();
 	bool Render(ID3D11DeviceContext*, const int, XMMATRIX, XMMATRIX, XMMATRIX);
-	void SetShader(ShaderClass *_shader);
+	void SetShader(ShaderClass *_shader,HWND hwnd);
+	ShaderClass* GetShader()
+	{
+		return shader;
+	}
 	ShaderParameterCollections* GetParams();
 private:
 	ShaderClass * shader;
-	ShaderParameterCollections params;
 };
