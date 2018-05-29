@@ -34,7 +34,7 @@ public:
 		ID3D11ShaderResourceView*, XMFLOAT3, XMFLOAT4, XMFLOAT4*/);
 
 private:
-	bool InitializeShader(ID3D11Device*, HWND, const WCHAR*, const WCHAR*);
+	bool InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename, const WCHAR* gsFileName = NULL)override;
 	void ShutdownShader();
 	void OutputShaderErrorMessage(ID3D10Blob*, HWND, const WCHAR*);
 

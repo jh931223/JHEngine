@@ -140,6 +140,12 @@
     <ClInclude Include="PerlinNoise.h">
       <Filter>Scripts</Filter>
     </ClInclude>
+    <ClInclude Include="ComputeShader.h">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClInclude>
+    <ClInclude Include="MarchingCubeShaderClass.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InputComponent.cpp">
@@ -230,6 +236,12 @@
     </ClCompile>
     <ClCompile Include="PerlinNoise.cpp">
       <Filter>Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="ComputeShader.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClCompile>
+    <ClCompile Include="MarchingCubeShaderClass.cpp">
+      <Filter>Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

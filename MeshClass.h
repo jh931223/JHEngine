@@ -4,11 +4,12 @@
 class Mesh
 {
 public:
-	struct VertexType
+	struct VertxBuffer
 	{
 		XMFLOAT3 position;
 		XMFLOAT2 texture;
 		XMFLOAT3 normal;
+		void SetPosition(float x, float y, float z) { position = XMFLOAT3(x, y, z); }
 	};
 
 
@@ -24,12 +25,12 @@ public:
 	void ShutdownBuffers();
 	void ReleaseModel();
 	void Render(ID3D11DeviceContext*);
-	bool SetVertices(VertexType*, int);
+	bool SetVertices(VertxBuffer*, int);
 	bool SetIndices(unsigned long*,int);
 	bool RecalculateNormals();
 
 	int GetIndexCount();
-	VertexType* vertices;
+	VertxBuffer* vertices;
 
 
 private:

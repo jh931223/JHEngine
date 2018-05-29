@@ -88,7 +88,7 @@ bool Mesh::InitializeBuffers(ID3D11Device* device)
 	// 정적 정점 버퍼의 구조체를 설정합니다.
 	D3D11_BUFFER_DESC vertexBufferDesc;
 	vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	vertexBufferDesc.ByteWidth = sizeof(VertexType) * m_vertexCount;
+	vertexBufferDesc.ByteWidth = sizeof(VertxBuffer) * m_vertexCount;
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertexBufferDesc.CPUAccessFlags = 0;
 	vertexBufferDesc.MiscFlags = 0;
@@ -155,7 +155,7 @@ void Mesh::ShutdownBuffers()
 void Mesh::RenderBuffers(ID3D11DeviceContext* deviceContext)
 {
 	// 정점 버퍼의 단위와 오프셋을 설정합니다.
-	UINT stride = sizeof(VertexType);
+	UINT stride = sizeof(VertxBuffer);
 	UINT offset = 0;
 
 	// 렌더링 할 수 있도록 입력 어셈블러에서 정점 버퍼를 활성으로 설정합니다.
@@ -209,7 +209,7 @@ bool Mesh::LoadModel(const char * filename)
 	// 버텍스 데이터를 읽습니다.
 	if (vertices)
 		delete[] vertices;
-	vertices = new VertexType[m_vertexCount];
+	vertices = new VertxBuffer[m_vertexCount];
 	if (indices)
 		delete[] indices;
 	indices = new unsigned long[m_indexCount];
@@ -240,7 +240,7 @@ void Mesh::ReleaseModel()
 	}
 }
 
-bool Mesh::SetVertices(VertexType* _vertices,int _size)
+bool Mesh::SetVertices(VertxBuffer* _vertices,int _size)
 {
 	vertices = _vertices;
 	m_vertexCount = _size;

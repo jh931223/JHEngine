@@ -1,38 +1,38 @@
 #include "stdafx.h"
-#include "Textureshaderclass.h"
+#include "MarchingCubeShaderClass.h"
 #include "TextureClass.h"
 #include <map>
 #include <string>
-TextureShaderClass::TextureShaderClass()
+MarchingCubeShaderClass::MarchingCubeShaderClass()
 {
 }
 
 
-TextureShaderClass::TextureShaderClass(const TextureShaderClass& other)
+MarchingCubeShaderClass::MarchingCubeShaderClass(const MarchingCubeShaderClass& other)
 {
 }
 
 
-TextureShaderClass::~TextureShaderClass()
+MarchingCubeShaderClass::~MarchingCubeShaderClass()
 {
 }
 
 
-bool TextureShaderClass::Initialize(ID3D11Device* device, HWND hwnd)
+bool MarchingCubeShaderClass::Initialize(ID3D11Device* device, HWND hwnd)
 {
 	// 정점 및 픽셀 쉐이더를 초기화합니다.
-	return InitializeShader(device, hwnd, L"../JHEngine/texture_vs.hlsl", L"../JHEngine/texture_ps.hlsl");
+	return InitializeShader(device, hwnd, L"../JHEngine/marchingCube_vs.hlsl", L"../JHEngine/marchingCube_ps.hlsl", L"../JHEngine/mrachingCube_gs.hlsl");
 }
 
 
-void TextureShaderClass::Shutdown()
+void MarchingCubeShaderClass::Shutdown()
 {
 	// 버텍스 및 픽셀 쉐이더와 관련된 객체를 종료합니다.
 	ShutdownShader();
 }
 
 
-bool TextureShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix,
+bool MarchingCubeShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix,
 	XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM* textureArray)
 {
 	// 렌더링에 사용할 셰이더 매개 변수를 설정합니다.
@@ -48,7 +48,7 @@ bool TextureShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCou
 }
 
 
-bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename, const WCHAR* gsFileName)
+bool MarchingCubeShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename, const WCHAR* gsFileName)
 {
 	HRESULT result;
 	ID3D10Blob* errorMessage = nullptr;
@@ -93,6 +93,26 @@ bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const
 		return false;
 	}
 
+	// 픽셀 쉐이더 코드를 컴파일한다.
+	ID3D10Blob* geometryShaderBuffer = nullptr;
+	result = D3DCompileFromFile(psFilename, NULL, NULL, "main", "gs_5_0", D3D10_SHADER_ENABLE_STRICTNESS,
+		0, &geometryShaderBuffer, &errorMessage);
+	if (FAILED(result))
+	{
+		// 셰이더 컴파일 실패시 오류메시지를 출력합니다.
+		if (errorMessage)
+		{
+			OutputShaderErrorMessage(errorMessage, hwnd, psFilename);
+		}
+		// 컴파일 오류가 아니라면 셰이더 파일을 찾을 수 없는 경우입니다.
+		else
+		{
+			MessageBox(hwnd, psFilename, L"Missing Shader File", MB_OK);
+		}
+
+		return false;
+	}
+
 	// 버퍼로부터 정점 셰이더를 생성한다.
 	result = device->CreateVertexShader(vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), NULL,
 		&m_vertexShader);
@@ -109,10 +129,16 @@ bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const
 		return false;
 	}
 
-	// 정점 입력 레이아웃 구조체를 설정합니다.
-	
+	// 버퍼에서 픽셀 쉐이더를 생성합니다.
+	result = device->CreateGeometryShader(geometryShaderBuffer->GetBufferPointer(), geometryShaderBuffer->GetBufferSize(), NULL,
+		&m_geometryShader);
+	if (FAILED(result))
+	{
+		return false;
+	}
 
-	if (!CreateVertexLayout(device,vertexShaderBuffer))
+
+	if (!CreateVertexLayout(device, vertexShaderBuffer))
 	{
 		return false;
 	}
@@ -124,6 +150,8 @@ bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const
 	pixelShaderBuffer->Release();
 	pixelShaderBuffer = 0;
 
+	geometryShaderBuffer->Release();
+	geometryShaderBuffer = 0;
 	// 정점 셰이더에 있는 행렬 상수 버퍼의 구조체를 작성합니다.
 	D3D11_BUFFER_DESC matrixBufferDesc;
 	matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -167,7 +195,7 @@ bool TextureShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const
 }
 
 
-void TextureShaderClass::ShutdownShader()
+void MarchingCubeShaderClass::ShutdownShader()
 {
 	// 샘플러 상태를 해제한다.
 	if (m_sampleState)
@@ -203,12 +231,18 @@ void TextureShaderClass::ShutdownShader()
 		m_vertexShader->Release();
 		m_vertexShader = 0;
 	}
+	// 지오메트리 쉐이더를 해제합니다.
+	if (m_geometryShader)
+	{
+		m_geometryShader->Release();
+		m_geometryShader = 0;
+	}
 }
 
 
 
-bool TextureShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix,
-	XMMATRIX projectionMatrix,PARAM* parameters)
+bool MarchingCubeShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix,
+	XMMATRIX projectionMatrix, PARAM* parameters)
 {
 	// 상수 버퍼의 내용을 쓸 수 있도록 잠급니다.
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -234,19 +268,19 @@ bool TextureShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMATRIX w
 	// 상수 버퍼의 잠금을 풉니다.
 	deviceContext->Unmap(m_matrixBuffer, 0);
 
+
 	// 정점 셰이더에서의 상수 버퍼의 위치를 설정합니다.
 	unsigned int bufferNumber = 0;
 
 	// 마지막으로 정점 셰이더의 상수 버퍼를 바뀐 값으로 바꿉니다.
 	deviceContext->VSSetConstantBuffers(bufferNumber, 1, &m_matrixBuffer);
-
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
 	deviceContext->PSSetShaderResources(0, 1, parameters->GetTexture("Texture")->GetResourceView());
 	return true;
 }
 
 
-void TextureShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int indexCount)
+void MarchingCubeShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int indexCount)
 {
 	// 정점 입력 레이아웃을 설정합니다.
 	deviceContext->IASetInputLayout(m_layout);
@@ -254,6 +288,7 @@ void TextureShaderClass::RenderShader(ID3D11DeviceContext* deviceContext, int in
 	// 삼각형을 그릴 정점 셰이더와 픽셀 셰이더를 설정합니다.
 	deviceContext->VSSetShader(m_vertexShader, NULL, 0);
 	deviceContext->PSSetShader(m_pixelShader, NULL, 0);
+	deviceContext->GSSetShader(m_geometryShader, NULL, 0);
 
 	// 픽셀 쉐이더에서 샘플러 상태를 설정합니다.
 	deviceContext->PSSetSamplers(0, 1, &m_sampleState);

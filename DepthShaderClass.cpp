@@ -48,7 +48,7 @@ bool DepthShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount
 }
 
 
-bool DepthShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename)
+bool DepthShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename, const WCHAR* gsFileName)
 {
 	ID3D10Blob* errorMessage = nullptr;
 
@@ -104,23 +104,8 @@ bool DepthShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const W
 		return false;
 	}
 
-	// 정점 입력 레이아웃 구조체를 설정합니다.
-	// 이 설정은 ModelClass와 셰이더의 VertexType 구조와 일치해야합니다.
-	D3D11_INPUT_ELEMENT_DESC polygonLayout[1];
-	polygonLayout[0].SemanticName = "POSITION";
-	polygonLayout[0].SemanticIndex = 0;
-	polygonLayout[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	polygonLayout[0].InputSlot = 0;
-	polygonLayout[0].AlignedByteOffset = 0;
-	polygonLayout[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	polygonLayout[0].InstanceDataStepRate = 0;
 
-	// 레이아웃의 요소 수를 가져옵니다.
-	unsigned int numElements = sizeof(polygonLayout) / sizeof(polygonLayout[0]);
-
-	// 정점 입력 레이아웃을 만듭니다.
-	if (FAILED(device->CreateInputLayout(polygonLayout, numElements, vertexShaderBuffer->GetBufferPointer(),
-		vertexShaderBuffer->GetBufferSize(), &m_layout)))
+	if (!CreateVertexLayout(device, vertexShaderBuffer))
 	{
 		return false;
 	}

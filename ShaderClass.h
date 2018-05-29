@@ -60,16 +60,40 @@ public:
 	}
 
 protected:
-	virtual bool InitializeShader(ID3D11Device*, HWND, const WCHAR*, const WCHAR*) = 0;
+	virtual bool InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename, const WCHAR* gsFileName=NULL) = 0;
 	virtual void ShutdownShader() = 0;
 	virtual bool DrawCall(ID3D11DeviceContext*, XMMATRIX, XMMATRIX, XMMATRIX, PARAM*) = 0;
 	virtual void RenderShader(ID3D11DeviceContext*, int)=0;
+	bool CreateVertexLayout(ID3D11Device* device, ID3D10Blob* vertexShaderBuffer)
+	{
+		HRESULT result;
+		// 레이아웃의 요소 수를 가져옵니다.
+		UINT numElements = sizeof(polygonLayout) / sizeof(polygonLayout[0]);
+
+		// 정점 입력 레이아웃을 만듭니다.
+		result = device->CreateInputLayout(polygonLayout, numElements, vertexShaderBuffer->GetBufferPointer(),
+			vertexShaderBuffer->GetBufferSize(), &m_layout);
+		if (FAILED(result))
+		{
+			return false;
+		}
+		return true;
+	}
 
 protected:
 	ID3D11VertexShader * m_vertexShader = nullptr;
 	ID3D11PixelShader* m_pixelShader = nullptr;
+	ID3D11GeometryShader* m_geometryShader = nullptr;
 	ID3D11InputLayout* m_layout = nullptr;
 	ID3D11Buffer* m_matrixBuffer = nullptr;
 
 	ID3D11SamplerState* m_sampleState = nullptr;
+
+	// 이 설정은 ModelClass와 셰이더의 VertexType 구조와 일치해야합니다.
+	const D3D11_INPUT_ELEMENT_DESC polygonLayout[3]
+	{
+		{ "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA ,0 },
+		{ "TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT ,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0 }
+	};
 };

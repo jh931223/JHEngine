@@ -163,6 +163,7 @@
     <ClInclude Include="BitmapClass.h" />
     <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="Component.h" />
+    <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="D3DClass.h" />
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DepthShaderClass.h" />
@@ -174,6 +175,7 @@
     <ClInclude Include="JHVector.h" />
     <ClInclude Include="LightComponent.h" />
     <ClInclude Include="HierachyClass.h" />
+    <ClInclude Include="MarchingCubeShaderClass.h" />
     <ClInclude Include="MaterialClass.h" />
     <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MeshClass.h" />
@@ -199,6 +201,7 @@
     <ClCompile Include="BitmapClass.cpp" />
     <ClCompile Include="CameraComponent.cpp" />
     <ClCompile Include="Component.cpp" />
+    <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="DepthShaderClass.cpp" />
@@ -209,6 +212,7 @@
     <ClCompile Include="InputClass.cpp" />
     <ClCompile Include="LightComponent.cpp" />
     <ClCompile Include="HierachyClass.cpp" />
+    <ClCompile Include="MarchingCubeShaderClass.cpp" />
     <ClCompile Include="MaterialClass.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="MeshClass.cpp" />

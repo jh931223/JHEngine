@@ -1,11 +1,11 @@
 #pragma once
 #include "ShaderClass.h"
-class TextureShaderClass : public ShaderClass
+class MarchingCubeShaderClass : public ShaderClass
 {
 public:
-	TextureShaderClass();
-	TextureShaderClass(const TextureShaderClass&);
-	~TextureShaderClass();
+	MarchingCubeShaderClass();
+	MarchingCubeShaderClass(const MarchingCubeShaderClass&);
+	~MarchingCubeShaderClass();
 
 	bool Initialize(ID3D11Device*, HWND) override;
 	void Shutdown()override;
