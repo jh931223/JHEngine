@@ -98,7 +98,7 @@ void HierachyClass::Setup()
 	Voxel* voxel = new Voxel;
 	voxel->renderer = renderer;
 	gobj->AddComponent(voxel);
-	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("test"));// 머테리얼 설정
+	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_texture"));// 머테리얼 설정
 	gobj->transform->SetLocalPosition(XMFLOAT3(0, 0, 0));
 	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
 }

@@ -30,19 +30,19 @@ void MeshRenderer::SetMesh(Mesh * _mesh)
 	mesh = _mesh;
 }
 
-MaterialClass * MeshRenderer::GetMaterial()
+Material * MeshRenderer::GetMaterial()
 {
 	return material;
 }
 
-void MeshRenderer::SetMaterial(MaterialClass * _material)
+void MeshRenderer::SetMaterial(Material * _material)
 {
 	material = _material;
 }
 
 void MeshRenderer::Render(ID3D11DeviceContext * _deviceContext, XMMATRIX _world, XMMATRIX _view, XMMATRIX _proj)
 {	// 정점 버퍼의 단위와 오프셋을 설정합니다.
-	UINT stride = sizeof(VertxBuffer);
+	UINT stride = sizeof(VertexBuffer);
 	UINT offset = 0;
 
 	// 렌더링 할 수 있도록 입력 어셈블러에서 정점 버퍼를 활성으로 설정합니다.

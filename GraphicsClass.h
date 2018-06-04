@@ -20,7 +20,7 @@ class ViewPointClass;
 class MeshRenderer;
 class BitmapClass;
 class TextureShaderClass;
-class MaterialClass;
+class Material;
 class GraphicsClass
 {
 public:
@@ -34,7 +34,7 @@ public:
 	D3DClass* GetD3D();
 private:
 	bool Render();
-	bool RenderScene(CameraComponent* camera,MaterialClass* customMaterial);
+	bool RenderScene(CameraComponent* camera,Material* customMaterial);
 	bool RenderCanvas(CameraComponent* camera);
 	bool RenderToTexture(CameraComponent* camera);
 	bool RenderToDepthTexture(CameraComponent* camera);

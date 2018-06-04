@@ -1,7 +1,7 @@
 #pragma once
 #include<vector>
 
-struct VertxBuffer
+struct VertexBuffer
 {
 	XMFLOAT3 position;
 	XMFLOAT2 texture;
@@ -25,12 +25,12 @@ public:
 	void ShutdownBuffers();
 	void ReleaseModel();
 	void Render(ID3D11DeviceContext*);
-	bool SetVertices(VertxBuffer*, int);
+	bool SetVertices(VertexBuffer*, int);
 	bool SetIndices(unsigned long*,int);
 	bool RecalculateNormals();
 
 	int GetIndexCount();
-	VertxBuffer* vertices;
+	VertexBuffer* vertices;
 	ID3D11Buffer* const* GetVertexBuffer();
 	ID3D11Buffer* GetIndexBuffer();
 

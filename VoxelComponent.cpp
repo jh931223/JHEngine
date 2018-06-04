@@ -13,7 +13,10 @@
 #include"PerlinNoise.h"
 #include<amp.h>
 #include<amp_graphics.h>
-
+#include"SystemClass.h"
+#include"MaterialClass.h"
+#include"StructuredBuffer.h"
+#include"ResourcesClass.h"
 
 using namespace concurrency;
 using namespace concurrency::graphics;
@@ -27,6 +30,7 @@ Voxel ::~Voxel()
 {
 	ReleaseChunks();
 	mesh->Shutdown();
+	Buf_chunkData->Release();
 }
 
 void Voxel::Update()
@@ -66,8 +70,9 @@ void Voxel::Initialize()
 	useMarchingCube = true;
 	useOctree = false;
 	octreeMerge = false;
-	useGPGPU = true;
-	//LoadCube(32,32,32);
+	useGPGPU = false;
+	useGeometry = true;
+	
 	SetLODLevel(0, 5000000);
 	SetLODLevel(1, 100);
 	SetLODLevel(2, 200);
@@ -76,9 +81,11 @@ void Voxel::Initialize()
 	
 	octreeType = 0;
 
-	//LoadCube(16, 16, 16);
+	//LoadCube(32, 32, 32);
 	LoadPerlin(128, 128, 128,64, 0.3);
 	int h = ReadTXT("../JHEngine/height.txt");
+
+
 
 
 	//LoadHeightMapFromRaw(1025,128,1025,"../JHEngine/data/heightmap.r16");
@@ -109,7 +116,7 @@ void Voxel::ReleaseChunks()
 void Voxel::CreateFaceUp(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
-	VertxBuffer v1, v2, v3, v4;
+	VertexBuffer v1, v2, v3, v4;
 	float offset = _unit * 0.5f;
 	v1.position = XMFLOAT3(x - offset, y + offset, z - offset);
 	v2.position = XMFLOAT3(x - offset, y + offset, z + offset);
@@ -137,7 +144,7 @@ void Voxel::CreateFaceUp(float x, float y, float z, float _unit, byte type, int&
 }
 void Voxel::CreateFaceDown(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
-	VertxBuffer v1, v2, v3, v4;
+	VertexBuffer v1, v2, v3, v4;
 	float offset = _unit * 0.5f;
 	v1.position = XMFLOAT3(x - offset, y - offset, z - offset);
 	v2.position = XMFLOAT3(x - offset, y - offset, z + offset);
@@ -166,7 +173,7 @@ void Voxel::CreateFaceDown(float x, float y, float z, float _unit, byte type, in
 void Voxel::CreateFaceRight(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
-	VertxBuffer v1, v2, v3, v4;
+	VertexBuffer v1, v2, v3, v4;
 	float offset = _unit * 0.5f;
 	v1.position = XMFLOAT3(x + offset, y - offset, z + offset);
 	v2.position = XMFLOAT3(x + offset, y + offset, z + offset);
@@ -195,7 +202,7 @@ void Voxel::CreateFaceRight(float x, float y, float z, float _unit, byte type, i
 void Voxel::CreateFaceLeft(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
-	VertxBuffer v1, v2, v3, v4;
+	VertexBuffer v1, v2, v3, v4;
 
 	float offset = _unit * 0.5f;
 
@@ -227,7 +234,7 @@ void Voxel::CreateFaceLeft(float x, float y, float z, float _unit, byte type, in
 void Voxel::CreateFaceForward(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
-	VertxBuffer v1, v2, v3, v4;
+	VertexBuffer v1, v2, v3, v4;
 	float offset = _unit * 0.5f;
 	v1.position = XMFLOAT3(x - offset, y - offset, z + offset);
 	v2.position = XMFLOAT3(x - offset, y + offset, z + offset);
@@ -256,7 +263,7 @@ void Voxel::CreateFaceForward(float x, float y, float z, float _unit, byte type,
 void Voxel::CreateFaceBackward(float x, float y, float z, float _unit, byte type, int& faceCount)
 {
 
-	VertxBuffer v1, v2, v3, v4;
+	VertexBuffer v1, v2, v3, v4;
 	float offset = _unit * 0.5f;
 	v1.position = XMFLOAT3(x - offset, y - offset, z - offset);
 	v2.position = XMFLOAT3(x - offset, y + offset, z - offset);
@@ -288,13 +295,13 @@ void Voxel::CreateFaceMarchingCube(int _case, float x, float y, float z, int _un
 		return;
 	float offset = _unit * 0.5f;
 
-	VertxBuffer vert[12] = { XMFLOAT3(0,0,0) };
+	VertexBuffer vert[12] = { XMFLOAT3(0,0,0) };
 	XMFLOAT2 uv = GetUV(type);
 	for (int i = 0; i < 12; i++)
 	{
 		if ((edgeTable[_case] & (1 << i)) != 0)
 		{
-			vert[i].position = XMFLOAT3(x, y, z) + edgeMiddle[i] * offset;
+			vert[i].position = XMFLOAT3(x, y, z) + mcVertexOffset[i] * offset;
 		}
 	}
 	for (int i = 0; i<5; i++)
@@ -310,6 +317,18 @@ void Voxel::CreateFaceMarchingCube(int _case, float x, float y, float z, int _un
 		int index = vertices.size() - 3;
 		//CalcNormal(vertices[index], vertices[index + 1], vertices[index + 2]);
 	}
+}
+void Voxel::AddMarchingCase(int* marching,int x, int y, int z, int w, int h, int d, int _case)
+{
+	int idx = (x)+(y)* w + (z)* h * d;
+	if (marching[idx] == 0)
+	{
+		VertexBuffer vert;
+		vert.position = XMFLOAT3(x, y, z) - XMFLOAT3((w - 1)*0.5f, (h - 1)*0.5f, (d - 1)*0.5f);
+		//indices.push_back(vertices.size());
+		vertices.push_back(vert);
+	}
+	marching[idx] |= _case;
 }
 void Voxel::GenerateOctreeFaces(OctreeNode<int>* current,int& faceCount)
 {
@@ -376,6 +395,43 @@ void Voxel::GenerateMarchingCubeFaces()
 	int *myCube;
 	int size[3]{ width + 1,height + 1,depth + 1 };
 	myCube = new int[size[0]*size[1]*size[2]]{ 0, };
+	ULONG time = GetTickCount();
+	if (useGeometry)
+	{
+		for (int x = 0; x < width; x++)
+		{
+			for (int y = 0; y < height; y++)
+			{
+				for (int z = 0; z < depth; z++)
+				{
+					if (GetChunk(x, y, z))
+					{
+						AddMarchingCase(myCube, x, y, z, size[0], size[1], size[2], 32);
+						AddMarchingCase(myCube, x + 1, y, z, size[0], size[1], size[2], 16);
+						AddMarchingCase(myCube, x, y + 1, z, size[0], size[1], size[2], 2);
+						AddMarchingCase(myCube, x + 1, y + 1, z, size[0], size[1], size[2], 1);
+						AddMarchingCase(myCube, x, y, z + 1, size[0], size[1], size[2], 64);
+						AddMarchingCase(myCube, x + 1, y, z + 1, size[0], size[1], size[2], 128);
+						AddMarchingCase(myCube, x, y + 1, z + 1, size[0], size[1], size[2], 4);
+						AddMarchingCase(myCube, x + 1, y + 1, z + 1, size[0], size[1], size[2], 8);
+					}
+				}
+			}
+		}
+		int nums = size[0] * size[1] * size[2];
+		Material* material = renderer->GetMaterial();
+		material->GetParams()->SetInt("vertCount", vertices.size());
+		material->GetParams()->SetFloat3("startPosition", vertices[0].position);
+		material->GetParams()->SetInt("length", size[0]);
+		ID3D11Device* device = SystemClass::GetInstance()->GetDevice();
+		//ID3D11ShaderResourceView* srv = NULL;
+		//CreateSRV<int>(device, nums, srv, myCube);
+
+		material->GetParams()->SetSRV("chunkData", new StructuredBuffer(device,sizeof(int),nums,myCube));
+		printf("Marching Cube Create Buffer ( Geometry ): %d ms\n", GetTickCount() - time);
+		delete[] myCube;
+		return;
+	}
 	for (int x = 0; x < width; x++)
 	{
 		for (int y = 0; y < height; y++)
@@ -384,14 +440,14 @@ void Voxel::GenerateMarchingCubeFaces()
 			{
 				if (GetChunk(x, y, z))
 				{
-					myCube[(x) + (y) * size[0] +(z) * size[0]*size[1]] |=             0b00100000;
-					myCube[(x + 1)+y * size[0]+z *size[0]* size[1]] |=         0b00010000;
-					myCube[x+(y+1)*size[0]+z*size[0]*size[1]] |=         0b00000010;
-					myCube[(x+1)+(y+1)* size[0] + (z)* size[0] * size[1]] |=     0b00000001;
-					myCube[(x)+(y)* size[0] + (z+1)* size[0] * size[1]] |=         0b01000000;
-					myCube[(x+1)+(y)* size[0] + (z+1)* size[0] * size[1]] |=     0b10000000;
-					myCube[(x)+(y+1)* size[0] + (z+1)* size[0] * size[1]] |=     0b00000100;
-					myCube[(x+1)+(y+1)* size[0] + (z+1)* size[0] * size[1]] |= 0b00001000;
+					myCube[(x)+(y)* size[0] + (z)* size[0] * size[1]] |= 0b00100000;
+					myCube[(x + 1) + y * size[0] + z * size[0] * size[1]] |= 0b00010000;
+					myCube[x + (y + 1)*size[0] + z * size[0] * size[1]] |= 0b00000010;
+					myCube[(x + 1) + (y + 1)* size[0] + (z)* size[0] * size[1]] |= 0b00000001;
+					myCube[(x)+(y)* size[0] + (z + 1)* size[0] * size[1]] |= 0b01000000;
+					myCube[(x + 1) + (y)* size[0] + (z + 1)* size[0] * size[1]] |= 0b10000000;
+					myCube[(x)+(y + 1)* size[0] + (z + 1)* size[0] * size[1]] |= 0b00000100;
+					myCube[(x + 1) + (y + 1)* size[0] + (z + 1)* size[0] * size[1]] |= 0b00001000;
 				}
 			}
 		}
@@ -436,7 +492,6 @@ void Voxel::GenerateMarchingCubeFaces()
 		//gVertBuffer.discard_data();
 		//gTexBuffer.discard_data();
 		//gNormalBuffer.discard_data();
-		ULONG time = GetTickCount();
 		parallel_for_each(cubes.extent, [=](index<3> idxs)restrict(amp)
 		{
 			int _case = cubes[idxs[0]][idxs[1]][idxs[2]];
@@ -471,27 +526,20 @@ void Voxel::GenerateMarchingCubeFaces()
 			}
 		});
 		printf("Marching Cube Create Buffer ( GPU ): %d ms\n", GetTickCount() - time);
-		//gVertBuffer.synchronize();
-		//gNormalBuffer.synchronize();
-		//gTexBuffer.synchronize();
 		for (int i = 0; i < SIZE; i++)
 		{
 			if (gVertBuffer[i].w == 1)
 			{
-				VertxBuffer vert;
+				VertexBuffer vert;
 				vert.position = XMFLOAT3(gVertBuffer[i].x, gVertBuffer[i].y, gVertBuffer[i].z);
 				vert.texture = XMFLOAT2(gTexBuffer[i].x, gTexBuffer[i].y);
 				indices.push_back(vertices.size());
 				vertices.push_back(vert);
 			}
 		}
-		//delete[] v;
-		//delete[] t;
-		//delete[] n;
 	}
 	else
 	{
-		ULONG time = GetTickCount();
 		for (int x = 0; x < size[0]; x++)
 		{
 			for (int y = 0; y < size[1]; y++)
@@ -577,6 +625,30 @@ void Voxel::GenerateMarchingCubeOctreeFaces2()
 			int y = newPos.y;
 			int z = newPos.z;
 
+			/*
+			    券天天天天天天天天天天天天刻
+			   /l                         /l
+			  / l                        / l
+			 /  l                       /  l
+			/   l                      /   l
+		   /    l                     /    l
+		  /     l                    /     l
+		 函天天天天天天天天天天天天佾      l
+		 l      l                   I      l
+		 l      刮__________________l_____到
+		 l     /                    l     /
+		 l    /                     l    /
+		 l   /                      l   /
+		 l  /                       l  /
+		 l /                        l /
+		 l/                         l/
+		 刺天天天天天天天天天天天天刷
+			
+			
+			
+			
+			*/
+
 			myCube[x][y][z] |= 0b00100000;
 			myCube[x + 1][y][z] |= 0b00010000;
 			myCube[x][y + 1][z] |= 0b00000010;
@@ -649,7 +721,7 @@ void Voxel::GenerateVoxelFaces()
 	}
 }
 
-void Voxel::CalcNormal(VertxBuffer& v1, VertxBuffer& v2, VertxBuffer& v3)
+void Voxel::CalcNormal(VertexBuffer& v1, VertexBuffer& v2, VertexBuffer& v3)
 {
 	XMFLOAT3 f1 = v1.position - v2.position;
 	f1 = Normalize3(f1);
@@ -691,6 +763,12 @@ XMFLOAT3 Voxel::CovertToChunkPos(XMFLOAT3 targetPos)
 
 void Voxel::UpdateMesh()
 {
+	if (useGeometry)
+	{
+		renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_marchingCube"));
+	}
+	else
+		renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_texture"));
 	ULONG tick = GetTickCount64();
 	if (useOctree)
 	{
@@ -790,9 +868,12 @@ void Voxel::UpdateMarchingCubeMesh()
 	}
 	Mesh* newMesh = new Mesh();
 	GenerateMarchingCubeFaces();
-	newMesh->SetVertices(&vertices[0], vertices.size());
-	newMesh->SetIndices(&indices[0], indices.size());
-	newMesh->RecalculateNormals();
+	if(vertices.size())
+		newMesh->SetVertices(&vertices[0], vertices.size());
+	if(indices.size())
+		newMesh->SetIndices(&indices[0], indices.size());
+	if(!useGeometry)
+		newMesh->RecalculateNormals();
 	newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
 	vertices.clear();
 	indices.clear();

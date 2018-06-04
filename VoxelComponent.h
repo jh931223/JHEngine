@@ -4,11 +4,12 @@
 #include "MeshClass.h"
 #include "Octree.h"
 class MeshRenderer;
+class Material;
 class Voxel : public Component
 {
 public:
 	Voxel();
-	~Voxel();
+	virtual ~Voxel();
 	void Update() override;
 	void OnStart() override;
 	void Initialize();
@@ -19,13 +20,14 @@ public:
 	void CreateFaceForward(float x, float y, float z, float _unit, byte, int&);
 	void CreateFaceBackward(float x, float y, float z, float _unit, byte, int&);
 	void CreateFaceMarchingCube(int _case,float x, float y, float z,int,byte);
+	void AddMarchingCase(int*,int x, int y, int z, int w, int h, int d, int _case);
 	void GenerateOctreeFaces(OctreeNode<int>*,int&);
 	void GenerateOctreeFaces2(OctreeNode<int>*, int&);
 	void GenerateMarchingCubeFaces();
 	void GenerateMarchingCubeOctreeFaces();
 	void GenerateMarchingCubeOctreeFaces2();
 	void GenerateVoxelFaces();
-	void CalcNormal(VertxBuffer& v1, VertxBuffer& v2, VertxBuffer& v3);
+	void CalcNormal(VertexBuffer& v1, VertexBuffer& v2, VertexBuffer& v3);
 	void LoadHeightMapFromRaw(int,int,int,const char*);
 	void LoadCube(int,int,int);
 	void LoadPerlin(int _width,int _height, int _depth, int _maxHeight,float refinement);
@@ -58,8 +60,9 @@ private:
 	bool useOctree;
 	bool octreeMerge;
 	bool useGPGPU;
+	bool useGeometry;
 	byte * chunksArray;
-	std::vector<VertxBuffer> vertices;
+	std::vector<VertexBuffer> vertices;
 	std::vector<unsigned long> indices;
 	Octree<int>* octree;
 	int octreeType;
@@ -68,7 +71,12 @@ private:
 
 	bool chunkUpdated;
 
-	const XMFLOAT3 edgeMiddle[12] =
+
+	//지오메트리 버퍼
+	ID3D11Buffer* Buf_chunkData;
+	//
+
+	const XMFLOAT3 mcVertexOffset[12] =
 	{
 		XMFLOAT3(0,-1,1),
 		XMFLOAT3(1,-1,0),

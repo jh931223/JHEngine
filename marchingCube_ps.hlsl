@@ -13,23 +13,24 @@ SamplerState SampleType;
 //////////////
 // TYPEDEFS //
 //////////////
-struct PixelInputType
+struct g2f
 {
 	float4 position : SV_POSITION;
-	float2 tex : TEXCOORD0;
+	float3 normal : NORMAL;
+	float2 uv : TEXCOORD0;
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pixel Shader
 ////////////////////////////////////////////////////////////////////////////////
-float4 main(PixelInputType input) : SV_TARGET
+float4 vert(g2f input) : SV_TARGET
 {
 	float4 textureColor;
 
 
 // 이 텍스처 좌표 위치에서 샘플러를 사용하여 텍스처에서 픽셀 색상을 샘플링합니다.
-textureColor = shaderTexture.Sample(SampleType, input.tex);
+	textureColor = shaderTexture.Sample(SampleType, input.uv);
 
 return textureColor;
 }

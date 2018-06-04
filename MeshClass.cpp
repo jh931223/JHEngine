@@ -85,11 +85,7 @@ ID3D11Buffer * Mesh::GetIndexBuffer()
 
 bool Mesh::InitializeBuffers(ID3D11Device* device)
 {
-	if (vertices == 0)
-	{
-		return false;
-	}
-	if (indices == 0)
+	if (vertices == 0||m_vertexCount==0)
 	{
 		return false;
 	}
@@ -98,7 +94,7 @@ bool Mesh::InitializeBuffers(ID3D11Device* device)
 	// 정적 정점 버퍼의 구조체를 설정합니다.
 	D3D11_BUFFER_DESC vertexBufferDesc;
 	vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	vertexBufferDesc.ByteWidth = sizeof(VertxBuffer) * m_vertexCount;
+	vertexBufferDesc.ByteWidth = sizeof(VertexBuffer) * m_vertexCount;
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertexBufferDesc.CPUAccessFlags = 0;
 	vertexBufferDesc.MiscFlags = 0;
@@ -112,6 +108,13 @@ bool Mesh::InitializeBuffers(ID3D11Device* device)
 
 	// 이제 정점 버퍼를 만듭니다.
 	if (FAILED(device->CreateBuffer(&vertexBufferDesc, &vertexData, &m_vertexBuffer)))
+	{
+		return false;
+	}
+
+	vertices = 0;
+
+	if (indices == 0||m_indexCount==0)
 	{
 		return false;
 	}
@@ -137,7 +140,6 @@ bool Mesh::InitializeBuffers(ID3D11Device* device)
 		return false;
 	}
 
-	vertices = 0;
 	indices = 0;
 	
 	return true;
@@ -165,7 +167,7 @@ void Mesh::ShutdownBuffers()
 void Mesh::RenderBuffers(ID3D11DeviceContext* deviceContext)
 {
 	// 정점 버퍼의 단위와 오프셋을 설정합니다.
-	UINT stride = sizeof(VertxBuffer);
+	UINT stride = sizeof(VertexBuffer);
 	UINT offset = 0;
 
 	// 렌더링 할 수 있도록 입력 어셈블러에서 정점 버퍼를 활성으로 설정합니다.
@@ -219,7 +221,7 @@ bool Mesh::LoadModel(const char * filename)
 	// 버텍스 데이터를 읽습니다.
 	if (vertices)
 		delete[] vertices;
-	vertices = new VertxBuffer[m_vertexCount];
+	vertices = new VertexBuffer[m_vertexCount];
 	if (indices)
 		delete[] indices;
 	indices = new unsigned long[m_indexCount];
@@ -250,23 +252,31 @@ void Mesh::ReleaseModel()
 	}
 }
 
-bool Mesh::SetVertices(VertxBuffer* _vertices,int _size)
+bool Mesh::SetVertices(VertexBuffer* _vertices,int _size)
 {
+	if (_size == 0)
+		return false;
 	vertices = _vertices;
 	m_vertexCount = _size;
-	return false;
+	return true;
 }
 
 
 bool Mesh::SetIndices(unsigned long* _indices, int _size)
 {
+	if (_size == 0)
+		return false;
 	indices = _indices;
 	m_indexCount = _size;
-	return false;
+	return true;
 }
 
 bool Mesh::RecalculateNormals()
 {
+	if (m_indexCount == 0)
+		return false;
+	if (m_vertexCount == 0)
+		return false;
 	if (vertices == 0)
 		return false;
 	if (indices == 0)

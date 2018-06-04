@@ -146,6 +146,9 @@
     <ClInclude Include="MarchingCubeShaderClass.h">
       <Filter>Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="StructuredBuffer.h">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InputComponent.cpp">
@@ -243,6 +246,9 @@
     <ClCompile Include="MarchingCubeShaderClass.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="StructuredBuffer.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="texture_ps.hlsl">
@@ -261,6 +267,9 @@
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
     <FxCompile Include="depth_vs.hlsl">
+      <Filter>Shaders\HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="marchingCube.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
   </ItemGroup>

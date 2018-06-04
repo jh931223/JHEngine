@@ -122,7 +122,7 @@ D3DClass * GraphicsClass::GetD3D()
 {
 	return m_Direct3D;
 }
-bool GraphicsClass::RenderScene(CameraComponent* m_Camera,MaterialClass* customMaterial = nullptr)
+bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMaterial = nullptr)
 {
 	if (m_Camera != 0)
 		m_Camera->Render();

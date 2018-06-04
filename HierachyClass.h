@@ -3,7 +3,7 @@
 #include<string>
 #include"Singleton.h"
 class GameObject;
-class HierachyClass
+class HierachyClass : public Singleton<HierachyClass>
 {
 	std::vector<GameObject*> gameObjects;
 

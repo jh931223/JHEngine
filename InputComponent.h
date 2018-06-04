@@ -6,7 +6,7 @@ class InputComponent :
 public:
 
 	InputComponent();
-	~InputComponent();
+	virtual ~InputComponent();
 	void Update() override;
 };
 

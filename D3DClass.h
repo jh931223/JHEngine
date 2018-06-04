@@ -5,7 +5,7 @@ class D3DClass : public AlignedAllocationPolicy<16>
 public:
 	D3DClass();
 	D3DClass(const D3DClass&);
-	~D3DClass();
+	virtual ~D3DClass();
 
 	bool Initialize(int, int, bool, HWND, bool, float, float);
 	void Shutdown();

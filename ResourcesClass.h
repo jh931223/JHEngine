@@ -1,13 +1,14 @@
 #pragma once
 class Mesh;
 class TextureClass;
-class MaterialClass;
+class Material;
 class ShaderClass;
 class RenderTextureClass;
 #include <map>
 #include <string>
+#include"Singleton.h"
 //using namespace std;
-class ResourcesClass
+class ResourcesClass : public Singleton<ResourcesClass>
 {
 
 
@@ -16,13 +17,13 @@ public:
 	~ResourcesClass();
 	void Initialize(HWND hwnd);
 	static ResourcesClass* GetInstance();
-	MaterialClass* FindMaterial(std::string _name);
+	Material* FindMaterial(std::string _name);
 	Mesh* FindMesh(std::string _name);
 	TextureClass* FindTexture(std::string _name);
 	ShaderClass* FindShader(std::string _name);
 	RenderTextureClass* FindRenderTexture(std::string _name);
 private:
-	std::map<std::string, MaterialClass*> materialMap;
+	std::map<std::string, Material*> materialMap;
 	std::map<std::string, TextureClass*> textureMap;
 	std::map<std::string, Mesh*> meshMap;
 	std::map<std::string, ShaderClass*> shaderMap;

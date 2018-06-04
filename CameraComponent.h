@@ -4,7 +4,7 @@ class CameraComponent : public Component
 {
 public:
 	CameraComponent();
-	~CameraComponent();
+	virtual ~CameraComponent();
 
 	void Render();
 	void GetViewMatrix(XMMATRIX&);

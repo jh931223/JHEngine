@@ -2,6 +2,12 @@
 #include "ShaderClass.h"
 class MarchingCubeShaderClass : public ShaderClass
 {
+protected:
+	struct MCBufferType
+	{
+		XMFLOAT3 startPosition;
+		float length;
+	};
 public:
 	MarchingCubeShaderClass();
 	MarchingCubeShaderClass(const MarchingCubeShaderClass&);
@@ -17,4 +23,8 @@ private:
 
 	bool DrawCall(ID3D11DeviceContext*, XMMATRIX, XMMATRIX, XMMATRIX)override;
 	void RenderShader(ID3D11DeviceContext*, int)override;
+private:
+	ID3D11Buffer* m_marchingInfoBuffer=nullptr;
+	int vertCount;
+
 };

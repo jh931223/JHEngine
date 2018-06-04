@@ -13,6 +13,7 @@
 #include "ShadowShaderClass.h"
 #include "RenderTextureClass.h"
 #include "DepthShaderClass.h"
+#include "MarchingCubeShaderClass.h"
 
 #include <map>
 #include <string>
@@ -65,7 +66,7 @@ ResourcesClass * ResourcesClass::GetInstance()
 	return SystemClass::GetInstance()->GetResources();
 }
 
-MaterialClass * ResourcesClass::FindMaterial(string _name)
+Material * ResourcesClass::FindMaterial(string _name)
 {
 	return materialMap[_name];
 }
@@ -130,7 +131,7 @@ void ResourcesClass::InitializeTexture(HWND hwnd)
 
 void ResourcesClass::InitializeMaterial(HWND hwnd)
 {
-	MaterialClass* result = new MaterialClass;
+	Material* result = new Material;
 	result->SetShader(new ShadowShaderClass,hwnd);
 	result->GetParams()->SetTexture("Texture", FindTexture("stone"));
 	result->GetParams()->SetRenderTexture("DepthMapTexture", FindRenderTexture("rt_Shadow"));
@@ -138,7 +139,7 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	result->GetParams()->SetFloat4("diffuseColor", XMFLOAT4(4, 1.0, 0, 1));
 	materialMap["cube"] = result;
 
-	result = new MaterialClass;
+	result = new Material;
 	result->SetShader(new ShadowShaderClass, hwnd);
 	result->GetParams()->SetTexture("Texture", FindTexture("floor"));
 	result->GetParams()->SetRenderTexture("DepthMapTexture", FindRenderTexture("rt_Shadow"));
@@ -146,14 +147,18 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	result->GetParams()->SetFloat4("diffuseColor", XMFLOAT4(1, 1.0, 0, 1));
 	materialMap["floor"] = result;
 
-	result = new MaterialClass;
+	result = new Material;
 	result->SetShader(new DepthShaderClass, hwnd);
 	materialMap["depthMap"] = result;
 
-	result = new MaterialClass;
+	result = new Material;
+	result->SetShader(new MarchingCubeShaderClass, hwnd);
+	result->GetParams()->SetTexture("Texture", FindTexture("tile"));
+	materialMap["m_marchingCube"] = result;	result = new Material;
+
 	result->SetShader(new TextureShaderClass, hwnd);
 	result->GetParams()->SetTexture("Texture", FindTexture("tile"));
-	materialMap["test"] = result;
+	materialMap["m_texture"] = result;
 }
 
 
