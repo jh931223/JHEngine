@@ -37,6 +37,7 @@ public:
 	void SetRotation(XMFLOAT3 R);
 	void SetLocalRotation(XMFLOAT3 R);
 
+
 	XMMATRIX GetTransformMatrix();
 
 	XMMATRIX GetTranslateMatrix();

@@ -55,9 +55,11 @@ bool SystemClass::Initialize()
 		return false;
 	m_Resources->Initialize(m_hwnd);
 
-	m_Hierachy = new HierachyClass;
+	m_Hierachy = HierachyClass::GetInstance();
 	if (!m_Hierachy)
 		return false;
+	m_Hierachy->Setup();
+	m_Hierachy->Start();
 	return true;
 }
 
@@ -109,7 +111,7 @@ void SystemClass::Run()
 			if (!Frame())
 				break;
 		}
-		if (Input()->IsKeyDown(VK_ESCAPE))
+		if (Input()->GetKey(VK_ESCAPE))
 		{
 			break;
 		}
@@ -145,7 +147,6 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 		m_Input->KeyUp((unsigned int)wparam);
 		return 0;
 	}
-
 
 	// 그 외의 모든 메시지들은 기본 메시지 처리로 넘깁니다.
 	default:

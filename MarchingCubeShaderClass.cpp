@@ -348,10 +348,12 @@ bool MarchingCubeShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMAT
 	deviceContext->Unmap(m_marchingInfoBuffer, 0);
 	bufferNumber = 0;
 	deviceContext->GSSetConstantBuffers(1, 1, &m_marchingInfoBuffer);
-	deviceContext->GSSetShaderResources(0,1, m_shaderParameters.GetSRV("chunkData"));
+	deviceContext->GSSetShaderResources(0,1, m_shaderParameters.GetSRV("mcData"));
 
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
-	deviceContext->PSSetShaderResources(0, 1, m_shaderParameters.GetTexture("Texture")->GetResourceView());
+	deviceContext->PSSetShaderResources(0, 1, m_shaderParameters.GetTexture("Texture1")->GetResourceView());
+	deviceContext->PSSetShaderResources(1, 1, m_shaderParameters.GetTexture("Texture2")->GetResourceView());
+	deviceContext->PSSetShaderResources(2, 1, m_shaderParameters.GetTexture("Texture3")->GetResourceView());
 	vertCount = m_shaderParameters.GetInt("vertCount");
 	// 지오메트리 셰이더에 값을 전달
 	return true;

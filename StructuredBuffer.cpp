@@ -49,8 +49,12 @@ HRESULT StructuredBuffer::InitializeBuffer(ID3D11Device* pDevice, size_t structS
 
 void StructuredBuffer::Release()
 {
-	srv->Release();
-	buffer->Release();
+	if(srv)
+		srv->Release();
+	srv = 0;
+	if(buffer)
+		buffer->Release();
+	buffer = 0;
 }
 
 ID3D11ShaderResourceView * const * StructuredBuffer::GetSRV()

@@ -6,6 +6,7 @@ struct VertexBuffer
 	XMFLOAT3 position;
 	XMFLOAT2 texture;
 	XMFLOAT3 normal;
+	XMFLOAT4 color;
 	void SetPosition(float x, float y, float z) { position = XMFLOAT3(x, y, z); }
 };
 class Mesh

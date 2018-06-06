@@ -3,6 +3,7 @@
 #include <vector>
 #include "MeshClass.h"
 #include "Octree.h"
+#include<map>
 class MeshRenderer;
 class Material;
 class Voxel : public Component
@@ -20,10 +21,13 @@ public:
 	void CreateFaceForward(float x, float y, float z, float _unit, byte, int&);
 	void CreateFaceBackward(float x, float y, float z, float _unit, byte, int&);
 	void CreateFaceMarchingCube(int _case,float x, float y, float z,int,byte);
-	void AddMarchingCase(int*,int x, int y, int z, int w, int h, int d, int _case);
+	void AddMarchingCase(int x, int y, int z, int _case);
+	void SubMarchingCase(int x, int y, int z,int _case);
+	void SetMarchingCubeChunkData(int x, int y, int z, bool isCreate);
+	void SetupMarchingCubeVertexBufferGS();
 	void GenerateOctreeFaces(OctreeNode<int>*,int&);
 	void GenerateOctreeFaces2(OctreeNode<int>*, int&);
-	void GenerateMarchingCubeFaces();
+	void GenerateMarchingCubeFaces(bool isNew);
 	void GenerateMarchingCubeOctreeFaces();
 	void GenerateMarchingCubeOctreeFaces2();
 	void GenerateVoxelFaces();
@@ -37,11 +41,11 @@ public:
 	void NewOctree(int _length);
 	XMFLOAT2 GetUV(byte);
 	byte GetChunk(int x, int y, int z);
-	XMFLOAT3 CovertToChunkPos(XMFLOAT3 targetpos);
-	void UpdateMesh();
+	XMFLOAT3 CovertToChunkPos(XMFLOAT3 targetpos,bool returnNan=true);
+	void UpdateMesh(bool isNew = true);
 	void UpdateVoxelMesh();
 	void UpdateOctreeMesh();
-	void UpdateMarchingCubeMesh();
+	void UpdateMarchingCubeMesh(bool isNew=true);
 	Mesh* mesh;
 	MeshRenderer* renderer;
 private:
@@ -71,6 +75,10 @@ private:
 
 	bool chunkUpdated;
 
+	unsigned int* mcData;
+	std::map<int, VertexBuffer> um_Vertices;
+
+	GameObject* camera;
 
 	//지오메트리 버퍼
 	ID3D11Buffer* Buf_chunkData;

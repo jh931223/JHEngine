@@ -5,6 +5,11 @@ namespace JHDev
 	typedef XMFLOAT3 Vector3;
 	typedef bool Bool;
 	typedef float Scalar;
+	inline Vector3 GetNanVector()
+	{
+		float nan = sqrt(-1);
+		return Vector3(nan, nan, nan);
+	}
 	inline Bool operator==(const XMFLOAT3& one,const XMFLOAT3&other) 
 	{
 		return (one.x == other.x && one.y == other.y && one.z == other.z);

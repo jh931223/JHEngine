@@ -1,3 +1,4 @@
+#pragma once
 #include "stdafx.h"
 #include "HierachyClass.h"
 #include "MeshRenderer.h"
@@ -15,8 +16,6 @@ using namespace std;
 
 HierachyClass::HierachyClass()
 {
-	Setup();
-	Start();
 }
 
 
@@ -77,11 +76,11 @@ void HierachyClass::Setup()
 	m_Light->GenerateProjectionMatrix(SCREEN_DEPTH, SCREEN_NEAR);
 	m_Light->GenerateViewMatrix();
 	// light object 생성
-	gobj = new GameObject("카메라");
+	gobj = new GameObject("mainCamera");
 	AddGameObject(gobj);
 	CameraComponent* m_Camera = new CameraComponent;
 	gobj->AddComponent(m_Camera);
-	m_Camera->transform()->SetPosition(XMFLOAT3(0.0f, 0.0f, -10.0f));
+	m_Camera->transform()->SetPosition(XMFLOAT3(0.0f, 0.0f, -100.0f));
 	m_Camera->transform()->SetRotation(XMFLOAT3(0.0f, 0.0f, 0.0f));
 	gobj->AddComponent(new InputComponent);
 	// 복셀 생성

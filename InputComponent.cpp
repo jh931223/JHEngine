@@ -14,25 +14,25 @@ InputComponent::~InputComponent()
 
 void InputComponent::Update()
 {
-	if (Input()->IsKeyDown(VK_CONTROL))
+	if (Input()->GetKey(VK_CONTROL))
 	{
 		Input()->ToggleCursor();
 	}
 
 	XMFLOAT3 axis(0,0,0);
-	if (Input()->IsKeyDown(68))
+	if (Input()->GetKey(68))
 	{
 		axis += right();
 	}
-	else if (Input()->IsKeyDown(65))
+	else if (Input()->GetKey(65))
 	{
 		axis -= right();
 	}
-	if (Input()->IsKeyDown(87))
+	if (Input()->GetKey(87))
 	{
 		axis += forward();
 	}
-	else if (Input()->IsKeyDown(83))
+	else if (Input()->GetKey(83))
 	{
 		axis -= forward();
 	}
@@ -48,7 +48,7 @@ void InputComponent::Update()
 	v = XMVector3Transform(v, m);
 	XMStoreFloat3(&axis, v);
 	float speed = 1.0f;
-	if (Input()->IsKeyDown(VK_SHIFT))
+	if (Input()->GetKey(VK_SHIFT))
 		speed = 2.0f;
 	transform()->TranslateW(axis*0.1f*speed);
 }

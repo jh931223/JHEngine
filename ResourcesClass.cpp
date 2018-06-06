@@ -153,7 +153,9 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 
 	result = new Material;
 	result->SetShader(new MarchingCubeShaderClass, hwnd);
-	result->GetParams()->SetTexture("Texture", FindTexture("tile"));
+	result->GetParams()->SetTexture("Texture1", FindTexture("stone"));
+	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
+	result->GetParams()->SetTexture("Texture3", FindTexture("stone"));
 	materialMap["m_marchingCube"] = result;	result = new Material;
 
 	result->SetShader(new TextureShaderClass, hwnd);
