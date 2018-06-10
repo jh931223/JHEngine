@@ -210,6 +210,8 @@ public:
 	
 
 	OctreeNode<T>* root;
+	OctreeNode<T>** arrayedOctree;
+
 	int depth;
 	int size;
 	XMFLOAT3 position;
@@ -220,6 +222,11 @@ public:
 		OctreeNode<T>::SubdivideThenSet(root,pos,0, 0);
 		position = pos;
 		size = _size;
+		arrayedOctree = new OctreeNode<T>*[_depth];
+		for (int i = 0; i < _depth; i++)
+		{
+			arrayedOctree[i] = new OctreeNode<T>[pow(2, i)*pow(2, i)*pow(2, i)];
+		}
 	}
 	~Octree()
 	{

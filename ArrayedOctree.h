@@ -233,31 +233,39 @@ public:
 	}
 	int GetNodeIDX(DirectX::XMFLOAT3 targetPosition, int targetDepth)
 	{
+		if (targetPosition.x < position.x || targetPosition.y < position.y || targetPosition.z < position.z)
+			return -1;
+		if (targetPosition.x >= position.x + size || targetPosition.y >= position.y + size || targetPosition.z >= position.z + size)
+			return -1;
 		int x, y, z;
 		GetStartPoint(targetPosition, targetDepth, x, y, z);
 		int idx = (z << targetDepth * 2) + (y << targetDepth) + x;
 		return idx;
 	}
-	int GetNodeDelta(int idx,int targetDepth,int dx, int dy, int dz)
+	int GetNodeDeltaIDX(int idx,int targetDepth,int dx, int dy, int dz)
 	{
-		return idx+ (dz << targetDepth * 2) + (dy << targetDepth) + dx
+		return idx + (dz << targetDepth * 2) + (dy << targetDepth) + dx;
 	}
-	void SetValue(XMFLOAT3 targetPos, int targetDepth,T _value)
+	void SetValue(XMFLOAT3 targetPosition, int targetDepth,T _value)
 	{
-		int idx = GetNodeIDX(targetPos, targetDepth);
+		int idx = GetNodeIDX(targetPosition, targetDepth);
+		if (idx == -1)
+			return;
 		nodes[targetDepth][idx] = _value;
 	}
-	T GetValue(XMFLOAT3 targetPos, int targetDepth)
+	T GetValue(XMFLOAT3 targetPosition, int targetDepth)
 	{
-		int idx = GetNodeIDX(targetPos, targetDepth);
+		int idx = GetNodeIDX(targetPosition, targetDepth);
+		if (idx == -1)
+			return;
 		return nodes[targetDepth][idx];
 	}
-	void GetStartPoint(XMFLOAT3 targetPos, int targetDepth,int&x,int&y,int&z)
+	void GetStartPoint(XMFLOAT3 targetPosition, int targetDepth,int&x,int&y,int&z)
 	{
 		if (targetPosition.x < position.x || targetPosition.y < position.y || targetPosition.z < position.z)
-			return 0;
+			return -1;
 		if (targetPosition.x >= position.x + size || targetPosition.y >= position.y + size || targetPosition.z >= position.z + size)
-			return 0;
+			return -1;
 		float d = targetDepth / depth;
 		int x = targetPosition.x*d;
 		int y = targetPosition.y*d;

@@ -431,15 +431,15 @@ float4 ps(g2f input) : SV_TARGET
 [maxvertexcount(15)]
 void gs(point v2g input[1], inout TriangleStream<g2f> outStream)
 {
-	int i, j;
-	float4 pos = input[0].position;
-	float3 temp = pos.xyz - startPosition;
-	int vid = (int)temp.x + (int)temp.y*length + (int)temp.z*length*length;
 	int _case = input[0].uv.x;// mcData[vid];
 	if (_case == 0 || _case == 255)
 	{
 		return;
 	}
+	int i, j;
+	float4 pos = input[0].position;
+	float3 temp = pos.xyz - startPosition;
+	//int vid = (int)temp.x + (int)temp.y*length + (int)temp.z*length*length;
 	float offset = 1.0f * 0.5f;
 	float3 _verts[12];// = { float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0) };
 	for (i = 0; i < 12; i++)

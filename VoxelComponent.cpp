@@ -142,7 +142,7 @@ void Voxel::Initialize()
 	octreeType = 0;
 
 	//LoadCube(2, 2, 2);
-	LoadPerlin(129, 129, 129, 64, 0.3);
+	LoadPerlin(512, 512, 512, 64, 0.3);
 	int h = ReadTXT("../JHEngine/height.txt");
 
 
@@ -409,6 +409,7 @@ void Voxel::AddMarchingCase(int x, int y, int z, int _index)
 	{
 		mcData = new unsigned int[w*h*d];
 		memset(mcData, 0, sizeof(unsigned int)*w*h*d);
+		//vertices.resize(w*h*d);
 	}
 	int idx = (x)+(y)* w + (z)* h * d;
 	if (mcData[idx] == 0&&useGeometry)
@@ -416,10 +417,12 @@ void Voxel::AddMarchingCase(int x, int y, int z, int _index)
 		VertexBuffer vert;
 		vert.position = XMFLOAT3(x, y, z);// - XMFLOAT3((w - 1)*0.5f, (h - 1)*0.5f, (d - 1)*0.5f);
 		um_Vertices[idx] = vert;
+		//vertices[idx] = vert;
 	}
 	else if (mcData[idx] == 255)
 		return;
 	mcData[idx] |= _index;
+	vertices[idx].uv.x = mcData[idx];
 	if (mcData[idx] == 255)
 		um_Vertices.erase(idx);
 }
@@ -433,6 +436,7 @@ void Voxel::SubMarchingCase(int x, int y, int z, int _index)
 		return;
 	bool hasNoVertex = mcData[idx] == 255;
 	mcData[idx] &= ~(_index);
+	//vertices[idx].uv.x = mcData[idx];
 	if (useGeometry)
 	{
 		if (mcData[idx] == 0)
@@ -682,7 +686,7 @@ void Voxel::GenerateMarchingCubeFaces_GS(bool isNew)
 	int nums = size[0] * size[1] * size[2];
 	Material* material = renderer->GetMaterial();
 	ULONG time3 = GetTickCount();
-	SetupMarchingCubeVertexBufferGS();
+	//SetupMarchingCubeVertexBufferGS();
 	printf("Marching Cube Build Vertex Buffer ( Geometry ): %d ms\n", GetTickCount() - time3);
 	material->GetParams()->SetInt("vertCount", vertices.size());
 	material->GetParams()->SetFloat3("startPosition", vertices[0].position);
@@ -1248,7 +1252,8 @@ void Voxel::UpdateMarchingCubeMesh(bool isNew)
 	if(!useGeometry)
 		newMesh->RecalculateNormals();
 	newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
-	vertices.clear();
+	if (!useGeometry)
+		vertices.clear();
 	indices.clear();
 	mesh = newMesh;
 	renderer->SetMesh(newMesh);
