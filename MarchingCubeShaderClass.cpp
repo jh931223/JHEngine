@@ -157,9 +157,9 @@ bool MarchingCubeShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, 
 	D3D11_INPUT_ELEMENT_DESC polygonLayout[]
 	{
 		{ "POSITION",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA ,0 },
-		{ "TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT ,0,12,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "SV_VertexID",0,DXGI_FORMAT_R32_UINT ,0,0,D3D11_INPUT_PER_VERTEX_DATA,0 },
 	};
-	if (!CreateVertexLayout(device, vertexShaderBuffer, polygonLayout, ARRAYSIZE(polygonLayout)))
+	if (!CreateVertexLayout(device, vertexShaderBuffer, polygonLayout, 2))
 	{
 		return false;
 	}
@@ -348,7 +348,7 @@ bool MarchingCubeShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMAT
 	deviceContext->Unmap(m_marchingInfoBuffer, 0);
 	bufferNumber = 0;
 	deviceContext->GSSetConstantBuffers(1, 1, &m_marchingInfoBuffer);
-	//deviceContext->GSSetShaderResources(0,1, m_shaderParameters.GetSRV("mcData"));
+	deviceContext->GSSetShaderResources(0,1, m_shaderParameters.GetSRV("mcData"));
 
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
 	deviceContext->PSSetShaderResources(0, 1, m_shaderParameters.GetTexture("Texture1")->GetResourceView());

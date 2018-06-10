@@ -3,7 +3,7 @@
 #include <vector>
 #include "MeshClass.h"
 #include "Octree.h"
-#include <unordered_map>   
+#include<map>
 class MeshRenderer;
 class Material;
 class Voxel : public Component
@@ -14,27 +14,23 @@ public:
 	void Update() override;
 	void OnStart() override;
 	void Initialize();
-	void CreateFaceUp(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceDown(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceRight(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceLeft(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceForward(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceBackward(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceMarchingCube(int _case,float x, float y, float z,int,BYTE);
+	void CreateFaceUp(float x, float y, float z, float _unit, byte, int&);
+	void CreateFaceDown(float x, float y, float z, float _unit, byte, int&);
+	void CreateFaceRight(float x, float y, float z, float _unit, byte, int&);
+	void CreateFaceLeft(float x, float y, float z, float _unit, byte, int&);
+	void CreateFaceForward(float x, float y, float z, float _unit, byte, int&);
+	void CreateFaceBackward(float x, float y, float z, float _unit, byte, int&);
+	void CreateFaceMarchingCube(int _case,float x, float y, float z,int,byte);
 	void AddMarchingCase(int x, int y, int z, int _case);
 	void SubMarchingCase(int x, int y, int z,int _case);
-	void SetMarchingCubeChunkData(int x, int y, int z, bool isCreate, int length = 1);
+	void SetMarchingCubeChunkData(int x, int y, int z, bool isCreate);
 	void SetupMarchingCubeVertexBufferGS();
-	void CreateOctreeFaces(OctreeNode<int>*,int&);
-	void CreateOctreeFaces2(OctreeNode<int>*, int&);
-	void GenerateMarchingCubeFaces(bool isNew = true);
-	void GenerateMarchingCubeFaces_GS(bool isNew = true);
-	void GenerateMarchingCubeFaces_GPGPU(bool isNew = true);
-	void GenerateMarchingCubeFaces_Octree(bool isNew = true);
-	void GenerateMarchingCubeFaces_GPGPU_GS(bool isNew = true);
-	void GenerateMarchingCubeFacesOctreeVer2();
+	void GenerateOctreeFaces(OctreeNode<int>*,int&);
+	void GenerateOctreeFaces2(OctreeNode<int>*, int&);
+	void GenerateMarchingCubeFaces(bool isNew);
+	void GenerateMarchingCubeOctreeFaces();
+	void GenerateMarchingCubeOctreeFaces2();
 	void GenerateVoxelFaces();
-	void GenerateOctreeFaces(int type=0);
 	void CalcNormal(VertexBuffer& v1, VertexBuffer& v2, VertexBuffer& v3);
 	void LoadHeightMapFromRaw(int,int,int,const char*);
 	void LoadCube(int,int,int);
@@ -43,38 +39,33 @@ public:
 	void SetOctree(XMFLOAT3, BYTE);
 	void BuildOctree(int, XMFLOAT3);
 	void NewOctree(int _length);
-	XMFLOAT2 GetUV(BYTE);
-	BYTE GetChunk(int x, int y, int z);
+	XMFLOAT2 GetUV(byte);
+	byte GetChunk(int x, int y, int z);
 	XMFLOAT3 CovertToChunkPos(XMFLOAT3 targetpos,bool returnNan=true);
 	void UpdateMesh(bool isNew = true);
 	void UpdateVoxelMesh();
+	void UpdateOctreeMesh();
 	void UpdateMarchingCubeMesh(bool isNew=true);
 	Mesh* mesh;
 	MeshRenderer* renderer;
 private:
 	void ReleaseChunks();
-	void ReleaseOctree();
-	void ReleaseMarchingCube();
 	void NewChunks(int _width,int,int);
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
 	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height,int&,int&);
 	int GetLODLevel(XMFLOAT3 basePos, XMFLOAT3 targetPos);
 	void SetLODLevel(int level,float distance);
-
 	int ReadTXT(const char* filename);
-
 	int width, height, depth;
 	float unit;
 	float tUnit;
 	int tAmount;
 	bool useMarchingCube;
 	bool useOctree;
-	bool useOctreeMCData;
-	bool buildWithGPGPU;
 	bool octreeMerge;
 	bool useGPGPU;
 	bool useGeometry;
-	unsigned int * chunksData;
+	byte * chunksArray;
 	std::vector<VertexBuffer> vertices;
 	std::vector<unsigned long> indices;
 	Octree<int>* octree;
@@ -84,13 +75,14 @@ private:
 
 	bool chunkUpdated;
 
-	Octree<short>* mcDataOctree;
 	unsigned int* mcData;
-	std::unordered_map<int, VertexBuffer> um_Vertices;
-
+	std::map<int, VertexBuffer> um_Vertices;
 
 	GameObject* camera;
 
+	//지오메트리 버퍼
+	ID3D11Buffer* Buf_chunkData;
+	//
 
 	const XMFLOAT3 mcVertexOffset[12] =
 	{
@@ -385,6 +377,7 @@ private:
 		{ 0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
 		{ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 } 
 	};
+
 	const int triTableN[4096] = {
 		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 ,
 		0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1 ,

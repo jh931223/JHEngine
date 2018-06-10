@@ -16,13 +16,13 @@ cbuffer MarchingCubeBuffer
 struct vInput
 {
 	float4 position : POSITION;
-	float2 uv : TEXCOORD0;
+	uint vertexID : SV_VertexID;
 };
 
 struct v2g
 {
 	float4 position : POSITION;
-	float2 uv : TEXCOORD0;
+	uint vertexID : VertexID;
 };
 
 struct g2f
@@ -371,7 +371,7 @@ v2g vs(vInput input)
 	input.position.w = 1.0f;
 
 	output.position = input.position;
-	output.uv = input.uv;
+	output.vertexID = input.vertexID;
 	return output;
 }
 
@@ -431,17 +431,17 @@ float4 ps(g2f input) : SV_TARGET
 [maxvertexcount(15)]
 void gs(point v2g input[1], inout TriangleStream<g2f> outStream)
 {
-	int i, j;
 	float4 pos = input[0].position;
 	float3 temp = pos.xyz - startPosition;
 	int vid = (int)temp.x + (int)temp.y*length + (int)temp.z*length*length;
-	int _case = input[0].uv.x;// mcData[vid];
+	int _case = mcData[vid];
 	if (_case == 0 || _case == 255)
 	{
 		return;
 	}
 	float offset = 1.0f * 0.5f;
 	float3 _verts[12];// = { float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0) };
+	int i, j;
 	for (i = 0; i < 12; i++)
 	{
 		if ((edgeTable[_case] & (1 << i)) != 0)
