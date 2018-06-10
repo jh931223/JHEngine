@@ -149,6 +149,12 @@
     <ClInclude Include="StructuredBuffer.h">
       <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
     </ClInclude>
+    <ClInclude Include="VoxelTerrainComponent.h">
+      <Filter>EngineFrameworks\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="ArrayedOctree.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InputComponent.cpp">
@@ -249,6 +255,10 @@
     <ClCompile Include="StructuredBuffer.cpp">
       <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
     </ClCompile>
+    <ClCompile Include="VoxelTerrainComponent.cpp" />
+    <ClCompile Include="ArrayedOctree.cpp">
+      <Filter>Scripts</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="texture_ps.hlsl">
@@ -270,9 +280,6 @@
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
     <FxCompile Include="marchingCube.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
-    <FxCompile Include="voxelCube.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
   </ItemGroup>

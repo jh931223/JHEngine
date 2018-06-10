@@ -228,7 +228,7 @@ bool Mesh::LoadModel(const char * filename)
 	for (int i = 0; i < m_vertexCount; i++)
 	{
 		fin >> vertices[i].position.x >> vertices[i].position.y >> vertices[i].position.z;
-		fin >> vertices[i].texture.x >> vertices[i].texture.y;
+		fin >> vertices[i].uv.x >> vertices[i].uv.y;
 		fin >> vertices[i].normal.x >> vertices[i].normal.y >> vertices[i].normal.z;
 		indices[i] = i;
 	}

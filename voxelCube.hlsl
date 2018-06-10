@@ -93,7 +93,6 @@ void gs(point v2g input[1], inout TriangleStream<g2f> outStream)
 	o.position = mul(o.position, viewMatrix);
 	o.position = mul(o.position, projectionMatrix);
 	o.uv = float2(0, 1);
-	o.normal = edgeNormal[0];
 	outStream.Append(o);
 
 	o.position = pos + float4(-u, 0, u, 0);
@@ -101,7 +100,6 @@ void gs(point v2g input[1], inout TriangleStream<g2f> outStream)
 	o.position = mul(o.position, viewMatrix);
 	o.position = mul(o.position, projectionMatrix);
 	o.uv = float2(0, 0);
-	o.normal = edgeNormal[0];
 	outStream.Append(o);
 
 	o.position = pos + float4(u, 0, u, 0);
@@ -109,80 +107,7 @@ void gs(point v2g input[1], inout TriangleStream<g2f> outStream)
 	o.position = mul(o.position, viewMatrix);
 	o.position = mul(o.position, projectionMatrix);
 	o.uv = float2(1, 0);
-	o.normal = edgeNormal[0];
 	outStream.Append(o);
 
 	outStream.RestartStrip();
-}
-
-
-[maxvertexcount(15)]
-void gs(point v2g input[1], inout TriangleStream<g2f> outStream)
-{
-	float4 pos = input[0].position;
-	float3 temp = pos.xyz - startPosition;
-	int vid = (int)temp.x + (int)temp.y*length + (int)temp.z*length*length;
-	int _case = mcData[vid];
-	if (_case == 0 || _case == 255)
-	{
-		return;
-	}
-	float offset = 1.0f * 0.5f;
-	float3 _verts[12];// = { float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0) };
-	int i, j;
-	for (i = 0; i < 12; i++)
-	{
-		if ((edgeTable[_case] & (1 << i)) != 0)
-		{
-			_verts[i] = pos.xyz + mcVertexOffset[i] * offset;
-		}
-	}
-	for (i = 0; i < 5; i++)
-	{
-		int t = triTable[_case][i * 3];
-		if (t<0)
-		{
-			break;
-		}
-		float4 pos0, pos1, pos2;
-		pos0 = float4(_verts[triTable[_case][(i * 3)]], 1);
-		pos1 = float4(_verts[triTable[_case][(i * 3 + 1)]], 1);
-		pos2 = float4(_verts[triTable[_case][(i * 3 + 2)]], 1);
-		float3 normal = GenerateNormal(pos0, pos1, pos2);
-		for (j = 2; j >= 0; j--)
-		{
-			g2f o;
-			int edge = triTable[_case][(i * 3 + j)];
-			o.uv = (j == 0) ? float2(0, 0) : (j == 1) ? float2(1 * 0.5f, 0) : float2	(0, 1);
-			o.position = float4(_verts[edge].xyz, 1);
-			o.worldPos = mul(o.position, worldMatrix);
-			o.position = mul(o.worldPos, viewMatrix);
-			o.position = mul(o.position, projectionMatrix);
-			o.normal = mul(normal, worldMatrix);// edgeNormal[edge];
-			outStream.Append(o);
-		}
-
-		outStream.RestartStrip();
-	}
-	//for (i = 0; i < 5; i++)
-	//{
-	//	int t = triTable[_case][i * 3];
-	//	if (t<0)
-	//	{
-	//		break;
-	//	}
-	//	for (j = 2; j >= 0; j--)
-	//	{
-	//		g2f o;
-	//		int edge = triTable[_case][(i * 3 + j)];
-	//		o.uv = (j == 0) ? float2(0, 0) : (j == 1) ? float2(1 * 0.5f, 0) : float2(0, 1);
-	//		o.position = float4(_verts[edge].xyz, 1);
-	//		o.position = mul(o.position, worldMatrix);
-	//		o.position = mul(o.position, viewMatrix);
-	//		o.position = mul(o.position, projectionMatrix);
-	//		o.normal = edgeNormal[edge];
-	//		outStream.Append(o);
-	//	}
-	//	outStream.RestartStrip();
-	//}
 }
