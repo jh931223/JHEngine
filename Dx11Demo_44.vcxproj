@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{BB284FAC-97F3-48D9-AF48-1237D86F6419}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>Dx11Demo44</RootNamespace>
+    <RootNamespace>JHEngine</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
     <ProjectName>JHEngine</ProjectName>
   </PropertyGroup>
@@ -170,6 +170,7 @@
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DepthShaderClass.h" />
     <ClInclude Include="DxDefine.h" />
+    <ClInclude Include="FinalVoxelComponent.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GraphicsClass.h" />
     <ClInclude Include="InputClass.h" />
@@ -185,6 +186,7 @@
     <ClInclude Include="OctreeManagerComponent.h" />
     <ClInclude Include="PerlinNoise.h" />
     <ClInclude Include="RenderTextureClass.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="ResourcesClass.h" />
     <ClInclude Include="ShaderClass.h" />
     <ClInclude Include="ShadowShaderClass.h" />
@@ -197,7 +199,6 @@
     <ClInclude Include="TextureShaderClass.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="ViewPointClass.h" />
-    <ClInclude Include="VoxelComponent.h" />
     <ClInclude Include="VoxelTerrainComponent.h" />
     <ClInclude Include="WICTextureLoader.h" />
   </ItemGroup>
@@ -210,6 +211,7 @@
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="DepthShaderClass.cpp" />
+    <ClCompile Include="FinalVoxelComponent.cpp" />
     <ClCompile Include="InputComponent.cpp" />
     <ClCompile Include="JHEngine.cpp" />
     <ClCompile Include="GameObject.cpp" />
@@ -240,61 +242,39 @@
     <ClCompile Include="TextureShaderClass.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="ViewPointClass.cpp" />
-    <ClCompile Include="VoxelComponent.cpp" />
     <ClCompile Include="VoxelTerrainComponent.cpp" />
     <ClCompile Include="WICTextureLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="depth_ps.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+    <FxCompile Include="hlsl\depth_ps.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <EnableDebuggingInformation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</EnableDebuggingInformation>
     </FxCompile>
-    <FxCompile Include="depth_vs.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+    <FxCompile Include="hlsl\depth_vs.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="marchingCube.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Effect</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vert</EntryPointName>
-      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</TreatWarningAsError>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Effect</ShaderType>
+    <FxCompile Include="hlsl\marchingCube.hlsl">
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
-      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vs</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Effect</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vert</EntryPointName>
     </FxCompile>
-    <FxCompile Include="Shadow_ps.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+    <FxCompile Include="hlsl\projection_ps.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shadow_vs.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+    <FxCompile Include="hlsl\projection_vs.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="texture_ps.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+    <FxCompile Include="hlsl\Shadow_ps.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="texture_vs.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+    <FxCompile Include="hlsl\Shadow_vs.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="hlsl\texture_ps.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="hlsl\texture_vs.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
@@ -316,6 +296,11 @@
     <None Include="data\heightmap.r16" />
     <None Include="data\lena(512x512).raw" />
     <None Include="data\teasdrrain.raw" />
+    <None Include="dds1.bin" />
+    <None Include="dds2.bin" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="JHEngine.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

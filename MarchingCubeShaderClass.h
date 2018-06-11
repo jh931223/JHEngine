@@ -5,8 +5,9 @@ class MarchingCubeShaderClass : public ShaderClass
 protected:
 	struct MCBufferType
 	{
-		XMFLOAT3 startPosition;
+		float isoLevel;
 		float length;
+		XMFLOAT2 etc;
 	};
 public:
 	MarchingCubeShaderClass();

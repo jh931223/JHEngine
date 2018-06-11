@@ -23,7 +23,7 @@ MarchingCubeShaderClass::~MarchingCubeShaderClass()
 bool MarchingCubeShaderClass::Initialize(ID3D11Device* device, HWND hwnd)
 {
 	// 정점 및 픽셀 쉐이더를 초기화합니다.
-	return InitializeShader(device, hwnd, L"../JHEngine/marchingCube.hlsl", L"../JHEngine/marchingCube.hlsl", L"../JHEngine/marchingCube.hlsl");
+	return InitializeShader(device, hwnd, L"hlsl/marchingCube.hlsl", L"hlsl/marchingCube.hlsl", L"hlsl/marchingCube.hlsl");
 }
 
 
@@ -343,12 +343,12 @@ bool MarchingCubeShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMAT
 
 	// 상수 버퍼의 데이터에 대한 포인터를 가져옵니다.
 	MCBufferType* dataPtr2 = (MCBufferType*)mappedResource.pData;
-	dataPtr2->startPosition = m_shaderParameters.GetFloat3("startPosition");
+	dataPtr2->isoLevel = m_shaderParameters.GetFloat("isoLevel");
 	dataPtr2->length = m_shaderParameters.GetInt("length");
 	deviceContext->Unmap(m_marchingInfoBuffer, 0);
 	bufferNumber = 0;
 	deviceContext->GSSetConstantBuffers(1, 1, &m_marchingInfoBuffer);
-	//deviceContext->GSSetShaderResources(0,1, m_shaderParameters.GetSRV("mcData"));
+	deviceContext->GSSetShaderResources(0, 1, m_shaderParameters.GetSRV("chunksData"));
 
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
 	deviceContext->PSSetShaderResources(0, 1, m_shaderParameters.GetTexture("Texture1")->GetResourceView());

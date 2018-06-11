@@ -8,7 +8,7 @@ cbuffer MatrixBuffer
 
 cbuffer MarchingCubeBuffer
 {
-	float3 startPosition;
+	float isoLevel;
 	float length;
 };
 
@@ -34,7 +34,13 @@ struct g2f
 	//float4 color : TEXCOORD1;
 };
 
-StructuredBuffer<int> mcData;
+struct VoxelData
+{
+	int material;
+	float isoValue;
+};
+
+StructuredBuffer<VoxelData> chunksData;
 
 
 Texture2D shaderTexture1;
@@ -382,8 +388,8 @@ float4 ps(g2f input) : SV_TARGET
 	//return textureColor;
 
 	float scale = 0.2f;
-	float sharpness = 5;
-	float3 blending = pow(abs(input.normal),0.0001);
+	float sharpness = 1;
+	float3 blending = pow(abs(input.normal), sharpness);
 	blending = blending / (blending.x + blending.y + blending.z);
 
 	float4 coords=input.worldPos;
@@ -426,47 +432,158 @@ float4 ps(g2f input) : SV_TARGET
 //
 //	outStream.RestartStrip();
 //}
-
+float3 lerpSelf(float3 p, float3 target, float acc)
+{
+	return p + (target - p)*acc;
+}
 
 [maxvertexcount(15)]
 void gs(point v2g input[1], inout TriangleStream<g2f> outStream)
 {
-	int _case = input[0].uv.x;// mcData[vid];
-	if (_case == 0 || _case == 255)
-	{
+	float size = length;
+	float size2 = length * length;
+	float x = input[0].position.x;
+	float y = input[0].position.y;
+	float z = input[0].position.z;
+	float p = x + size * y + size2 * z;
+	float3 p3=float3(x, y, z);
+	int px = p + 1;
+	float3 px3= float3(x + 1, y, z);
+	int py = p + size;
+	float3 py3= float3(x, y + 1, z);
+	int pxy = py + 1;
+	float3 pxy3= float3(x + 1, y + 1, z);
+	int pz = p + size2;
+	float3 pz3= float3(x, y, z + 1);
+	int pxz = px + size2;
+	float3 pxz3= float3(x + 1, y, z + 1);
+	int pyz = py + size2;
+	float3 pyz3= float3(x, y + 1, z + 1);
+	int pxyz = pxy + size2;
+	float3 pxyz3= float3(x + 1, y + 1, z + 1);
+	float value0, value1, value2, value3, value4, value5, value6, value7;
+	value0 = chunksData[(int)p].isoValue;
+	value1 = chunksData[(int)px].isoValue;
+	value2 = chunksData[(int)py].isoValue;
+	value3 = chunksData[(int)pxy].isoValue;
+	value4 = chunksData[(int)pz].isoValue;
+	value5 = chunksData[(int)pxz].isoValue;
+	value6 = chunksData[(int)pyz].isoValue;
+	value7 = chunksData[(int)pxyz].isoValue;
+
+
+	int cubeindex = 0;
+
+	if (value0 < isoLevel) cubeindex |= 1;
+	if (value1 < isoLevel) cubeindex |= 2;
+	if (value2 < isoLevel) cubeindex |= 8;
+	if (value3 < isoLevel) cubeindex |= 4;
+	if (value4 < isoLevel) cubeindex |= 16;
+	if (value5 < isoLevel) cubeindex |= 32;
+	if (value6 < isoLevel) cubeindex |= 128;
+	if (value7 < isoLevel) cubeindex |= 64;
+
+	float3 vert[12];// = { XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0) };
+	float2 uv;
+	int bits = edgeTable[cubeindex];
+	if (bits == 0)
 		return;
-	}
-	int i, j;
-	float4 pos = input[0].position;
-	float3 temp = pos.xyz - startPosition;
-	//int vid = (int)temp.x + (int)temp.y*length + (int)temp.z*length*length;
-	float offset = 1.0f * 0.5f;
-	float3 _verts[12];// = { float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0),float3(0,0,0) };
-	for (i = 0; i < 12; i++)
+	float mu = 0.5f;
+	if ((bits & 1) != 0)
 	{
-		if ((edgeTable[_case] & (1 << i)) != 0)
-		{
-			_verts[i] = pos.xyz + mcVertexOffset[i] * offset;
-		}
+		mu = (isoLevel - value0) / (value1 - value0);
+		vert[0] = lerpSelf(p3, px3, mu);
 	}
+	if ((bits & 2) != 0)
+	{
+		mu = (isoLevel - value1) / (value3 - value1);
+		vert[1] = lerpSelf(px3, pxy3, mu);
+	}
+	if ((bits & 4) != 0)
+	{
+		mu = (isoLevel - value2) / (value3 - value2);
+		vert[2] = lerpSelf(py3, pxy3, mu);
+
+	}
+	if ((bits & 8) != 0)
+	{
+		mu = (isoLevel - value0) / (value2 - value0);
+		vert[3] = lerpSelf(p3, py3, mu);
+
+	}
+	// top of the cube
+	if ((bits & 16) != 0)
+	{
+		mu = (isoLevel - value4) / (value5 - value4);
+		vert[4] = lerpSelf(pz3, pxz3, mu);
+
+	}
+	if ((bits & 32) != 0)
+	{
+		mu = (isoLevel - value5) / (value7 - value5);
+		vert[5] = lerpSelf(pxz3, pxyz3, mu);
+
+	}
+	if ((bits & 64) != 0)
+	{
+		mu = (isoLevel - value6) / (value7 - value6);
+		vert[6] = lerpSelf(pyz3, pxyz3, mu);
+	}
+	if ((bits & 128) != 0)
+	{
+		mu = (isoLevel - value4) / (value6 - value4);
+		vert[7] = lerpSelf(pz3, pyz3, mu);
+
+	}
+	// vertical lines of the cube
+	if ((bits & 256) != 0)
+	{
+		mu = (isoLevel - value0) / (value4 - value0);
+		vert[8] = lerpSelf(p3, pz3, mu);
+
+	}
+	if ((bits & 512) != 0)
+	{
+		mu = (isoLevel - value1) / (value5 - value1);
+		vert[9] = lerpSelf(px3, pxz3, mu);
+
+	}
+	if ((bits & 1024) != 0)
+	{
+		mu = (isoLevel - value3) / (value7 - value3);
+		vert[10] = lerpSelf(pxy3, pxyz3, mu);
+	}
+
+	//print (bits & 2048);
+
+	if ((bits & 2048) != 0)
+	{
+		mu = (isoLevel - value2) / (value6 - value2);
+		vert[11] = lerpSelf(py3, pyz3, mu);
+	}
+	//cubeindex <<= 4;  // multiply by 16...
+	int i,j = 0;
+	int rr = 0;
+	matrix wvp = mul(worldMatrix, viewMatrix);
+	wvp = mul(wvp, projectionMatrix);
 	for (i = 0; i < 5; i++)
 	{
-		int t = triTable[_case][i * 3];
+		int t = triTable[cubeindex][i * 3];
 		if (t<0)
 		{
 			break;
 		}
 		float4 pos0, pos1, pos2;
-		pos0 = float4(_verts[triTable[_case][(i * 3)]],1);
-		pos1 = float4(_verts[triTable[_case][(i * 3 + 1)]], 1);
-		pos2 = float4(_verts[triTable[_case][(i * 3 + 2)]], 1);
+		pos0 = float4(vert[triTable[cubeindex][(i * 3)]],1);
+		pos1 = float4(vert[triTable[cubeindex][(i * 3 + 1)]], 1);
+		pos2 = float4(vert[triTable[cubeindex][(i * 3 + 2)]], 1);
 		float3 normal = GenerateNormal(pos0, pos1, pos2);
-		for (j = 2; j >= 0; j--)
+		for (j = 0; j < 3; j++)
 		{
 			g2f o;
-			int edge = triTable[_case][(i * 3 + j)];
+			int edge = triTable[cubeindex][(i * 3 + j)];
 			o.uv = (j == 0) ? float2(0, 0) : (j == 1) ? float2(1 * 0.5f, 0) : float2	(0, 1);
-			o.position = float4(_verts[edge].xyz, 1);
+			o.position = float4(vert[edge].xyz, 1);
 			o.worldPos = mul(o.position, worldMatrix);
 			o.position = mul(o.worldPos, viewMatrix);
 			o.position = mul(o.position, projectionMatrix);
@@ -476,25 +593,5 @@ void gs(point v2g input[1], inout TriangleStream<g2f> outStream)
 
 		outStream.RestartStrip();
 	}
-	//for (i = 0; i < 5; i++)
-	//{
-	//	int t = triTable[_case][i * 3];
-	//	if (t<0)
-	//	{
-	//		break;
-	//	}
-	//	for (j = 2; j >= 0; j--)
-	//	{
-	//		g2f o;
-	//		int edge = triTable[_case][(i * 3 + j)];
-	//		o.uv = (j == 0) ? float2(0, 0) : (j == 1) ? float2(1 * 0.5f, 0) : float2(0, 1);
-	//		o.position = float4(_verts[edge].xyz, 1);
-	//		o.position = mul(o.position, worldMatrix);
-	//		o.position = mul(o.position, viewMatrix);
-	//		o.position = mul(o.position, projectionMatrix);
-	//		o.normal = edgeNormal[edge];
-	//		outStream.Append(o);
-	//	}
-	//	outStream.RestartStrip();
-	//}
+
 }

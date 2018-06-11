@@ -116,9 +116,6 @@
     <ClInclude Include="InputComponent.h">
       <Filter>Scripts</Filter>
     </ClInclude>
-    <ClInclude Include="VoxelComponent.h">
-      <Filter>Scripts</Filter>
-    </ClInclude>
     <ClInclude Include="BitmapClass.h">
       <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
     </ClInclude>
@@ -155,6 +152,12 @@
     <ClInclude Include="ArrayedOctree.h">
       <Filter>Scripts</Filter>
     </ClInclude>
+    <ClInclude Include="FinalVoxelComponent.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>EngineFrameworks\Source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InputComponent.cpp">
@@ -171,9 +174,6 @@
     </ClCompile>
     <ClCompile Include="ResourcesClass.cpp" />
     <ClCompile Include="HierachyClass.cpp" />
-    <ClCompile Include="VoxelComponent.cpp">
-      <Filter>Scripts</Filter>
-    </ClCompile>
     <ClCompile Include="TextureClass.cpp">
       <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
     </ClCompile>
@@ -259,27 +259,36 @@
     <ClCompile Include="ArrayedOctree.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
+    <ClCompile Include="FinalVoxelComponent.cpp">
+      <Filter>Scripts</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="texture_ps.hlsl">
+    <FxCompile Include="hlsl\depth_ps.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
-    <FxCompile Include="texture_vs.hlsl">
+    <FxCompile Include="hlsl\depth_vs.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
-    <FxCompile Include="Shadow_vs.hlsl">
+    <FxCompile Include="hlsl\marchingCube.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
-    <FxCompile Include="Shadow_ps.hlsl">
+    <FxCompile Include="hlsl\projection_ps.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
-    <FxCompile Include="depth_ps.hlsl">
+    <FxCompile Include="hlsl\projection_vs.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
-    <FxCompile Include="depth_vs.hlsl">
+    <FxCompile Include="hlsl\Shadow_ps.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
-    <FxCompile Include="marchingCube.hlsl">
+    <FxCompile Include="hlsl\Shadow_vs.hlsl">
+      <Filter>Shaders\HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="hlsl\texture_ps.hlsl">
+      <Filter>Shaders\HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="hlsl\texture_vs.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
   </ItemGroup>
@@ -330,5 +339,16 @@
     <None Include="data\teasdrrain.raw">
       <Filter>data</Filter>
     </None>
+    <None Include="dds1.bin">
+      <Filter>리소스 파일</Filter>
+    </None>
+    <None Include="dds2.bin">
+      <Filter>리소스 파일</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="JHEngine.rc">
+      <Filter>리소스 파일</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

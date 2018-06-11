@@ -211,21 +211,24 @@ XMMATRIX CTransform::GetRotateMatrix()
 XMFLOAT3 CTransform::forward()
 {
 	XMFLOAT3 result;
-	XMVECTOR v = XMVectorMultiply(XMVectorSet(0, 0, 1,0),m_Q);
+	XMVECTOR v = XMVector3Rotate(XMVectorSet(0, 0, 1,0), m_Q);
+	XMVector3Normalize(v);
 	XMStoreFloat3(&result, v);
 	return result;
 }
 XMFLOAT3 CTransform::right()
 {
 	XMFLOAT3 result;
-	XMVECTOR v = XMVectorMultiply(XMVectorSet(1, 0, 0, 0), m_Q);
+	XMVECTOR v = XMVector3Rotate(XMVectorSet(1, 0, 0, 0), m_Q);
+	XMVector3Normalize(v);
 	XMStoreFloat3(&result, v);
 	return result;
 }
 XMFLOAT3 CTransform::up()
 {
 	XMFLOAT3 result;
-	XMVECTOR v = XMVectorMultiply(XMVectorSet(0, 1, 0, 0), m_Q);
+	XMVECTOR v = XMVector3Rotate(XMVectorSet(0, 1, 0, 0), m_Q);
+	XMVector3Normalize(v);
 	XMStoreFloat3(&result, v);
 	return result;
 }

@@ -40,7 +40,7 @@ bool SystemClass::Initialize()
 	}
 
 	// m_Input 객체 초기화
-	m_Input->Initialize();
+	m_Input->Initialize(m_hinstance, m_hwnd, screenWidth, screenHeight);
 
 	// m_Graphics 객체 생성.  그래픽 랜더링을 처리하기 위한 객체입니다.
 	m_Graphics = new GraphicsClass;
@@ -54,6 +54,7 @@ bool SystemClass::Initialize()
 	if (!m_Resources)
 		return false;
 	m_Resources->Initialize(m_hwnd);
+
 
 	m_Hierachy = HierachyClass::GetInstance();
 	if (!m_Hierachy)
@@ -77,6 +78,7 @@ void SystemClass::Shutdown()
 	// m_Input 객체 반환
 	if (m_Input)
 	{
+		m_Input->Shutdown();
 		delete m_Input;
 		m_Input = 0;
 	}
@@ -111,7 +113,7 @@ void SystemClass::Run()
 			if (!Frame())
 				break;
 		}
-		if (Input()->GetKey(VK_ESCAPE))
+		if (m_Input->IsEscapePressed())
 		{
 			break;
 		}
@@ -123,7 +125,7 @@ bool SystemClass::Frame()
 {
 	m_Hierachy->Update();
 	// 그래픽 객체의 Frame을 처리합니다
-	m_Input->MouseUpdate();
+	m_Input->Frame();
 	return m_Graphics->Frame();
 }
 
@@ -133,20 +135,6 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 	switch (umsg)
 	{
 		// 키보드가 눌러졌는가 처리
-	case WM_KEYDOWN:
-	{
-		// 키 눌림 flag를 m_Input 객체에 처리하도록 합니다
-		m_Input->KeyDown((unsigned int)wparam);
-		return 0;
-	}
-
-	// 키보드가 떨어졌는가 처리
-	case WM_KEYUP:
-	{
-		// 키 해제 flag를 m_Input 객체에 처리하도록 합니다.
-		m_Input->KeyUp((unsigned int)wparam);
-		return 0;
-	}
 
 	// 그 외의 모든 메시지들은 기본 메시지 처리로 넘깁니다.
 	default:
@@ -166,7 +154,7 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 	m_hinstance = GetModuleHandle(NULL);
 
 	// 프로그램 이름을 지정합니다
-	m_applicationName = L"Dx11Demo_44";
+	m_applicationName = L"JHEngine";
 
 	// windows 클래스를 아래와 같이 설정합니다.
 	WNDCLASSEX wc;
@@ -225,11 +213,11 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 		posX, posY, screenWidth, screenHeight, NULL, NULL, m_hinstance, NULL);
 
 	// 윈도우를 화면에 표시하고 포커스를 지정합니다
+	SetCursor(NULL);
+	ShowCursor(false);
 	ShowWindow(m_hwnd, SW_SHOW);
 	SetForegroundWindow(m_hwnd);
 	SetFocus(m_hwnd);
-	SetCursor(NULL);
-	ShowCursor(false);
 }
 
 

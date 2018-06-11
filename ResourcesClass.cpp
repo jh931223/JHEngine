@@ -123,10 +123,10 @@ void ResourcesClass::InitializeMesh(HWND hwnd)
 
 void ResourcesClass::InitializeTexture(HWND hwnd)
 {
-	textureMap["stone"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"../JHEngine/data/stone.dds");
-	textureMap["floor"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"../JHEngine/data/seafloor.dds");
-	textureMap["tile"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"../JHEngine/data/tile.dds");
-	textureMap["grass"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"../JHEngine/data/grass.dds");
+	textureMap["stone"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/stone.dds");
+	textureMap["floor"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/seafloor.dds");
+	textureMap["tile"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/tile.dds");
+	textureMap["grass"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/grass.dds");
 }
 
 void ResourcesClass::InitializeMaterial(HWND hwnd)

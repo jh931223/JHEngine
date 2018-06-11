@@ -8,7 +8,7 @@
 #include "LightComponent.h"
 #include "CameraComponent.h"
 #include "InputComponent.h"
-#include "VoxelComponent.h"
+#include "FinalVoxelComponent.h"
 #include "MeshClass.h"
 #include <map>
 #include <string>
@@ -94,7 +94,7 @@ void HierachyClass::Setup()
 	r->AddChild(gobj);
 	renderer = new MeshRenderer;
 	gobj->AddComponent(renderer);
-	Voxel* voxel = new Voxel;
+	VoxelComponent* voxel = new VoxelComponent;
 	voxel->renderer = renderer;
 	gobj->AddComponent(voxel);
 	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_texture"));// 머테리얼 설정

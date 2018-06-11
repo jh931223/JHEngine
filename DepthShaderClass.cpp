@@ -21,7 +21,7 @@ DepthShaderClass::~DepthShaderClass()
 bool DepthShaderClass::Initialize(ID3D11Device* device, HWND hwnd)
 {
 	// 정점 및 픽셀 쉐이더를 초기화합니다.
-	return InitializeShader(device, hwnd, L"../JHEngine/depth_vs.hlsl", L"../JHEngine/depth_ps.hlsl");
+	return InitializeShader(device, hwnd, L"hlsl/depth_vs.hlsl", L"hlsl/depth_ps.hlsl");
 }
 
 

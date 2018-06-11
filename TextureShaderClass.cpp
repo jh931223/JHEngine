@@ -21,7 +21,7 @@ TextureShaderClass::~TextureShaderClass()
 bool TextureShaderClass::Initialize(ID3D11Device* device, HWND hwnd)
 {
 	// 정점 및 픽셀 쉐이더를 초기화합니다.
-	return InitializeShader(device, hwnd, L"../JHEngine/texture_vs.hlsl", L"../JHEngine/texture_ps.hlsl");
+	return InitializeShader(device, hwnd, L"hlsl/texture_vs.hlsl", L"hlsl/texture_ps.hlsl");
 }
 
 
