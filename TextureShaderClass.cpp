@@ -33,10 +33,10 @@ void TextureShaderClass::Shutdown()
 
 
 bool TextureShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix,
-	XMMATRIX viewMatrix, XMMATRIX projectionMatrix)
+	XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM& params)
 {
 	// 렌더링에 사용할 셰이더 매개 변수를 설정합니다.
-	if (!DrawCall(deviceContext, worldMatrix, viewMatrix, projectionMatrix))
+	if (!DrawCall(deviceContext, worldMatrix, viewMatrix, projectionMatrix,params))
 	{
 		return false;
 	}
@@ -214,7 +214,7 @@ void TextureShaderClass::ShutdownShader()
 
 
 bool TextureShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix,
-	XMMATRIX projectionMatrix)
+	XMMATRIX projectionMatrix, PARAM& params)
 {
 	// 상수 버퍼의 내용을 쓸 수 있도록 잠급니다.
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -247,7 +247,7 @@ bool TextureShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMATRIX w
 	deviceContext->VSSetConstantBuffers(bufferNumber, 1, &m_matrixBuffer);
 
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
-	deviceContext->PSSetShaderResources(0, 1, m_shaderParameters.GetTexture("Texture")->GetResourceView());
+	deviceContext->PSSetShaderResources(0, 1, params.GetTexture("Texture")->GetResourceView());
 	return true;
 }
 

@@ -9,6 +9,7 @@ class ShaderParameterCollections
 {
 	std::map<std::string, XMFLOAT4> params_Float4;
 	std::map<std::string, XMFLOAT3> params_Float3;
+	std::map<std::string, XMFLOAT2> params_Float2;
 	std::map<std::string, int> params_Int;
 	std::map<std::string, float> params_Float;
 	std::map<std::string, TextureClass*> params_Texture;
@@ -28,6 +29,7 @@ public:
 	}
 	inline void SetFloat4(std::string name, XMFLOAT4 f4) { params_Float4[name] = f4; }
 	inline void SetFloat3(std::string name, XMFLOAT3 f3) { params_Float3[name] = f3; }
+	inline void SetFloat2(std::string name, XMFLOAT2 f2) { params_Float2[name] = f2; }
 	inline void SetFloat(std::string name, float f) { params_Float[name] = f; }
 	inline void SetInt(std::string name, int i) { params_Int[name] = i; }
 	inline void SetTexture(std::string name, TextureClass* tC) { params_Texture[name] = tC; }
@@ -35,6 +37,7 @@ public:
 	inline void SetSRV(std::string name, StructuredBuffer* srv) { if (params_StructuredBuffer[name]) { params_StructuredBuffer[name]->Release(); } params_StructuredBuffer[name] = srv; }
 	inline XMFLOAT4 GetFloat4(std::string name) { return params_Float4[name]; }
 	inline XMFLOAT3 GetFloat3(std::string name) { return params_Float3[name]; }
+	inline XMFLOAT2 GetFloat2(std::string name) { return params_Float2[name]; }
 	inline float GetFloat(std::string name) { return params_Float[name]; }
 	inline int GetInt(std::string name) { return params_Int[name]; }
 	inline TextureClass* GetTexture(std::string name) { return params_Texture[name]; }
@@ -61,7 +64,7 @@ public:
 
 	virtual bool Initialize(ID3D11Device*, HWND) = 0;
 	virtual void Shutdown() = 0;
-	virtual bool Render(ID3D11DeviceContext*, int, XMMATRIX, XMMATRIX, XMMATRIX) = 0;
+	virtual bool Render(ID3D11DeviceContext*, int, XMMATRIX, XMMATRIX, XMMATRIX, PARAM& params) = 0;
 	void OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND hwnd, const WCHAR* shaderFilename)
 	{
 		// 에러 메시지를 출력창에 표시합니다.
@@ -74,14 +77,10 @@ public:
 		// 컴파일 에러가 있음을 팝업 메세지로 알려줍니다.
 		MessageBox(hwnd, L"Error compiling shader.", shaderFilename, MB_OK);
 	}
-	PARAM* GetParameters()
-	{
-		return &m_shaderParameters;
-	}
 protected:
 	virtual bool InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename, const WCHAR* gsFileName=NULL) = 0;
 	virtual void ShutdownShader() = 0;
-	virtual bool DrawCall(ID3D11DeviceContext*, XMMATRIX, XMMATRIX, XMMATRIX) = 0;
+	virtual bool DrawCall(ID3D11DeviceContext*, XMMATRIX, XMMATRIX, XMMATRIX, PARAM& params) = 0;
 	virtual void RenderShader(ID3D11DeviceContext*, int)=0;
 	bool CreateVertexLayout(ID3D11Device* device, ID3D10Blob* vertexShaderBuffer, const D3D11_INPUT_ELEMENT_DESC* polygonLayout, UINT numElements)
 	{
@@ -97,7 +96,6 @@ protected:
 	}
 
 protected:
-	PARAM m_shaderParameters;
 	ID3D11VertexShader * m_vertexShader = nullptr;
 	ID3D11PixelShader* m_pixelShader = nullptr;
 	ID3D11GeometryShader* m_geometryShader = nullptr;

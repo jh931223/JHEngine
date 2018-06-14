@@ -105,6 +105,10 @@ void ResourcesClass::InitializeShader(HWND hwnd)
 	result = new DepthShaderClass;
 	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
 	shaderMap["DepthShader"] = result;
+
+	result = new MarchingCubeShaderClass;
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
+	shaderMap["MarchingCubeShader"] = result;
 }
 
 void ResourcesClass::InitializeRenderTexture(HWND hwnd)
@@ -152,7 +156,7 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	materialMap["depthMap"] = result;
 
 	result = new Material;
-	result->SetShader(new MarchingCubeShaderClass, hwnd);
+	result->SetShader(FindShader("MarchingCubeShader"), hwnd);
 	result->GetParams()->SetTexture("Texture1", FindTexture("stone"));
 	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
 	result->GetParams()->SetTexture("Texture3", FindTexture("stone"));

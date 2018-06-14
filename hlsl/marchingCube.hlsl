@@ -10,6 +10,7 @@ cbuffer MarchingCubeBuffer
 {
 	float isoLevel;
 	float length;
+	float2 unitSize;
 };
 
 
@@ -445,22 +446,23 @@ void gs(point v2g input[1], inout TriangleStream<g2f> outStream)
 	float x = input[0].position.x;
 	float y = input[0].position.y;
 	float z = input[0].position.z;
-	float p = x + size * y + size2 * z;
+	float unit = unitSize.x;
+	float p = x / unit + size * y / unit + size2 * z / unit;
 	float3 p3=float3(x, y, z);
 	int px = p + 1;
-	float3 px3= float3(x + 1, y, z);
+	float3 px3= p3+float3(unit,0,0);
 	int py = p + size;
-	float3 py3= float3(x, y + 1, z);
+	float3 py3= p3 + float3(0,unit,0);
 	int pxy = py + 1;
-	float3 pxy3= float3(x + 1, y + 1, z);
+	float3 pxy3= p3 + float3(unit, unit, 0);
 	int pz = p + size2;
-	float3 pz3= float3(x, y, z + 1);
+	float3 pz3= p3 + float3(0,0,unit);
 	int pxz = px + size2;
-	float3 pxz3= float3(x + 1, y, z + 1);
+	float3 pxz3= p3 + float3(unit, 0, unit);
 	int pyz = py + size2;
-	float3 pyz3= float3(x, y + 1, z + 1);
+	float3 pyz3= p3 + float3(0, unit,unit);
 	int pxyz = pxy + size2;
-	float3 pxyz3= float3(x + 1, y + 1, z + 1);
+	float3 pxyz3= p3 + float3(unit,unit,unit);
 	float value0, value1, value2, value3, value4, value5, value6, value7;
 	value0 = chunksData[(int)p].isoValue;
 	value1 = chunksData[(int)px].isoValue;

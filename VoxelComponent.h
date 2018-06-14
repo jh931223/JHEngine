@@ -2,21 +2,21 @@
 #include "Component.h"
 #include <vector>
 #include "MeshClass.h"
-#include "Octree.h"
+#include "ArrayedOctree.h"
 #include <unordered_map>   
 class MeshRenderer;
 class Material;
-class Voxel : public Component
+struct VoxelData
 {
-	struct VoxelData
-	{
-		BYTE material;
-		XMFLOAT3 point;
-		float isoValue;
-	};
+	int material=0;
+	float isoValue=-1;
+};
+class VoxelComponent : public Component
+{
 public:
-	Voxel();
-	virtual ~Voxel();
+
+	VoxelComponent();
+	virtual ~VoxelComponent();
 	void Update() override;
 	void OnStart() override;
 	void Initialize();
@@ -26,42 +26,47 @@ public:
 	void CreateFaceLeft(float x, float y, float z, float _unit, BYTE, int&);
 	void CreateFaceForward(float x, float y, float z, float _unit, BYTE, int&);
 	void CreateFaceBackward(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceMarchingCube(float x, float y, float z,int,BYTE);
+	void CreateFaceMarchingCube(float x, float y, float z,int);
+
 	void AddMarchingCase(int x, int y, int z, int _case);
 	void SubMarchingCase(int x, int y, int z,int _case);
+
 	void SetMarchingCubeChunkData(int x, int y, int z, bool isCreate, int length = 1);
+
 	void SetupMarchingCubeVertexBufferGS();
-	void CreateOctreeFaces(OctreeNode<float>*,int&);
-	void CreateOctreeFaces2(OctreeNode<float>*, int&);
+
 	void GenerateMarchingCubeFaces(bool isNew = true);
 	void GenerateMarchingCubeFaces_GS(bool isNew = true);
 	void GenerateMarchingCubeFaces_GPGPU(bool isNew = true);
 	void GenerateMarchingCubeFaces_Octree(bool isNew = true);
-	void GenerateMarchingCubeFaces_GPGPU_GS(bool isNew = true);
-	void GenerateMarchingCubeFacesOctreeVer2();
+
 	void GenerateVoxelFaces();
-	void GenerateOctreeFaces(int type=0);
+	void GenerateOctreeFaces();
+
 	void CalcNormal(VertexBuffer& v1, VertexBuffer& v2, VertexBuffer& v3);
 	void LoadHeightMapFromRaw(int,int,int,const char*);
 	void LoadCube(int,int,int);
 	void LoadPerlin(int _width,int _height, int _depth, int _maxHeight,float refinement);
-	void SetChunk(int x,int y,int z,float);
-	void SetOctree(XMFLOAT3, BYTE);
+	void SetChunk(int x,int y,int z, VoxelData);
+
 	void BuildOctree(int, XMFLOAT3);
 	void NewOctree(int _length);
+
 	XMFLOAT2 GetUV(BYTE);
-	float GetChunk(int x, int y, int z);
+	VoxelData GetChunk(int x, int y, int z);
 	XMFLOAT3 CovertToChunkPos(XMFLOAT3 targetpos,bool returnNan=true);
 	void UpdateMesh(bool isNew = true);
 	void UpdateVoxelMesh();
 	void UpdateMarchingCubeMesh(bool isNew=true);
 	Mesh* mesh;
 	MeshRenderer* renderer;
+	Material* material;
 private:
 	void ReleaseChunks();
 	void ReleaseOctree();
-	void ReleaseMarchingCube();
+
 	void NewChunks(int _width,int,int);
+
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
 	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height,int&,int&);
 	int GetLODLevel(XMFLOAT3 basePos, XMFLOAT3 targetPos);
@@ -79,26 +84,22 @@ private:
 	int tAmount;
 	bool useMarchingCube;
 	bool useOctree;
-	bool useOctreeMCData;
-	bool buildWithGPGPU;
-	bool octreeMerge;
 	bool useGPGPU;
 	bool useGeometry;
-	float * chunksData;
+	VoxelData * chunksData;
+	ArrayedOctree<VoxelData>* aOctree;
+	int currentOctreeDepth = 0;
 	std::vector<VertexBuffer> vertices;
 	std::vector<unsigned long> indices;
-	Octree<BYTE>* octree;
-	int octreeType;
-	int LODDistance[8]{ 0, };
+
+	int LODDistance[3]{ 0, };
+
 	XMFLOAT3 lastBasePosition;
 
-	bool chunkUpdated;
-
 	int isoLevel = 0;
+	float strength=0.5f;
+	float brushRadius = 3.0f;
 
-	Octree<short>* mcDataOctree;
-	float* mcData;
-	std::vector<XMFLOAT3> points;
 	std::unordered_map<int, VertexBuffer> um_Vertices;
 
 

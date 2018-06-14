@@ -9,6 +9,12 @@ Material::Material()
 {
 }
 
+Material::Material(const Material & mat)
+{
+	this->params = mat.params;
+	this->shader = mat.shader;
+}
+
 
 Material::~Material()
 {
@@ -21,7 +27,7 @@ Material::~Material()
 
 bool Material::Render(ID3D11DeviceContext * _deviceContext, const int _index, XMMATRIX _world, XMMATRIX _view, XMMATRIX _proj)
 {
-	return shader->Render(_deviceContext, _index, _world, _view, _proj);
+	return shader->Render(_deviceContext, _index, _world, _view, _proj,params);
 }
 
 void Material::SetShader(ShaderClass * _shader,HWND hwnd)
@@ -32,5 +38,5 @@ void Material::SetShader(ShaderClass * _shader,HWND hwnd)
 
 ShaderParameterCollections * Material::GetParams()
 {
-	return shader->GetParameters();
+	return &params;
 }

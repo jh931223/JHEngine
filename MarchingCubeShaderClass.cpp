@@ -35,10 +35,10 @@ void MarchingCubeShaderClass::Shutdown()
 
 
 bool MarchingCubeShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix,
-	XMMATRIX viewMatrix, XMMATRIX projectionMatrix)
+	XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM& params)
 {
 	// 렌더링에 사용할 셰이더 매개 변수를 설정합니다.
-	if (!DrawCall(deviceContext, worldMatrix, viewMatrix, projectionMatrix))
+	if (!DrawCall(deviceContext, worldMatrix, viewMatrix, projectionMatrix,params))
 	{
 		return false;
 	}
@@ -298,7 +298,7 @@ void MarchingCubeShaderClass::ShutdownShader()
 
 
 bool MarchingCubeShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix,
-	XMMATRIX projectionMatrix)
+	XMMATRIX projectionMatrix, PARAM& params)
 {
 	// 상수 버퍼의 내용을 쓸 수 있도록 잠급니다.
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -343,18 +343,19 @@ bool MarchingCubeShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMAT
 
 	// 상수 버퍼의 데이터에 대한 포인터를 가져옵니다.
 	MCBufferType* dataPtr2 = (MCBufferType*)mappedResource.pData;
-	dataPtr2->isoLevel = m_shaderParameters.GetFloat("isoLevel");
-	dataPtr2->length = m_shaderParameters.GetInt("length");
+	dataPtr2->isoLevel = params.GetFloat("isoLevel");
+	dataPtr2->length = params.GetInt("length");
+	dataPtr2->unitSize = params.GetFloat2("unitSize");
 	deviceContext->Unmap(m_marchingInfoBuffer, 0);
 	bufferNumber = 0;
 	deviceContext->GSSetConstantBuffers(1, 1, &m_marchingInfoBuffer);
-	deviceContext->GSSetShaderResources(0, 1, m_shaderParameters.GetSRV("chunksData"));
+	deviceContext->GSSetShaderResources(0, 1, params.GetSRV("chunksData"));
 
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
-	deviceContext->PSSetShaderResources(0, 1, m_shaderParameters.GetTexture("Texture1")->GetResourceView());
-	deviceContext->PSSetShaderResources(1, 1, m_shaderParameters.GetTexture("Texture2")->GetResourceView());
-	deviceContext->PSSetShaderResources(2, 1, m_shaderParameters.GetTexture("Texture3")->GetResourceView());
-	vertCount = m_shaderParameters.GetInt("vertCount");
+	deviceContext->PSSetShaderResources(0, 1, params.GetTexture("Texture1")->GetResourceView());
+	deviceContext->PSSetShaderResources(1, 1, params.GetTexture("Texture2")->GetResourceView());
+	deviceContext->PSSetShaderResources(2, 1, params.GetTexture("Texture3")->GetResourceView());
+	vertCount = params.GetInt("vertCount");
 	// 지오메트리 셰이더에 값을 전달
 	return true;
 }

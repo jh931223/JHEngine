@@ -33,10 +33,10 @@ void DepthShaderClass::Shutdown()
 
 
 bool DepthShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount,
-	XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix)
+	XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM& params)
 {
 	// 렌더링에 사용할 셰이더 매개 변수를 설정합니다.
-	if (!DrawCall(deviceContext, worldMatrix, viewMatrix, projectionMatrix))
+	if (!DrawCall(deviceContext, worldMatrix, viewMatrix, projectionMatrix,params))
 	{
 		return false;
 	}
@@ -188,7 +188,7 @@ void DepthShaderClass::OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND h
 
 
 bool DepthShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix,
-	XMMATRIX projectionMatrix)
+	XMMATRIX projectionMatrix, PARAM& params)
 {
 	LightComponent::mainLight()->GetViewMatrix(viewMatrix);
 	LightComponent::mainLight()->GetProjectionMatrix(projectionMatrix);

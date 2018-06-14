@@ -9,6 +9,7 @@ class Material
 
 public:
 	Material();
+	Material(const Material& mat);
 	~Material();
 	bool Render(ID3D11DeviceContext*, const int, XMMATRIX, XMMATRIX, XMMATRIX);
 	void SetShader(ShaderClass *_shader,HWND hwnd);
@@ -19,4 +20,5 @@ public:
 	ShaderParameterCollections* GetParams();
 private:
 	ShaderClass * shader;
+	ShaderParameterCollections params;
 };

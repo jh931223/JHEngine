@@ -152,11 +152,11 @@
     <ClInclude Include="ArrayedOctree.h">
       <Filter>Scripts</Filter>
     </ClInclude>
-    <ClInclude Include="FinalVoxelComponent.h">
-      <Filter>Scripts</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>EngineFrameworks\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="VoxelComponent.h">
+      <Filter>Scripts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -259,7 +259,7 @@
     <ClCompile Include="ArrayedOctree.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
-    <ClCompile Include="FinalVoxelComponent.cpp">
+    <ClCompile Include="VoxelComponent.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
   </ItemGroup>

@@ -81,6 +81,14 @@ public:
 			return;
 		nodes[targetDepth][idx] = _value;
 	}
+	void SetValue(int idx, T _value, int targetDepth = -1)
+	{
+		if (targetDepth == -1)
+			targetDepth = depth;
+		if (idx == -1)
+			return;
+		nodes[targetDepth][idx] = _value;
+	}
 	void GetNodes(int* size, T*& _nodes, int targetDepth = -1)
 	{
 		if (targetDepth == -1)
@@ -124,15 +132,21 @@ public:
 			return;
 		if (targetDepth == -1)
 			targetDepth = depth;
-		float d = targetDepth / depth;
-		x = targetPosition.x*d;
-		y = targetPosition.y*d;
-		z = targetPosition.z*d;
+		int unit = GetUnitSize(targetDepth);
+		x = targetPosition.x / unit;
+		y = targetPosition.y / unit;
+		z = targetPosition.z / unit;
 	}
 	int GetUnitSize(int targetDepth=-1)
 	{
 		if (targetDepth == -1)
 			targetDepth = depth;
 		return pow(2, depth - targetDepth);
+	}
+	int GetLength(int targetDepth = -1)
+	{
+		if (targetDepth == -1)
+			targetDepth = depth;
+		return pow(2, targetDepth);
 	}
 };

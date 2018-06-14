@@ -164,7 +164,8 @@ bool GraphicsClass::RenderCanvas(CameraComponent* m_Camera)
 {
 	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, orthoMatrix;
 	m_Direct3D->GetWorldMatrix(worldMatrix);
-	m_Camera->GetViewMatrix(viewMatrix);
+	//m_Camera->GetViewMatrix(viewMatrix);
+	CameraComponent::GetDefaultViewMtrix(viewMatrix);
 	m_Direct3D->GetOrthoMatrix(orthoMatrix);
 	// 모든 2D 렌더링을 시작하려면 Z 버퍼를 끕니다.
 	//m_Direct3D->TurnZBufferOff();

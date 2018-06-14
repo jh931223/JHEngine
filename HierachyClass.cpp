@@ -8,7 +8,7 @@
 #include "LightComponent.h"
 #include "CameraComponent.h"
 #include "InputComponent.h"
-#include "FinalVoxelComponent.h"
+#include "VoxelComponent.h"
 #include "MeshClass.h"
 #include <map>
 #include <string>
@@ -91,14 +91,34 @@ void HierachyClass::Setup()
 
 	gobj = new GameObject("º¹¼¿");
 	AddGameObject(gobj);
-	r->AddChild(gobj);
+	//r->AddChild(gobj);
 	renderer = new MeshRenderer;
 	gobj->AddComponent(renderer);
 	VoxelComponent* voxel = new VoxelComponent;
 	voxel->renderer = renderer;
 	gobj->AddComponent(voxel);
 	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_texture"));// ¸ÓÅ×¸®¾ó ¼³Á¤
-	gobj->transform->SetLocalPosition(XMFLOAT3(0, 0, 0));
+	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));
+	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
+	gobj = new GameObject("º¹¼¿2");
+	AddGameObject(gobj);
+	r->AddChild(gobj);
+	renderer = new MeshRenderer;
+	gobj->AddComponent(renderer);
+	voxel = new VoxelComponent;
+	voxel->renderer = renderer;
+	gobj->AddComponent(voxel);
+	gobj->transform->SetPosition(XMFLOAT3(63, 0, 0));
+	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
+	gobj = new GameObject("º¹¼¿3");
+	AddGameObject(gobj);
+	r->AddChild(gobj);
+	renderer = new MeshRenderer;
+	gobj->AddComponent(renderer);
+	voxel = new VoxelComponent;
+	voxel->renderer = renderer;
+	gobj->AddComponent(voxel);
+	gobj->transform->SetPosition(XMFLOAT3(0, 0, -63));
 	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
 }
 
