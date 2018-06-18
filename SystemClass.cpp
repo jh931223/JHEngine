@@ -25,8 +25,6 @@ SystemClass::~SystemClass()
 bool SystemClass::Initialize()
 {
 	// 윈도우 창 가로, 세로 넓이 변수 초기화
-	int screenWidth = 0;
-	int screenHeight = 0;
 
 	// 윈도우 생성 초기화
 	InitializeWindows(screenWidth, screenHeight);
@@ -145,7 +143,16 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 }
 
 
-void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
+int SystemClass::GetScreenWidth()
+{
+	return screenWidth;
+}
+int SystemClass::GetScreenHeight()
+{
+	return screenHeight;
+}
+
+void SystemClass::InitializeWindows(int& _screenWidth, int& _screenHeight)
 {
 	// 외부 포인터를 이 객체로 지정합니다
 	ApplicationHandle = this;
@@ -175,8 +182,8 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 	RegisterClassEx(&wc);
 
 	// 모니터 화면의 해상도를 읽어옵니다
-	screenWidth = GetSystemMetrics(SM_CXSCREEN);
-	screenHeight = GetSystemMetrics(SM_CYSCREEN);
+	_screenWidth = GetSystemMetrics(SM_CXSCREEN);
+	_screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
 	int posX = 0;
 	int posY = 0;
@@ -188,8 +195,8 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 		DEVMODE dmScreenSettings;
 		memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
 		dmScreenSettings.dmSize = sizeof(dmScreenSettings);
-		dmScreenSettings.dmPelsWidth = (unsigned long)screenWidth;
-		dmScreenSettings.dmPelsHeight = (unsigned long)screenHeight;
+		dmScreenSettings.dmPelsWidth = (unsigned long)_screenWidth;
+		dmScreenSettings.dmPelsHeight = (unsigned long)_screenHeight;
 		dmScreenSettings.dmBitsPerPel = 32;
 		dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
 
@@ -199,18 +206,18 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 	else
 	{
 		// 윈도우 모드의 경우 800 * 600 크기를 지정합니다.
-		screenWidth = 800;
-		screenHeight = 600;
+		_screenWidth = 800;
+		_screenHeight = 600;
 
 		// 윈도우 창을 가로, 세로의 정 가운데 오도록 합니다.
-		posX = (GetSystemMetrics(SM_CXSCREEN) - screenWidth) / 2;
-		posY = (GetSystemMetrics(SM_CYSCREEN) - screenHeight) / 2;
+		posX = (GetSystemMetrics(SM_CXSCREEN) - _screenWidth) / 2;
+		posY = (GetSystemMetrics(SM_CYSCREEN) - _screenHeight) / 2;
 	}
 
 	// 윈도우를 생성하고 핸들을 구합니다.
 	m_hwnd = CreateWindowEx(WS_EX_APPWINDOW, m_applicationName, m_applicationName,
 		WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP,
-		posX, posY, screenWidth, screenHeight, NULL, NULL, m_hinstance, NULL);
+		posX, posY, _screenWidth, _screenHeight, NULL, NULL, m_hinstance, NULL);
 
 	// 윈도우를 화면에 표시하고 포커스를 지정합니다
 	SetCursor(NULL);

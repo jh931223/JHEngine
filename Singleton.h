@@ -5,7 +5,9 @@ template <typename T> class Singleton
 public:
 	static T * GetInstance()
 	{
-		if (ms_Instance == NULL) ms_Instance = new T;
+
+		static T * ms_Instance = new T;
+		//if (ms_Instance == NULL) ms_Instance = new T;
 		return ms_Instance;
 	};
 	static void DestroyInstance()
@@ -15,7 +17,7 @@ public:
 	};
 
 private:
-	static T * ms_Instance;
+	//static T * ms_Instance;
 };
 
-template<typename T> T* Singleton<T>::ms_Instance = 0;
+//template<typename T> T* Singleton<T>::ms_Instance = 0;

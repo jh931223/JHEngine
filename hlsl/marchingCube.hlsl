@@ -39,6 +39,7 @@ struct VoxelData
 {
 	int material;
 	float isoValue;
+	float blendSharpness;
 };
 
 StructuredBuffer<VoxelData> chunksData;
@@ -389,7 +390,7 @@ float4 ps(g2f input) : SV_TARGET
 	//return textureColor;
 
 	float scale = 0.2f;
-	float sharpness = 1;
+	float sharpness = 8;
 	float3 blending = pow(abs(input.normal), sharpness);
 	blending = blending / (blending.x + blending.y + blending.z);
 

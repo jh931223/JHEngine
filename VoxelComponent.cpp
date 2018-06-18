@@ -20,7 +20,9 @@
 #include"ResourcesClass.h"
 #include"InputClass.h"
 #include"HierachyClass.h"
-
+#include"VoxelTerrainComponent.h"
+#include<process.h>
+#include<mutex>
 using namespace concurrency;
 using namespace concurrency::graphics;
 using namespace concurrency::direct3d;
@@ -39,18 +41,16 @@ VoxelComponent ::~VoxelComponent()
 		delete material;
 	}
 	material = 0;
+	if (T_BuildThread)
+	{
+		CloseHandle(T_BuildThread);
+	}
+	T_BuildThread = 0;
 }
 
 void VoxelComponent::Update()
 {
-	XMFLOAT3 camPos = camera->transform->GetWorldPosition();
-	XMFLOAT3 centerPos = transform()->GetWorldPosition() + XMFLOAT3(width*0.5f, height*0.5f, depth*0.5f);
-	int lodLevel = GetLODLevel(camPos, centerPos);
-	if (currentOctreeDepth!=aOctree->depth-lodLevel)
-	{
-		currentOctreeDepth = aOctree->depth-lodLevel;
-		UpdateMesh(true);
-	}
+	CheckLOD();
 	if (Input()->GetKey(DIK_UP))
 	{
 		strength += 0.1f;
@@ -165,10 +165,12 @@ void VoxelComponent::Initialize()
 	useOctree = true;
 	useGPGPU = false;
 	useGeometry = true;
-	
-	SetLODLevel(0, 150);
-	SetLODLevel(1, 300);
-	SetLODLevel(2, 400);
+	useMultiThread = true;
+	//useFrustum = true;
+
+	SetLODLevel(0, 100);
+	SetLODLevel(1, 150);
+	SetLODLevel(2, 200);
 	SetLODLevel(3, 500);
 	lastBasePosition = CameraComponent::mainCamera()->transform()->GetWorldPosition();
 	
@@ -183,7 +185,7 @@ void VoxelComponent::Initialize()
 
 
 	//LoadCube(32, 32, 32);
-	LoadPerlin(64, 64, 64, 32, 0.3);
+	LoadPerlin(128, 128, 128, 64, 0.3);
 	//int h = ReadTXT("/data/height.txt");
 
 
@@ -193,8 +195,12 @@ void VoxelComponent::Initialize()
 	//LoadHeightMapFromRaw(1025,128,1025,"../JHEngine/data/heightmap.r16");
 	if(useOctree&&!aOctree)
 		BuildOctree(width, lastBasePosition);
-	currentOctreeDepth = aOctree->depth;
-	UpdateMesh();
+	if (!useMultiThread)
+	{
+		currentOctreeDepth = aOctree->depth;
+		UpdateMesh(true);
+	}
+	else BuildVertexBufferAsync(this, aOctree->depth);
 	printf("Init time : %dms\n", GetTickCount64() - tick);
 
 }
@@ -596,9 +602,41 @@ void VoxelComponent::SetMarchingCubeChunkData(int x, int y, int z,bool isCreate,
 {
 	
 }
-void VoxelComponent::SetupMarchingCubeVertexBufferGS()
+void VoxelComponent::BuildVertexBufferGS(int targetDepth)
 {
-	
+	if (useFrustum)
+	{
+		BuildVertexBufferFrustumCulling(targetDepth);
+		return;
+	}
+	int length = width;
+	vertices.clear();
+	float _unit = unit;
+	if (useOctree)
+	{
+		_unit = aOctree->GetUnitSize(targetDepth);
+		length = aOctree->GetLength(targetDepth);
+	}
+	ULONG time2 = GetTickCount();
+	vertices.resize(length*length*length);
+	for (int i = 0; i < length - 1; i++)
+		for (int j = 0; j < length - 1; j++)
+			for (int k = 0; k < length - 1; k++)
+			{
+				XMFLOAT3 pos = XMFLOAT3(i*_unit, j*_unit, k*_unit);
+				VertexBuffer vert;
+				vert.position = XMFLOAT3(pos);
+				vertices[i + j * length + k * length*length] = vert;
+				//vertices.push_back(vert);
+			}
+		T_mutex.lock();
+	unit = _unit;
+	Material* material = renderer->GetMaterial();
+	material->GetParams()->SetInt("vertCount", vertices.size());
+	material->GetParams()->SetInt("length", length);
+	material->GetParams()->SetFloat2("unitSize", XMFLOAT2(unit, 0));
+		T_mutex.unlock();
+	printf("Marching Cube Build Data ( Geometry, useOctree=%d ): %d ms\n", useOctree, GetTickCount() - time2);
 }
 
 //마칭큐브 폴리곤 생성
@@ -623,60 +661,30 @@ void VoxelComponent::GenerateMarchingCubeFaces_GS(bool isNew)
 {
 	ULONG time = GetTickCount();
 	int length = width;
-	if (isNew)
+	if (isNew&&!useMultiThread)
 	{
-
-		vertices.clear();
-		if (useOctree)
-		{
-			unit = aOctree->GetUnitSize(currentOctreeDepth);
-			length = aOctree->GetLength(currentOctreeDepth);
-		}
-		ULONG time2 = GetTickCount();
-		vertices.resize(length*length*length);
-		for (int i = 0; i < length - 1; i++)
-			for (int j = 0; j < length - 1; j++)
-				for (int k = 0; k < length - 1; k++)
-				{
-					XMFLOAT3 pos = XMFLOAT3(i*unit, j*unit, k*unit);
-					//int v0, v1, v2, v3,v4,v5,v6,v7;
-					//int idx = aOctree->GetNodeIDX(pos, currentOctreeDepth);
-					//v0 = aOctree->GetValue(idx, currentOctreeDepth).isoValue;
-					//v1 = aOctree->GetValue(aOctree->GetNodeDeltaIDX(idx, 1, 0, 0,currentOctreeDepth), currentOctreeDepth).isoValue;
-					//v2 = aOctree->GetValue(aOctree->GetNodeDeltaIDX(idx, 0, 1, 0, currentOctreeDepth)).isoValue;
-					//v3 = aOctree->GetValue(aOctree->GetNodeDeltaIDX(idx, 0, 0, 1, currentOctreeDepth), currentOctreeDepth).isoValue;
-					//v4 = aOctree->GetValue(aOctree->GetNodeDeltaIDX(idx, 0, 1, 1, currentOctreeDepth), currentOctreeDepth).isoValue;
-					//v5 = aOctree->GetValue(aOctree->GetNodeDeltaIDX(idx, 1, 1, 0, currentOctreeDepth), currentOctreeDepth).isoValue;
-					//v6 = aOctree->GetValue(aOctree->GetNodeDeltaIDX(idx, 1, 0, 1, currentOctreeDepth)).isoValue;
-					//v7 = aOctree->GetValue(aOctree->GetNodeDeltaIDX(idx, 1, 1, 1, currentOctreeDepth), currentOctreeDepth).isoValue;
-					//if (v0 < isoLevel&&v1 < isoLevel&&v2 < isoLevel&&v3 < isoLevel&&v4 < isoLevel&&v5 < isoLevel&&v6 < isoLevel&&v7 < isoLevel)
-					//	continue;
-					VertexBuffer vert;
-					vert.position = XMFLOAT3(pos);
-					vertices[i + j * length + k * length*length] = vert;
-					//vertices.push_back(vert);
-				}
-		printf("Marching Cube Build Data ( Geometry, useOctree=%d ): %d ms\n", useOctree, GetTickCount() - time2);
+		BuildVertexBufferGS(currentOctreeDepth);
 	}
 	Material* material = renderer->GetMaterial();
 	ULONG time3 = GetTickCount();
 	//SetupMarchingCubeVertexBufferGS();
 	//printf("Marching Cube Build Vertex Buffer ( Geometry ): %d ms\n", GetTickCount() - time3);
-	if (isNew)
+	if (vertices.size() > 0)
 	{
-		material->GetParams()->SetInt("vertCount", vertices.size());
-	}
-	material->GetParams()->SetFloat("isoLevel", isoLevel);
+		material->GetParams()->SetFloat("isoLevel", isoLevel);
+		ID3D11Device* device = SystemClass::GetInstance()->GetDevice();
 
-	material->GetParams()->SetInt("length", length);
-	material->GetParams()->SetFloat2("unitSize", XMFLOAT2(unit,0));
-	ID3D11Device* device = SystemClass::GetInstance()->GetDevice();
-	int nums = nums = length * length*length;
-	if (useOctree)
-	{
-		material->GetParams()->SetSRV("chunksData", new StructuredBuffer(device, sizeof(VoxelData), nums, aOctree->GetNodes(NULL, currentOctreeDepth)));
+		if (useOctree)
+		{
+			length = aOctree->GetLength(currentOctreeDepth);
+		}
+		int nums = nums = length * length*length;
+		if (useOctree)
+		{
+			material->GetParams()->SetSRV("chunksData", new StructuredBuffer(device, sizeof(VoxelData), nums, aOctree->GetNodes(NULL, currentOctreeDepth)));
+		}
+		else material->GetParams()->SetSRV("chunksData", new StructuredBuffer(device, sizeof(VoxelData), nums, chunksData));
 	}
-	else material->GetParams()->SetSRV("chunksData", new StructuredBuffer(device,sizeof(VoxelData),nums,chunksData));
 	printf("Marching Cube Create Buffer ( Geometry ): %d ms\n", GetTickCount() - time);
 }
 void VoxelComponent::GenerateMarchingCubeFaces_GPGPU(bool isNew)
@@ -863,7 +871,8 @@ void VoxelComponent::SetChunk(int x, int y, int z, VoxelData value)
 		VoxelData vox = value;
 		VoxelData lastVox;
 		lastVox = vox;
-		aOctree->SetValue(pos, vox, aOctree->depth);
+		int idx = aOctree->GetNodeIDX(pos);
+		aOctree->SetValue(idx, vox, aOctree->depth);
 		for (int i = aOctree->depth-1; i >= 0; i--)
 		{
 			int idx = aOctree->GetNodeIDX(pos, i);
@@ -894,7 +903,7 @@ XMFLOAT3 VoxelComponent::CovertToChunkPos(XMFLOAT3 targetPos, bool returnNan)
 void VoxelComponent::UpdateMesh(bool isNew)
 {
 	ULONG tick = GetTickCount64();
-
+		T_mutex.lock();
 	if (!useMarchingCube)
 	{
 		UpdateVoxelMesh();
@@ -903,6 +912,8 @@ void VoxelComponent::UpdateMesh(bool isNew)
 	{
 		UpdateMarchingCubeMesh(isNew);
 	}
+
+		T_mutex.unlock();
 	printf("Update Mesh : %dms\n", GetTickCount64() - tick);
 }
 
@@ -913,12 +924,6 @@ void VoxelComponent::UpdateVoxelMesh()
 	else
 		GenerateOctreeFaces();
 
-	if (mesh)
-	{
-		mesh->ShutdownBuffers();
-		delete mesh;
-		mesh = NULL;
-	}
 	Mesh* newMesh = new Mesh();
 	if (vertices.size())
 		newMesh->SetVertices(&vertices[0], vertices.size());
@@ -929,6 +934,13 @@ void VoxelComponent::UpdateVoxelMesh()
 	newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
 	vertices.clear();
 	indices.clear();
+
+	if (mesh)
+	{
+		mesh->ShutdownBuffers();
+		delete mesh;
+		mesh = NULL;
+	}
 	mesh = newMesh;
 	renderer->SetMesh(newMesh);
 	//vertices.clear();
@@ -952,27 +964,278 @@ void VoxelComponent::UpdateMarchingCubeMesh(bool isNew)
 	}
 	else
 		return;
-	if (!useGeometry || isNew)
+	if (!useGeometry || isNew )
 	{
-		if (mesh)
+		if (useMultiThread&&vertBuildState!= VERT_BUILD_FINISHED)
 		{
-			mesh->ShutdownBuffers();
-			delete mesh;
-			mesh = NULL;
+			return;
 		}
-		Mesh* newMesh = new Mesh();
-		if (vertices.size())
-			newMesh->SetVertices(&vertices[0], vertices.size());
-		if (indices.size() && !useGeometry)
-			newMesh->SetIndices(&indices[0], indices.size());
-		if (!useGeometry)
-			newMesh->RecalculateNormals();
-		newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
-		vertices.clear();
-		indices.clear();
-		mesh = newMesh;
-		renderer->SetMesh(newMesh);
+		if (vertices.size() > 0)
+		{
+			Mesh* newMesh = new Mesh();
+			if (vertices.size())
+				newMesh->SetVertices(&vertices[0], vertices.size());
+			if (indices.size() && !useGeometry)
+				newMesh->SetIndices(&indices[0], indices.size());
+			if (!useGeometry)
+				newMesh->RecalculateNormals();
+			newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
+			//vertices.clear();
+			//indices.clear();
+			Mesh* lastMesh = mesh;
+			mesh = newMesh;
+			renderer->SetMesh(mesh);
+			if (lastMesh)
+			{
+				lastMesh->ShutdownBuffers();
+				delete lastMesh;
+				lastMesh = NULL;
+			}
+		}
+		else
+		{
+			Mesh* lastMesh = mesh;
+			if (lastMesh)
+			{
+				lastMesh->ShutdownBuffers();
+				delete lastMesh;
+				lastMesh = NULL;
+			}
+			mesh = NULL;
+			renderer->SetMesh(NULL);
+		}
 	}
+}
+
+void VoxelComponent::SetVertexBuildState(VERT_BUILD_STATE _state)
+{
+	vertBuildState = _state;
+}
+
+void VoxelComponent::CheckLOD()
+{
+	if (useMultiThread)
+	{
+		if (vertBuildState == VERT_BUILD_NONE)
+		{
+			XMFLOAT3 camPos = camera->transform->GetWorldPosition();
+			XMFLOAT3 centerPos = transform()->GetWorldPosition() + XMFLOAT3(width*0.5f, height*0.5f, depth*0.5f);
+			int lodLevel = GetLODLevel(camPos, centerPos);
+			if (currentOctreeDepth != aOctree->depth - lodLevel)
+			{
+				BuildVertexBufferAsync(this, aOctree->depth - lodLevel);
+			}
+		}
+		else if (vertBuildState == VERT_BUILD_FINISHED)
+		{
+			UpdateMesh(true);
+			CloseHandle(T_BuildThread);
+			vertBuildState = VERT_BUILD_NONE;
+		}
+	}
+	else
+	{
+		XMFLOAT3 camPos = camera->transform->GetWorldPosition();
+		XMFLOAT3 centerPos = transform()->GetWorldPosition() + XMFLOAT3(width*0.5f, height*0.5f, depth*0.5f);
+		int lodLevel = GetLODLevel(camPos, centerPos);
+		if (currentOctreeDepth != aOctree->depth - lodLevel)
+		{
+			currentOctreeDepth = aOctree->depth-lodLevel;
+			UpdateMesh(true);
+		}
+	}
+}
+
+bool VoxelComponent::FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius)
+{
+	for (int i = 0; i<6; i++)
+	{
+		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter - radius), (yCenter - radius), (zCenter - radius),
+			1.0f))) >= 0.0f)
+			continue;
+
+		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter + radius), (yCenter - radius), (zCenter - radius),
+			1.0f))) >= 0.0f)
+			continue;
+
+		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter - radius), (yCenter + radius), (zCenter - radius),
+			1.0f))) >= 0.0f)
+			continue;
+
+		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter + radius), (yCenter + radius), (zCenter - radius),
+			1.0f))) >= 0.0f)
+			continue;
+
+		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter - radius), (yCenter - radius), (zCenter + radius),
+			1.0f))) >= 0.0f)
+			continue;
+
+		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter + radius), (yCenter - radius), (zCenter + radius),
+			1.0f))) >= 0.0f)
+			continue;
+
+		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter - radius), (yCenter + radius), (zCenter + radius),
+			1.0f))) >= 0.0f)
+			continue;
+
+		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter + radius), (yCenter + radius), (zCenter + radius),
+			1.0f))) >= 0.0f)
+			continue;
+
+		return false;
+	}
+
+	return true;
+}
+
+bool VoxelComponent::FrustumCheckSphere(float xCenter, float yCenter, float zCenter, float radius)
+{
+	for (int i = 0; i<6; i++)
+	{
+		// 구의 반경이 뷰 frustum 안에 있는지 확인합니다.
+		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet(xCenter, yCenter, zCenter, 1.0f))) < -radius)
+			return false;
+	}
+
+	return true;
+}
+
+
+void VoxelComponent::ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, XMMATRIX viewMatrix)
+{
+	XMFLOAT4X4 pMatrix;
+	XMStoreFloat4x4(&pMatrix, projectionMatrix);
+
+	// 절두체에서 최소 Z 거리를 계산합니다.
+	float zMinimum = -pMatrix._43 / pMatrix._33;
+	float r = screenDepth / (screenDepth - zMinimum);
+
+	// 업데이트 된 값을 다시 투영 행렬에 설정합니다.
+	pMatrix._33 = r;
+	pMatrix._43 = -r * zMinimum;
+	projectionMatrix = XMLoadFloat4x4(&pMatrix);
+
+	// 뷰 매트릭스와 업데이트 된 프로젝션 매트릭스에서 절두체 매트릭스를 만듭니다.
+	XMMATRIX finalMatrix = XMMatrixMultiply(viewMatrix, projectionMatrix);
+
+	// 최종 행렬을 XMFLOAT4X4 유형으로 변환합니다.
+	XMFLOAT4X4 matrix;
+	XMStoreFloat4x4(&matrix, finalMatrix);
+
+	// 절두체의 가까운 평면을 계산합니다.
+	float x = (float)(matrix._14 + matrix._13);
+	float y = (float)(matrix._24 + matrix._23);
+	float z = (float)(matrix._34 + matrix._33);
+	float w = (float)(matrix._44 + matrix._43);
+	m_planes[0] = XMVectorSet(x, y, z, w);
+	m_planes[0] = XMPlaneNormalize(m_planes[0]);
+
+	// 절두체의 먼 평면을 계산합니다.
+	x = (float)(matrix._14 + matrix._13);
+	y = (float)(matrix._24 + matrix._23);
+	z = (float)(matrix._34 + matrix._33);
+	w = (float)(matrix._44 + matrix._43);
+	m_planes[1] = XMVectorSet(x, y, z, w);
+	m_planes[1] = XMPlaneNormalize(m_planes[1]);
+
+	// 절두체의 왼쪽 평면을 계산합니다.
+	x = (float)(matrix._14 + matrix._13);
+	y = (float)(matrix._24 + matrix._23);
+	z = (float)(matrix._34 + matrix._33);
+	w = (float)(matrix._44 + matrix._43);
+	m_planes[2] = XMVectorSet(x, y, z, w);
+	m_planes[2] = XMPlaneNormalize(m_planes[2]);
+
+	// 절두체의 오른쪽 평면을 계산합니다.
+	x = (float)(matrix._14 + matrix._13);
+	y = (float)(matrix._24 + matrix._23);
+	z = (float)(matrix._34 + matrix._33);
+	w = (float)(matrix._44 + matrix._43);
+	m_planes[3] = XMVectorSet(x, y, z, w);
+	m_planes[3] = XMPlaneNormalize(m_planes[3]);
+
+	// 절두체의 윗 평면을 계산합니다.
+	x = (float)(matrix._14 + matrix._13);
+	y = (float)(matrix._24 + matrix._23);
+	z = (float)(matrix._34 + matrix._33);
+	w = (float)(matrix._44 + matrix._43);
+	m_planes[4] = XMVectorSet(x, y, z, w);
+	m_planes[4] = XMPlaneNormalize(m_planes[4]);
+
+	// 절두체의 아래 평면을 계산합니다.
+	x = (float)(matrix._14 + matrix._13);
+	y = (float)(matrix._24 + matrix._23);
+	z = (float)(matrix._34 + matrix._33);
+	w = (float)(matrix._44 + matrix._43);
+	m_planes[5] = XMVectorSet(x, y, z, w);
+	m_planes[5] = XMPlaneNormalize(m_planes[5]);
+
+	return;
+}
+
+
+
+void VoxelComponent::BuildVertexBufferFrustumCulling(int targetDepth)
+{
+	int length = width;
+	vertices.clear();
+	float _unit = unit;
+	if (useOctree)
+	{
+		_unit = aOctree->GetUnitSize(targetDepth);
+		length = aOctree->GetLength(targetDepth);
+	}
+	CameraComponent* camComp=camera->GetComponent<CameraComponent>();
+	XMMATRIX proj, view;
+	camComp->GetProjectionMatrix(proj);
+	camComp->Render();
+	camComp->GetViewMatrix(view);
+	ConstructFrustum(camComp->m_farPlane, proj, view);
+	ULONG time2 = GetTickCount();
+	vertices.reserve(length*length*length);
+	for (int i = 0; i < length - 1; i++)
+		for (int j = 0; j < length - 1; j++)
+			for (int k = 0; k < length - 1; k++)
+			{
+				XMFLOAT3 pos = XMFLOAT3(i*_unit, j*_unit, k*_unit);
+				float halfUnit = _unit * 0.5f;
+				XMFLOAT3 frustumPos = pos + transform()->GetWorldPosition()+XMFLOAT3(halfUnit, halfUnit, halfUnit);
+				//if (FrustumCheckSphere(frustumPos.x, frustumPos.y, frustumPos.z, halfUnit))
+				if (FrustumCheckCube(frustumPos.x , frustumPos.y , frustumPos.z, halfUnit))
+				{
+					VertexBuffer vert;
+					vert.position = XMFLOAT3(pos);
+					vertices.push_back(vert);
+				}
+			}
+		T_mutex.lock();
+	unit = _unit;
+	Material* material = renderer->GetMaterial();
+	material->GetParams()->SetInt("vertCount", vertices.size());
+	material->GetParams()->SetInt("length", length);
+	material->GetParams()->SetFloat2("unitSize", XMFLOAT2(unit, 0));
+		T_mutex.unlock();
+	printf("Marching Cube Build Data ( Geometry, useOctree=%d ): %d ms\n", useOctree, GetTickCount() - time2);
+}
+
+void VoxelComponent::BuildVertexBufferAsync(VoxelComponent * voxel, int targetDepth)
+{
+	voxel->SetVertexBuildState(VERT_BUILD_LOADING);
+	VertAsyncBuffer* buffer=new VertAsyncBuffer;
+	buffer->voxel = voxel;
+	buffer->targetDepth = targetDepth;
+	voxel->T_BuildThread = (HANDLE)_beginthreadex(NULL, 0, (_beginthreadex_proc_type)CallGenerateFunction, buffer, 0, NULL);
+}
+
+void VoxelComponent::CallGenerateFunction(LPVOID _buffer)
+{
+	printf("CallGenerateFunction\n");
+	VertAsyncBuffer* buffer = (VertAsyncBuffer*)_buffer;
+	buffer->voxel->BuildVertexBufferGS(buffer->targetDepth);
+	buffer->voxel->SetOctreeDepth(buffer->targetDepth);
+	buffer->voxel->SetVertexBuildState(VERT_BUILD_FINISHED);
+	delete buffer;
+	_endthreadex(0);
 }
 
 void VoxelComponent::LoadHeightMapFromRaw(int _width, int _height,int _depth,const char* filename)
@@ -1059,7 +1322,7 @@ void VoxelComponent::LoadPerlin(int _width,int _height, int _depth, int _maxHeig
 		{
 			float noise = perlin.noise((float)x*refinement, (float)z*refinement, 0);
 			noise *= (float)_maxHeight;
-			for (int y = 0; y < noise; y++)
+			for (int y = 0; y < _maxHeight; y++)
 			{
 				VoxelData vox;
 				vox.isoValue = noise-y;
@@ -1119,6 +1382,22 @@ void VoxelComponent::NewOctree(int _size)
 		}
 	}
 }
+
+void VoxelComponent::SetOctreeDepth(int _targetDepth)
+{
+	currentOctreeDepth = _targetDepth;
+}
+
+void VoxelComponent::ConnectComponent(int index, VoxelComponent* component)
+{
+	connectedComponent[index] = component;
+}
+
+void VoxelComponent::SetTerrainManager(VoxelTerrainComponent * _mangaer)
+{
+	terrainManager = _mangaer;
+}
+
 
 void VoxelComponent::ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height)
 {

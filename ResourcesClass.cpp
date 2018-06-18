@@ -131,6 +131,7 @@ void ResourcesClass::InitializeTexture(HWND hwnd)
 	textureMap["floor"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/seafloor.dds");
 	textureMap["tile"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/tile.dds");
 	textureMap["grass"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/grass.dds");
+	textureMap["soil"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/soil.dds");
 }
 
 void ResourcesClass::InitializeMaterial(HWND hwnd)
@@ -157,9 +158,9 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 
 	result = new Material;
 	result->SetShader(FindShader("MarchingCubeShader"), hwnd);
-	result->GetParams()->SetTexture("Texture1", FindTexture("stone"));
+	result->GetParams()->SetTexture("Texture1", FindTexture("soil"));
 	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
-	result->GetParams()->SetTexture("Texture3", FindTexture("stone"));
+	result->GetParams()->SetTexture("Texture3", FindTexture("soil"));
 	materialMap["m_marchingCube"] = result;	result = new Material;
 
 	result->SetShader(new TextureShaderClass, hwnd);

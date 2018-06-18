@@ -292,6 +292,7 @@
     <Text Include="data\floor.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="data\soil.dds" />
     <Image Include="data\grass.dds" />
     <Image Include="data\grass1.dds" />
     <Image Include="data\sample.dds" />

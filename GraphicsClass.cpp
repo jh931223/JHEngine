@@ -130,7 +130,7 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, orthoMatrix;
 	m_Direct3D->GetWorldMatrix(worldMatrix);
 	m_Camera->GetViewMatrix(viewMatrix);
-	m_Direct3D->GetProjectionMatrix(projectionMatrix);
+	m_Camera->GetProjectionMatrix(projectionMatrix);
 
 	// 메쉬를 그립니다.
 	for (const auto i : meshRenderers)

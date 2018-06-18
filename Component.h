@@ -12,6 +12,7 @@ public:
 	virtual ~Component() {}
 	virtual void OnStart() {};
 	virtual void Update() {};
+	virtual void LateUpdate() {};
 	CTransform* transform();
 };
 

@@ -22,9 +22,10 @@ public:
 	{
 		for (auto i : components)
 			if (typeid(*i) == typeid(T))
-				return i;
+				return (T*)i;
 		return NULL;
 	}
 	void Update();
+	void LateUpdate();
 };
 

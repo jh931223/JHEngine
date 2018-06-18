@@ -3,9 +3,11 @@
 #include <vector>
 #include "MeshClass.h"
 #include "ArrayedOctree.h"
-#include <unordered_map>   
+#include <unordered_map>
+#include <mutex>
 class MeshRenderer;
 class Material;
+class VoxelTerrainComponent;
 struct VoxelData
 {
 	int material=0;
@@ -15,6 +17,12 @@ class VoxelComponent : public Component
 {
 public:
 
+	enum VERT_BUILD_STATE
+	{
+		VERT_BUILD_NONE,
+		VERT_BUILD_LOADING,
+		VERT_BUILD_FINISHED
+	};
 	VoxelComponent();
 	virtual ~VoxelComponent();
 	void Update() override;
@@ -33,7 +41,6 @@ public:
 
 	void SetMarchingCubeChunkData(int x, int y, int z, bool isCreate, int length = 1);
 
-	void SetupMarchingCubeVertexBufferGS();
 
 	void GenerateMarchingCubeFaces(bool isNew = true);
 	void GenerateMarchingCubeFaces_GS(bool isNew = true);
@@ -51,6 +58,10 @@ public:
 
 	void BuildOctree(int, XMFLOAT3);
 	void NewOctree(int _length);
+	void SetOctreeDepth(int _targetDepth);
+
+	void ConnectComponent(int index,VoxelComponent* component);
+	void SetTerrainManager(VoxelTerrainComponent* _mangaer);
 
 	XMFLOAT2 GetUV(BYTE);
 	VoxelData GetChunk(int x, int y, int z);
@@ -58,25 +69,47 @@ public:
 	void UpdateMesh(bool isNew = true);
 	void UpdateVoxelMesh();
 	void UpdateMarchingCubeMesh(bool isNew=true);
-	Mesh* mesh;
-	MeshRenderer* renderer;
-	Material* material;
+	void BuildVertexBufferGS(int);
+	void SetVertexBuildState(VERT_BUILD_STATE _state);
+	void CheckLOD();
+	bool FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius);
+	bool FrustumCheckSphere(float xCenter, float yCenter, float zCenter, float radius);
+	void ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, XMMATRIX viewMatrix);
+
+	void BuildVertexBufferFrustumCulling(int targetDepth);
+	struct VertAsyncBuffer
+	{
+		VoxelComponent* voxel;
+		int targetDepth;
+		bool isNew;
+	};
+	static void BuildVertexBufferAsync(VoxelComponent* voxel,int targetDepth);
+	static void CallGenerateFunction(LPVOID);
 private:
 	void ReleaseChunks();
 	void ReleaseOctree();
 
-	void NewChunks(int _width,int,int);
+	void NewChunks(int _width, int, int);
 
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
-	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height,int&,int&);
+	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height, int&, int&);
 	int GetLODLevel(XMFLOAT3 basePos, XMFLOAT3 targetPos);
-	void SetLODLevel(int level,float distance);
+	void SetLODLevel(int level, float distance);
 	XMFLOAT3 lerpSelf(XMFLOAT3 p, XMFLOAT3 target, float acc)
 	{
-		return p+(target - p)*acc;
+		return p + (target - p)*acc;
 	}
 
 	int ReadTXT(const char* filename);
+
+public:
+	Mesh* mesh;
+	MeshRenderer* renderer;
+	Material* material;
+
+	HANDLE T_BuildThread;
+	std::mutex T_mutex;
+private:
 
 	int width, height, depth;
 	float unit;
@@ -86,6 +119,8 @@ private:
 	bool useOctree;
 	bool useGPGPU;
 	bool useGeometry;
+	bool useMultiThread;
+	bool useFrustum;
 	VoxelData * chunksData;
 	ArrayedOctree<VoxelData>* aOctree;
 	int currentOctreeDepth = 0;
@@ -100,11 +135,17 @@ private:
 	float strength=0.5f;
 	float brushRadius = 3.0f;
 
-	std::unordered_map<int, VertexBuffer> um_Vertices;
+	VoxelComponent* connectedComponent[4];
+	VoxelTerrainComponent* terrainManager;
 
 
 	GameObject* camera;
 
+	VERT_BUILD_STATE vertBuildState;
+
+	//frustum
+	XMVECTOR m_planes[6];
+	//
 
 	const XMFLOAT3 mcVertexOffset[12] =
 	{

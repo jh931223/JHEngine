@@ -16,6 +16,8 @@ public:
 	void Run();
 
 	LRESULT CALLBACK MessageHandler(HWND, UINT, WPARAM, LPARAM);
+	int GetScreenWidth();
+	int GetScreenHeight();
 	GraphicsClass* GetGraphics();
 	ResourcesClass* GetResources();
 	ID3D11Device* GetDevice();
@@ -33,6 +35,8 @@ private:
 	GraphicsClass* m_Graphics = nullptr;
 	HierachyClass* m_Hierachy = nullptr;
 	ResourcesClass* m_Resources = nullptr;
+	int screenWidth = 0;
+	int screenHeight = 0;
 };
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

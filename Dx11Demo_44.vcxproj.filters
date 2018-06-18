@@ -146,9 +146,6 @@
     <ClInclude Include="StructuredBuffer.h">
       <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
     </ClInclude>
-    <ClInclude Include="VoxelTerrainComponent.h">
-      <Filter>EngineFrameworks\Source</Filter>
-    </ClInclude>
     <ClInclude Include="ArrayedOctree.h">
       <Filter>Scripts</Filter>
     </ClInclude>
@@ -156,6 +153,9 @@
       <Filter>EngineFrameworks\Source</Filter>
     </ClInclude>
     <ClInclude Include="VoxelComponent.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="VoxelTerrainComponent.h">
       <Filter>Scripts</Filter>
     </ClInclude>
   </ItemGroup>
@@ -255,11 +255,13 @@
     <ClCompile Include="StructuredBuffer.cpp">
       <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
     </ClCompile>
-    <ClCompile Include="VoxelTerrainComponent.cpp" />
     <ClCompile Include="ArrayedOctree.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
     <ClCompile Include="VoxelComponent.cpp">
+      <Filter>Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="VoxelTerrainComponent.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
   </ItemGroup>
@@ -320,6 +322,9 @@
       <Filter>data</Filter>
     </Image>
     <Image Include="data\grass.dds">
+      <Filter>data</Filter>
+    </Image>
+    <Image Include="data\soil.dds">
       <Filter>data</Filter>
     </Image>
   </ItemGroup>

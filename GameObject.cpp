@@ -86,7 +86,14 @@ void GameObject::Update()
 {
 	for (auto i : components)
 		i->Update();
-	for (auto i : childObjects)
-		i->Update();
+	//for (auto i : childObjects)
+	//	i->Update();
+}
+
+void GameObject::LateUpdate()
+{
+	for (auto i : components)
+		i->LateUpdate();
+
 }
 
