@@ -108,45 +108,6 @@ void HierachyClass::Setup()
 	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_texture"));// ¸ÓÅ×¸®¾ó ¼³Á¤
 	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));
 	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
-	voxel->SetTerrainManager(terrainManager);
-
-
-	//gobj = new GameObject("º¹¼¿2");
-	//AddGameObject(gobj);
-	//r->AddChild(gobj);
-	//renderer = new MeshRenderer;
-	//gobj->AddComponent(renderer);
-	//voxel = new VoxelComponent;
-	//voxel->renderer = renderer;
-	//gobj->AddComponent(voxel);
-	//gobj->transform->SetPosition(XMFLOAT3(128, 0, 0));
-	//gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
-	//voxel->SetTerrainManager(terrainManager);
-
-	//gobj = new GameObject("º¹¼¿3");
-	//AddGameObject(gobj);
-	//r->AddChild(gobj);
-	//renderer = new MeshRenderer;
-	//gobj->AddComponent(renderer);
-	//voxel = new VoxelComponent;
-	//voxel->renderer = renderer;
-	//gobj->AddComponent(voxel);
-	//gobj->transform->SetPosition(XMFLOAT3(0, 0, -128));
-	//gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
-	//voxel->SetTerrainManager(terrainManager);
-
-
-	//gobj = new GameObject("º¹¼¿4");
-	//AddGameObject(gobj);
-	//r->AddChild(gobj);
-	//renderer = new MeshRenderer;
-	//gobj->AddComponent(renderer);
-	//voxel = new VoxelComponent;
-	//voxel->renderer = renderer;
-	//gobj->AddComponent(voxel);
-	//gobj->transform->SetPosition(XMFLOAT3(128, 0, -128));
-	//gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
-	//voxel->SetTerrainManager(terrainManager);
 	
 }
 

@@ -51,7 +51,7 @@ public:
 	void GenerateOctreeFaces();
 
 	void CalcNormal(VertexBuffer& v1, VertexBuffer& v2, VertexBuffer& v3);
-	void LoadHeightMapFromRaw(int,int,int,const char*);
+	void LoadHeightMapFromRaw(int,int,int,const char*, int startX = -1, int startZ = -1, int endX = -1, int endZ = -1);
 	void LoadCube(int,int,int);
 	void LoadPerlin(int _width,int _height, int _depth, int _maxHeight,float refinement);
 	void SetChunk(int x,int y,int z, VoxelData);
@@ -109,6 +109,7 @@ public:
 
 	HANDLE T_BuildThread;
 	std::mutex T_mutex;
+	int loadType = 0;
 private:
 
 	int width, height, depth;

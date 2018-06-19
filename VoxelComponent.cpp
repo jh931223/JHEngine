@@ -168,9 +168,9 @@ void VoxelComponent::Initialize()
 	useMultiThread = true;
 	//useFrustum = true;
 
-	SetLODLevel(0, 100);
-	SetLODLevel(1, 150);
-	SetLODLevel(2, 200);
+	SetLODLevel(0, 150);
+	SetLODLevel(1, 200);
+	SetLODLevel(2, 300);
 	SetLODLevel(3, 500);
 	lastBasePosition = CameraComponent::mainCamera()->transform()->GetWorldPosition();
 	
@@ -184,20 +184,21 @@ void VoxelComponent::Initialize()
 		renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_texture"));
 
 
-	//LoadCube(32, 32, 32);
-	LoadPerlin(128, 128, 128, 64, 0.3);
+	//LoadCube(128, 128, 128);
+	LoadPerlin(128, 128, 128, 80, 0.3);
 	//int h = ReadTXT("/data/height.txt");
 
 
 
 
 	ULONG tick = GetTickCount64();
-	//LoadHeightMapFromRaw(1025,128,1025,"../JHEngine/data/heightmap.r16");
+	//LoadHeightMapFromRaw(1025, 512, 1025, "data/heightmap.r16");// , 0, 0, 255, 255);
 	if(useOctree&&!aOctree)
 		BuildOctree(width, lastBasePosition);
 	if (!useMultiThread)
 	{
-		currentOctreeDepth = aOctree->depth;
+		if(useOctree)
+			currentOctreeDepth = aOctree->depth;
 		UpdateMesh(true);
 	}
 	else BuildVertexBufferAsync(this, aOctree->depth);
@@ -882,7 +883,10 @@ void VoxelComponent::SetChunk(int x, int y, int z, VoxelData value)
 		}
 
 	}
-	else chunksData[x + y * width + z * width*height]=value;
+	else
+	{
+		chunksData[x + y * width + z * width*height] = value;
+	}
 }
 XMFLOAT3 VoxelComponent::CovertToChunkPos(XMFLOAT3 targetPos, bool returnNan)
 {
@@ -977,11 +981,9 @@ void VoxelComponent::UpdateMarchingCubeMesh(bool isNew)
 				newMesh->SetVertices(&vertices[0], vertices.size());
 			if (indices.size() && !useGeometry)
 				newMesh->SetIndices(&indices[0], indices.size());
-			if (!useGeometry)
-				newMesh->RecalculateNormals();
+			/*if (!useGeometry)
+				newMesh->RecalculateNormals();*/
 			newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
-			//vertices.clear();
-			//indices.clear();
 			Mesh* lastMesh = mesh;
 			mesh = newMesh;
 			renderer->SetMesh(mesh);
@@ -991,6 +993,8 @@ void VoxelComponent::UpdateMarchingCubeMesh(bool isNew)
 				delete lastMesh;
 				lastMesh = NULL;
 			}
+			//vertices.clear();
+			//indices.clear();
 		}
 		else
 		{
@@ -1014,6 +1018,8 @@ void VoxelComponent::SetVertexBuildState(VERT_BUILD_STATE _state)
 
 void VoxelComponent::CheckLOD()
 {
+	if (!useOctree)
+		return;
 	if (useMultiThread)
 	{
 		if (vertBuildState == VERT_BUILD_NONE)
@@ -1238,26 +1244,36 @@ void VoxelComponent::CallGenerateFunction(LPVOID _buffer)
 	_endthreadex(0);
 }
 
-void VoxelComponent::LoadHeightMapFromRaw(int _width, int _height,int _depth,const char* filename)
+void VoxelComponent::LoadHeightMapFromRaw(int _width, int _height,int _depth,const char* filename,int startX, int startZ, int endX, int endZ)
 {
+	if (useOctree)
+		NewOctree((startX!=-1&&endX!=-1)?endX-startX+1:_width);
+	else NewChunks((startX != -1 && endX != -1) ? endX - startX+1 : _width, _height, (startZ != -1 && endZ != -1) ? endZ - startZ+1 : _depth);
+
 	unsigned short** data = nullptr;
-	NewChunks(_width, _height,_depth);
 	int top=0,bottom=0;
-	ReadRawEX16(data, filename, width, depth,top,bottom);
+	ReadRawEX16(data, filename, _width, _depth,top,bottom);
 	printf("%d, %d\n", top,bottom);
 	float h = (float)height / 65536;
-	for (int x = 0; x < width; x++)
+	int mX = (endX!=-1&&endX >= startX && endX < _width) ? endX+1 : _width;
+	int mZ = (endZ!=-1&&endZ >= startZ && endZ < _depth) ? endZ+1 : _depth;
+	int cX=0, cZ=0;
+	for (int x= (startX >= 0 && startX < _width) ? startX : 0; x < mX; x++)
 	{
-		for (int z = 0; z < depth; z++)
+		cZ = 0;
+		for (int z= (startZ >= 0 && startZ < _depth) ? startZ : 0; z < mZ; z++)
 		{
-			float convertY = ((float)data[x][depth-1-z] * h);
+			float convertY = ((float)data[x][_depth -1-z] * h);
 			for (int y = 0; (y < (int)roundl(convertY)); y++)
 			{
 				VoxelData v;
 				v.material = 1;
-				SetChunk(x, y, z,v);
+				v.isoValue = convertY - y;
+				SetChunk(cX, y, cZ,v);
 			}
+			cZ++;
 		}
+		cX++;
 	}
 	for (int i = 0; i < width; i++)
 		delete[] data[i];
@@ -1364,6 +1380,8 @@ void VoxelComponent::BuildOctree(int _octreelength, XMFLOAT3 basePosition)
 
 void VoxelComponent::NewOctree(int _size)
 {
+	if (_size % 2 > 0)
+		_size--;
 	width = _size;
 	height = _size;
 	depth = _size;
