@@ -111,6 +111,7 @@ void VoxelComponent::Update()
 				}
 			}
 		}
+
 		UpdateMesh(false);
 	}
 	else if (Input()->GetKey(VK_LBUTTON))
@@ -162,10 +163,10 @@ void VoxelComponent::Initialize()
 	tAmount = 4;
 
 	useMarchingCube = true;
-	useOctree = true;
+	useOctree = false;
 	useGPGPU = false;
-	useGeometry = true;
-	useMultiThread = true;
+	useGeometry = false;
+	useMultiThread = false;
 	//useFrustum = true;
 
 	SetLODLevel(0, 150);
@@ -184,8 +185,8 @@ void VoxelComponent::Initialize()
 		renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_texture"));
 
 
-	//LoadCube(128, 128, 128);
-	LoadPerlin(128, 128, 128, 80, 0.3);
+	//LoadCube(32, 32, 32);
+	LoadPerlin(16, 512, 16, 16, 0.3);
 	//int h = ReadTXT("/data/height.txt");
 
 
@@ -645,6 +646,8 @@ void VoxelComponent::BuildVertexBufferGS(int targetDepth)
 void VoxelComponent::GenerateMarchingCubeFaces(bool isNew)
 {
 	ULONG time = GetTickCount();
+	vertices.clear();
+	indices.clear();
 	for (int x = 0; x < width-1; x++)
 	{
 		for (int y = 0; y < height-1; y++)
@@ -845,7 +848,7 @@ XMFLOAT2 VoxelComponent::GetUV(BYTE type)
 VoxelData VoxelComponent::GetChunk(int x, int y, int z)
 {
 	VoxelData v;
-	v.material = 1;
+	v.material = 0;
 	if (x >= width || y >= height || z >= depth)
 		return v;
 	if (x < 0 || y < 0 || z < 0)
@@ -885,6 +888,9 @@ void VoxelComponent::SetChunk(int x, int y, int z, VoxelData value)
 	}
 	else
 	{
+		if (value.isoValue < isoLevel)
+			value.material = 0;
+		else value.material = 1;
 		chunksData[x + y * width + z * width*height] = value;
 	}
 }
@@ -993,8 +999,6 @@ void VoxelComponent::UpdateMarchingCubeMesh(bool isNew)
 				delete lastMesh;
 				lastMesh = NULL;
 			}
-			//vertices.clear();
-			//indices.clear();
 		}
 		else
 		{
@@ -1007,6 +1011,11 @@ void VoxelComponent::UpdateMarchingCubeMesh(bool isNew)
 			}
 			mesh = NULL;
 			renderer->SetMesh(NULL);
+		}
+		if (!useGeometry)
+		{
+			vertices.clear();
+			indices.clear();
 		}
 	}
 }
@@ -1342,7 +1351,8 @@ void VoxelComponent::LoadPerlin(int _width,int _height, int _depth, int _maxHeig
 			{
 				VoxelData vox;
 				vox.isoValue = noise-y;
-				vox.material = 1;
+				if(y<=noise)
+					vox.material = 1;
 				SetChunk(x,y,z,vox);
 			}
 		}

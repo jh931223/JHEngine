@@ -81,7 +81,7 @@ void HierachyClass::Setup()
 	AddGameObject(gobj);
 	CameraComponent* m_Camera = new CameraComponent;
 	gobj->AddComponent(m_Camera);
-	m_Camera->transform()->SetPosition(XMFLOAT3(0.0f, 0.0f, -100.0f));
+	m_Camera->transform()->SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
 	m_Camera->transform()->SetRotation(XMFLOAT3(0.0f, 0.0f, 0.0f));
 	float screenAspect = (float)SystemClass::GetInstance()->GetScreenWidth() / (float)SystemClass::GetInstance()->GetScreenHeight();
 	m_Camera->SetProjectionParameters((float)(XM_PI / 4.0f), screenAspect, 0.1f, 1000.0f);
