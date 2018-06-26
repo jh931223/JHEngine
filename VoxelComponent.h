@@ -2,12 +2,13 @@
 #include "Component.h"
 #include <vector>
 #include "MeshClass.h"
-#include "ArrayedOctree.h"
 #include <unordered_map>
 #include <mutex>
 class MeshRenderer;
 class Material;
 class VoxelTerrainComponent;
+template<typename T> class Octree;
+template<typename T> class ArrayedOctree;
 struct VoxelData
 {
 	int material=0;
@@ -125,6 +126,10 @@ private:
 	VoxelData * chunksData;
 	ArrayedOctree<VoxelData>* aOctree;
 	int currentOctreeDepth = 0;
+
+	Octree<VoxelData>* gOctree;
+	Octree<MeshRenderer*>* gOctreeMeshRenderer;
+
 	std::vector<VertexBuffer> vertices;
 	std::vector<unsigned long> indices;
 

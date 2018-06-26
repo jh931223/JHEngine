@@ -7,6 +7,7 @@
 #include"TextureClass.h"
 #include"CameraComponent.h"
 #include"Octree.h"
+#include"ArrayedOctree.h"
 #include<vector>
 #include<map>
 #include<time.h>
@@ -90,6 +91,7 @@ void VoxelComponent::Update()
 		int cY = (int)cpos.y;
 		int cZ = (int)cpos.z;
 		float radius = brushRadius;
+		bool isUpdated = false;
 		for (int x = cpos.x - radius; x < cpos.x + radius; x += 1)
 		{
 			for (int y = cpos.y - radius; y < cpos.y + radius; y += 1)
@@ -107,12 +109,13 @@ void VoxelComponent::Update()
 							vox.material = 0;
 						}
 						SetChunk((int)x, (int)y, (int)z, vox);
+						isUpdated = true;
 					}
 				}
 			}
 		}
-
-		UpdateMesh(false);
+		if (isUpdated)
+			UpdateMesh(false);
 	}
 	else if (Input()->GetKey(VK_LBUTTON))
 	{
@@ -122,6 +125,7 @@ void VoxelComponent::Update()
 		int cY = (int)cpos.y;
 		int cZ = (int)cpos.z;
 		float radius = brushRadius;
+		bool isUpdated = false;
 		for (int x = cpos.x - radius; x < cpos.x + radius; x+=1)
 		{
 			for (int y = cpos.y - radius; y < cpos.y + radius; y+=1)
@@ -139,11 +143,13 @@ void VoxelComponent::Update()
 							vox.material = 1;
 						}
 						SetChunk((int)x, (int)y, (int)z, vox);
+						isUpdated = true;
 					}
 				}
 			}
 		}
-		UpdateMesh(false);
+		if(isUpdated)
+			UpdateMesh(false);
 	}
 }
 
@@ -152,7 +158,13 @@ void VoxelComponent::OnStart()
 	//transform()->SetPosition(XMFLOAT3(0, 0, 0));
 	Initialize();
 }
-
+template<> OctreeNode<MeshRenderer*>::~OctreeNode()
+{
+	if (value)
+		delete value;
+	value = 0;
+	RemoveChilds();
+}
 void VoxelComponent::Initialize()
 {
 	camera = Hierachy()->FindGameObjectWithName("mainCamera");
@@ -162,7 +174,7 @@ void VoxelComponent::Initialize()
 	tUnit = 0.25f;
 	tAmount = 4;
 
-	useMarchingCube = true;
+	useMarchingCube = false;
 	useOctree = false;
 	useGPGPU = false;
 	useGeometry = false;
@@ -186,7 +198,7 @@ void VoxelComponent::Initialize()
 
 
 	//LoadCube(32, 32, 32);
-	LoadPerlin(16, 512, 16, 16, 0.3);
+	LoadPerlin(16, 512, 16, 32, 0.1);
 	//int h = ReadTXT("/data/height.txt");
 
 
@@ -884,7 +896,6 @@ void VoxelComponent::SetChunk(int x, int y, int z, VoxelData value)
 			lastVox = aOctree->GetValue(idxChild, i + 1);
 			aOctree->SetValue(idx, aOctree->GetValue(idxChild,i+1), i);
 		}
-
 	}
 	else
 	{
