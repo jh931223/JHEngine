@@ -8,6 +8,7 @@ class MeshRenderer;
 class Material;
 class VoxelTerrainComponent;
 template<typename T> class Octree;
+template<typename T> class OctreeNode;
 template<typename T> class ArrayedOctree;
 struct VoxelData
 {
@@ -29,13 +30,13 @@ public:
 	void Update() override;
 	void OnStart() override;
 	void Initialize();
-	void CreateFaceUp(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceDown(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceRight(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceLeft(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceForward(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceBackward(float x, float y, float z, float _unit, BYTE, int&);
-	void CreateFaceMarchingCube(float x, float y, float z,int);
+	void CreateFaceUp(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+	void CreateFaceDown(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+	void CreateFaceRight(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+	void CreateFaceLeft(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+	void CreateFaceForward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+	void CreateFaceBackward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+	void CreateFaceMarchingCube(float x, float y, float z,int, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
 
 	void AddMarchingCase(int x, int y, int z, int _case);
 	void SubMarchingCase(int x, int y, int z,int _case);
@@ -43,13 +44,13 @@ public:
 	void SetMarchingCubeChunkData(int x, int y, int z, bool isCreate, int length = 1);
 
 
-	void GenerateMarchingCubeFaces(bool isNew = true);
-	void GenerateMarchingCubeFaces_GS(bool isNew = true);
-	void GenerateMarchingCubeFaces_GPGPU(bool isNew = true);
-	void GenerateMarchingCubeFaces_Octree(bool isNew = true);
+	void GenerateMarchingCubeFaces(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, bool isNew = true);
+	void GenerateMarchingCubeFaces_GS(std::vector<VertexBuffer>& vertices, bool isNew = true);
+	void GenerateMarchingCubeFaces_GPGPU(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, bool isNew = true);
+	void GenerateMarchingCubeFaces_Octree(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, bool isNew = true);
 
-	void GenerateVoxelFaces();
-	void GenerateOctreeFaces();
+	void GenerateVoxelFaces(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
+	void GenerateOctreeFaces(XMFLOAT3 pos);
 
 	void CalcNormal(VertexBuffer& v1, VertexBuffer& v2, VertexBuffer& v3);
 	void LoadHeightMapFromRaw(int,int,int,const char*, int startX = -1, int startZ = -1, int endX = -1, int endZ = -1);
@@ -65,12 +66,13 @@ public:
 	void SetTerrainManager(VoxelTerrainComponent* _mangaer);
 
 	XMFLOAT2 GetUV(BYTE);
-	VoxelData GetChunk(int x, int y, int z);
+	VoxelData GetChunk(int x, int y, int z,OctreeNode<VoxelData>* _startNode = NULL);
 	XMFLOAT3 CovertToChunkPos(XMFLOAT3 targetpos,bool returnNan=true);
 	void UpdateMesh(bool isNew = true);
+	void UpdatePartialMesh(XMFLOAT3 pos,bool isNew = true);
 	void UpdateVoxelMesh();
 	void UpdateMarchingCubeMesh(bool isNew=true);
-	void BuildVertexBufferGS(int);
+	void BuildVertexBufferGS(int, std::vector<VertexBuffer>&);
 	void SetVertexBuildState(VERT_BUILD_STATE _state);
 	void CheckLOD();
 	bool FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius);
@@ -130,8 +132,6 @@ private:
 	Octree<VoxelData>* gOctree;
 	Octree<MeshRenderer*>* gOctreeMeshRenderer;
 
-	std::vector<VertexBuffer> vertices;
-	std::vector<unsigned long> indices;
 
 	int LODDistance[3]{ 0, };
 
@@ -140,6 +140,8 @@ private:
 	int isoLevel = 0;
 	float strength=0.5f;
 	float brushRadius = 3.0f;
+
+	int partitionSize=32;
 
 	VoxelComponent* connectedComponent[4];
 	VoxelTerrainComponent* terrainManager;

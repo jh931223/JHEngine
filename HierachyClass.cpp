@@ -29,6 +29,7 @@ HierachyClass::~HierachyClass()
 void HierachyClass::AddGameObject(GameObject * _gameObject)
 {
 	gameObjects.push_back(_gameObject);
+	newGameObjects.push_back(_gameObject);
 }
 
 void HierachyClass::DestroyGameObject(GameObject * _gameObject)
@@ -39,6 +40,14 @@ void HierachyClass::DestroyGameObject(GameObject * _gameObject)
 		if (*iter == _gameObject)
 		{
 			gameObjects.erase(iter);
+			break;
+		}
+	}
+	for (iter = newGameObjects.begin(); iter != newGameObjects.end(); iter++)
+	{
+		if (*iter == _gameObject)
+		{
+			newGameObjects.erase(iter);
 			break;
 		}
 	}
@@ -67,7 +76,6 @@ void HierachyClass::Setup()
 	//renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("cube"));// 머테리얼 설정
 	// light object 생성
 	gobj = new GameObject("라이트");
-	AddGameObject(gobj);
 	LightComponent* m_Light = new LightComponent;
 	gobj->AddComponent(m_Light);
 	m_Light->SetAmbientColor(0.15f, 0.15f, 0.15f, 1.0f);
@@ -78,10 +86,9 @@ void HierachyClass::Setup()
 	m_Light->GenerateViewMatrix();
 	// light object 생성
 	gobj = new GameObject("mainCamera");
-	AddGameObject(gobj);
 	CameraComponent* m_Camera = new CameraComponent;
 	gobj->AddComponent(m_Camera);
-	m_Camera->transform()->SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
+	m_Camera->transform()->SetPosition(XMFLOAT3(25.0f, 0.0f, -50.0f));
 	m_Camera->transform()->SetRotation(XMFLOAT3(0.0f, 0.0f, 0.0f));
 	float screenAspect = (float)SystemClass::GetInstance()->GetScreenWidth() / (float)SystemClass::GetInstance()->GetScreenHeight();
 	m_Camera->SetProjectionParameters((float)(XM_PI / 4.0f), screenAspect, 0.1f, 1000.0f);
@@ -90,15 +97,12 @@ void HierachyClass::Setup()
 	gobj = new GameObject("복셀루트");
 	GameObject* r = gobj;
 	r->transform->SetPosition(XMFLOAT3(0, 0, 0));
-	AddGameObject(gobj);
 
 	gobj = new GameObject("터레인 매니저");
-	AddGameObject(gobj);
 	VoxelTerrainComponent* terrainManager = new VoxelTerrainComponent;
 	gobj->AddComponent(terrainManager);
 
 	gobj = new GameObject("복셀");
-	AddGameObject(gobj);
 	//r->AddChild(gobj);
 	renderer = new MeshRenderer;
 	gobj->AddComponent(renderer);
@@ -113,12 +117,21 @@ void HierachyClass::Setup()
 
 void HierachyClass::Start()
 {
-	for (auto iterObj : gameObjects)
+	for (auto iterObj : newGameObjects)
 		iterObj->OnStart();
+	newGameObjects.clear();
 }
 
 void HierachyClass::Update()
 {
+	if (newGameObjects.size())
+	{
+		for (auto i : newGameObjects)
+		{
+			i->OnStart();
+		}
+		newGameObjects.clear();
+	}
 	for (auto i : gameObjects)
 	{
 		i->Update();

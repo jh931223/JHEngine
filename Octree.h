@@ -80,7 +80,7 @@ public:
 	int GetIndexOfPosition(XMFLOAT3 target)
 	{
 		int index = 0;
-		XMFLOAT3 cellCener = GetCenerPosition();
+		XMFLOAT3 cellCenter = GetCenerPosition();
 		index |= (target.y >= cellCenter.y) ? 2 : 0;
 		index |= (target.x >= cellCenter.x) ? 4 : 0;
 		index |= (target.z >= cellCenter.z) ? 1 : 0;
@@ -103,10 +103,10 @@ public:
 				if (i & 2)newPos.y += newSize;
 				if (i & 4)newPos.x += newSize;
 				if (i & 1)newPos.z += newSize;
-				childNodes[i] = new OctreeNode<T>(newPos, newSize, depth-1, node);
+				childNodes[i] = new OctreeNode<T>(newPos, newSize, depth-1, this);
 			}
 		}
-		return childNodes[idx]->Subdivide(targetPos, _targetDepth -1);
+		return childNodes[idx]->Subdivide(targetPos, _targetDepth,makeChild);
 	}
 	void GetLeafs(std::vector<OctreeNode<T>*>& _nodeArray)
 	{
@@ -173,8 +173,10 @@ public:
 		OctreeNode<T>* node = root->Subdivide(targetPos, targetDepth,true);
 		node->SetValue(_value);
 	}
-	OctreeNode<T>* GetNodeAtPosition(XMFLOAT3 targetPos,int targeDepth)
+	OctreeNode<T>* GetNodeAtPosition(XMFLOAT3 targetPos,int targetDepth, OctreeNode<T>* _startNode=NULL)
 	{
+		if(_startNode)
+			return _startNode->Subdivide(targetPos, targetDepth);
 		return root->Subdivide(targetPos, targetDepth);
 	}
 	int GetRootDepth()
@@ -188,5 +190,18 @@ public:
 		newRoot = new OctreeNode<T>(XMFLOAT3(0, 0, 0), pow(2, depth), depth, NULL);
 		newRoot->SetChild(0, root);
 		root = newRoot;
+	}
+	OctreeNode<T>* GetPartialNode(XMFLOAT3 pos,int partialSize)
+	{
+		OctreeNode<T>* node;
+		node = GetNodeAtPosition(pos, 0);
+		while (node->parent != NULL)
+		{
+			if (node->GetCellSize() < partialSize)
+				node = node->parent;
+			else
+				break;
+		}
+		return node;
 	}
 };

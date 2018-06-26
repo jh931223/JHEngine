@@ -44,6 +44,8 @@ void MeshRenderer::Render(ID3D11DeviceContext * _deviceContext, XMMATRIX _world,
 {	// 정점 버퍼의 단위와 오프셋을 설정합니다.
 	if (!mesh)
 		return;
+	if (!material)
+		return;
 	UINT stride = sizeof(VertexBuffer);
 	UINT offset = 0;
 

@@ -6,6 +6,7 @@ class GameObject;
 class HierachyClass : public Singleton<HierachyClass>
 {
 	std::vector<GameObject*> gameObjects;
+	std::vector<GameObject*> newGameObjects;
 
 public:
 	HierachyClass();

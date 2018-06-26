@@ -25,6 +25,7 @@ public:
 				return (T*)i;
 		return NULL;
 	}
+	static void Destroy(GameObject* _gameObject);
 	void Update();
 	void LateUpdate();
 };

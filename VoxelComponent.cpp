@@ -83,6 +83,7 @@ void VoxelComponent::Update()
 			currentOctreeDepth = 1;
 		UpdateMesh(true);
 	}
+	std::unordered_set<OctreeNode<VoxelData>*> uSet;
 	if (Input()->GetKey(VK_RBUTTON))
 	{
 		XMFLOAT3 pos = camera->transform->GetWorldPosition() + camera->transform->forward() * brushRadius;
@@ -109,7 +110,8 @@ void VoxelComponent::Update()
 							vox.material = 0;
 						}
 						SetChunk((int)x, (int)y, (int)z, vox);
-						isUpdated = true;
+						uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x,y,z),partitionSize));
+						//isUpdated = true;
 					}
 				}
 			}
@@ -143,13 +145,20 @@ void VoxelComponent::Update()
 							vox.material = 1;
 						}
 						SetChunk((int)x, (int)y, (int)z, vox);
-						isUpdated = true;
+						uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y, z), partitionSize));
+						//isUpdated = true;
 					}
 				}
 			}
 		}
 		if(isUpdated)
 			UpdateMesh(false);
+	}
+	if (uSet.size())
+	{
+		for (auto i : uSet)
+			UpdatePartialMesh(i->GetPosition());
+		uSet.clear();
 	}
 }
 
@@ -161,7 +170,7 @@ void VoxelComponent::OnStart()
 template<> OctreeNode<MeshRenderer*>::~OctreeNode()
 {
 	if (value)
-		delete value;
+		GameObject::Destroy(value->gameObject);
 	value = 0;
 	RemoveChilds();
 }
@@ -175,11 +184,13 @@ void VoxelComponent::Initialize()
 	tAmount = 4;
 
 	useMarchingCube = false;
-	useOctree = false;
+	useOctree = true;
 	useGPGPU = false;
 	useGeometry = false;
 	useMultiThread = false;
 	//useFrustum = true;
+
+	partitionSize = 16;
 
 	SetLODLevel(0, 150);
 	SetLODLevel(1, 200);
@@ -198,7 +209,7 @@ void VoxelComponent::Initialize()
 
 
 	//LoadCube(32, 32, 32);
-	LoadPerlin(16, 512, 16, 32, 0.1);
+	LoadPerlin(256, 512, 256, 64, 0.3);
 	//int h = ReadTXT("/data/height.txt");
 
 
@@ -206,15 +217,25 @@ void VoxelComponent::Initialize()
 
 	ULONG tick = GetTickCount64();
 	//LoadHeightMapFromRaw(1025, 512, 1025, "data/heightmap.r16");// , 0, 0, 255, 255);
-	if(useOctree&&!aOctree)
+	if (useOctree && !gOctree)
 		BuildOctree(width, lastBasePosition);
 	if (!useMultiThread)
 	{
-		if(useOctree)
-			currentOctreeDepth = aOctree->depth;
+		if (useOctree)
+			currentOctreeDepth = 0;
 		UpdateMesh(true);
 	}
-	else BuildVertexBufferAsync(this, aOctree->depth);
+	else BuildVertexBufferAsync(this, 0);
+	////AOctree
+	//if(useOctree&&!aOctree)
+	//	BuildOctree(width, lastBasePosition);
+	//if (!useMultiThread)
+	//{
+	//	if(useOctree)
+	//		currentOctreeDepth = aOctree->depth;
+	//	UpdateMesh(true);
+	//}
+	//else BuildVertexBufferAsync(this, aOctree->depth);
 	printf("Init time : %dms\n", GetTickCount64() - tick);
 
 }
@@ -250,8 +271,11 @@ void VoxelComponent::ReleaseOctree()
 	if (aOctree)
 		delete aOctree;
 	aOctree = 0;
+	if (gOctree)
+		delete gOctree;
+	gOctree = 0;
 }
-void VoxelComponent::CreateFaceUp(float x, float y, float z, float _unit, BYTE type, int& faceCount)
+void VoxelComponent::CreateFaceUp(float x, float y, float z, float _unit, BYTE type, int& faceCount, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
 
 	VertexBuffer v1, v2, v3, v4;
@@ -280,7 +304,7 @@ void VoxelComponent::CreateFaceUp(float x, float y, float z, float _unit, BYTE t
 	vertices.push_back(v4);
 	faceCount++;
 }
-void VoxelComponent::CreateFaceDown(float x, float y, float z, float _unit, BYTE type, int& faceCount)
+void VoxelComponent::CreateFaceDown(float x, float y, float z, float _unit, BYTE type, int& faceCount, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
 	VertexBuffer v1, v2, v3, v4;
 	float offset = _unit * 0.5f;
@@ -308,7 +332,7 @@ void VoxelComponent::CreateFaceDown(float x, float y, float z, float _unit, BYTE
 	vertices.push_back(v4);
 	faceCount++;
 }
-void VoxelComponent::CreateFaceRight(float x, float y, float z, float _unit, BYTE type, int& faceCount)
+void VoxelComponent::CreateFaceRight(float x, float y, float z, float _unit, BYTE type, int& faceCount, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
 
 	VertexBuffer v1, v2, v3, v4;
@@ -337,7 +361,7 @@ void VoxelComponent::CreateFaceRight(float x, float y, float z, float _unit, BYT
 	vertices.push_back(v4);
 	faceCount++;
 }
-void VoxelComponent::CreateFaceLeft(float x, float y, float z, float _unit, BYTE type, int& faceCount)
+void VoxelComponent::CreateFaceLeft(float x, float y, float z, float _unit, BYTE type, int& faceCount, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
 
 	VertexBuffer v1, v2, v3, v4;
@@ -369,7 +393,7 @@ void VoxelComponent::CreateFaceLeft(float x, float y, float z, float _unit, BYTE
 
 	faceCount++;
 }
-void VoxelComponent::CreateFaceForward(float x, float y, float z, float _unit, BYTE type, int& faceCount)
+void VoxelComponent::CreateFaceForward(float x, float y, float z, float _unit, BYTE type, int& faceCount, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
 
 	VertexBuffer v1, v2, v3, v4;
@@ -398,7 +422,7 @@ void VoxelComponent::CreateFaceForward(float x, float y, float z, float _unit, B
 	vertices.push_back(v4);
 	faceCount++;
 }
-void VoxelComponent::CreateFaceBackward(float x, float y, float z, float _unit, BYTE type, int& faceCount)
+void VoxelComponent::CreateFaceBackward(float x, float y, float z, float _unit, BYTE type, int& faceCount, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
 
 	VertexBuffer v1, v2, v3, v4;
@@ -427,7 +451,7 @@ void VoxelComponent::CreateFaceBackward(float x, float y, float z, float _unit, 
 	vertices.push_back(v4);
 	faceCount++;
 }
-void VoxelComponent::CreateFaceMarchingCube(float x, float y, float z, int _unit)
+void VoxelComponent::CreateFaceMarchingCube(float x, float y, float z, int _unit, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
 	float size = width;
 	float size2 = width * height;
@@ -451,15 +475,25 @@ void VoxelComponent::CreateFaceMarchingCube(float x, float y, float z, int _unit
 	short material = 0;
 	if (useOctree)
 	{
-		VoxelData pData = aOctree->GetValue(p);
+		VoxelData pData = gOctree->GetNodeAtPosition(p3,0)->GetValue();
 		value0 = pData.isoValue;
-		value1 = aOctree->GetValue(px).isoValue;
-		value2 = aOctree->GetValue(py).isoValue;
-		value3 = aOctree->GetValue(pxy).isoValue;
-		value4 = aOctree->GetValue(pz).isoValue;
-		value5 = aOctree->GetValue(pxz).isoValue;
-		value6 = aOctree->GetValue(pyz).isoValue;
-		value7 = aOctree->GetValue(pxyz).isoValue;
+		value1 = gOctree->GetNodeAtPosition(px3, 0)->GetValue().isoValue;
+		value2 = gOctree->GetNodeAtPosition(py3, 0)->GetValue().isoValue;
+		value3 = gOctree->GetNodeAtPosition(pxy3, 0)->GetValue().isoValue;
+		value4 = gOctree->GetNodeAtPosition(pz3, 0)->GetValue().isoValue;
+		value5 = gOctree->GetNodeAtPosition(pxz3, 0)->GetValue().isoValue;
+		value6 = gOctree->GetNodeAtPosition(pyz3, 0)->GetValue().isoValue;
+		value7 = gOctree->GetNodeAtPosition(pxyz3, 0)->GetValue().isoValue;
+		////AOctree
+		//VoxelData pData = aOctree->GetValue(p);
+		//value0 = pData.isoValue;
+		//value1 = aOctree->GetValue(px).isoValue;
+		//value2 = aOctree->GetValue(py).isoValue;
+		//value3 = aOctree->GetValue(pxy).isoValue;
+		//value4 = aOctree->GetValue(pz).isoValue;
+		//value5 = aOctree->GetValue(pxz).isoValue;
+		//value6 = aOctree->GetValue(pyz).isoValue;
+		//value7 = aOctree->GetValue(pxyz).isoValue;
 		material = pData.material;
 	}
 	else
@@ -616,7 +650,7 @@ void VoxelComponent::SetMarchingCubeChunkData(int x, int y, int z,bool isCreate,
 {
 	
 }
-void VoxelComponent::BuildVertexBufferGS(int targetDepth)
+void VoxelComponent::BuildVertexBufferGS(int targetDepth, std::vector<VertexBuffer>& vertices)
 {
 	if (useFrustum)
 	{
@@ -655,7 +689,7 @@ void VoxelComponent::BuildVertexBufferGS(int targetDepth)
 
 //¸¶ÄªÅ¥ºê Æú¸®°ï »ý¼º
 
-void VoxelComponent::GenerateMarchingCubeFaces(bool isNew)
+void VoxelComponent::GenerateMarchingCubeFaces(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices,bool isNew)
 {
 	ULONG time = GetTickCount();
 	vertices.clear();
@@ -666,20 +700,20 @@ void VoxelComponent::GenerateMarchingCubeFaces(bool isNew)
 		{
 			for (int z = 0; z < depth-1; z++)
 			{
-				CreateFaceMarchingCube(x, y, z, unit);
+				CreateFaceMarchingCube(x, y, z, unit,vertices,indices);
 			}
 		}
 	}
 	printf("Marching Cube Create Buffer ( CPU ): %d ms\n", GetTickCount() - time);
 	
 }
-void VoxelComponent::GenerateMarchingCubeFaces_GS(bool isNew)
+void VoxelComponent::GenerateMarchingCubeFaces_GS(std::vector<VertexBuffer>& vertices, bool isNew)
 {
 	ULONG time = GetTickCount();
 	int length = width;
 	if (isNew&&!useMultiThread)
 	{
-		BuildVertexBufferGS(currentOctreeDepth);
+		BuildVertexBufferGS(currentOctreeDepth,vertices);
 	}
 	Material* material = renderer->GetMaterial();
 	ULONG time3 = GetTickCount();
@@ -703,7 +737,7 @@ void VoxelComponent::GenerateMarchingCubeFaces_GS(bool isNew)
 	}
 	printf("Marching Cube Create Buffer ( Geometry ): %d ms\n", GetTickCount() - time);
 }
-void VoxelComponent::GenerateMarchingCubeFaces_GPGPU(bool isNew)
+void VoxelComponent::GenerateMarchingCubeFaces_GPGPU(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, bool isNew)
 {
 	ULONG time = GetTickCount();
 	if (useOctree)
@@ -717,13 +751,13 @@ void VoxelComponent::GenerateMarchingCubeFaces_GPGPU(bool isNew)
 		{
 			for (int z = 0; z < depth - 1; z++)
 			{
-				CreateFaceMarchingCube(x, y, z, unit);
+			//	CreateFaceMarchingCube(x, y, z, unit);
 			}
 		}
 	}
 	printf("Marching Cube Create Buffer ( GPU ): %d ms\n", GetTickCount() - time);
 }
-void VoxelComponent::GenerateMarchingCubeFaces_Octree(bool isNew)
+void VoxelComponent::GenerateMarchingCubeFaces_Octree(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, bool isNew)
 {
 	ULONG time = GetTickCount();
 	for (int x=0;x<width-1;x++)
@@ -732,7 +766,7 @@ void VoxelComponent::GenerateMarchingCubeFaces_Octree(bool isNew)
 		{
 			for (int z = 0; z < depth-1; z++)
 			{
-				CreateFaceMarchingCube(x, y, z, unit);
+				CreateFaceMarchingCube(x, y, z, unit,vertices,indices);
 			}
 		}
 	}
@@ -740,7 +774,7 @@ void VoxelComponent::GenerateMarchingCubeFaces_Octree(bool isNew)
 }
 
 
-void VoxelComponent::GenerateVoxelFaces()
+void VoxelComponent::GenerateVoxelFaces(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
 	int faceCount = 0;
 	short myBlock;
@@ -755,39 +789,110 @@ void VoxelComponent::GenerateVoxelFaces()
 					continue;
 				if (GetChunk(x - 1, y, z).material == 0)//LEFT
 				{
-					CreateFaceLeft(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
+					CreateFaceLeft(x*unit, y*unit, z*unit,unit, myBlock, faceCount,vertices,indices);
 				}
 				if (GetChunk(x + 1, y, z).material == 0)//RIGHT
 				{
-					CreateFaceRight(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
+					CreateFaceRight(x*unit, y*unit, z*unit,unit, myBlock, faceCount,vertices,indices);
 				}
 				if (GetChunk(x, y + 1, z).material == 0)//UP
 				{
-					CreateFaceUp(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
+					CreateFaceUp(x*unit, y*unit, z*unit,unit, myBlock, faceCount,vertices,indices);
 				}
 				if (GetChunk(x, y - 1, z).material == 0)//DOWN
 				{
-					CreateFaceDown(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
+					CreateFaceDown(x*unit, y*unit, z*unit,unit, myBlock, faceCount,vertices,indices);
 				}
 				if (GetChunk(x, y, z + 1).material == 0)//FORWARD
 				{
-					CreateFaceForward(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
+					CreateFaceForward(x*unit, y*unit, z*unit,unit, myBlock, faceCount,vertices,indices);
 				}
 				if (GetChunk(x, y, z - 1).material == 0)//BACKWARD
 				{
-					CreateFaceBackward(x*unit, y*unit, z*unit,unit, myBlock, faceCount);
+					CreateFaceBackward(x*unit, y*unit, z*unit,unit, myBlock, faceCount,vertices,indices);
 				}
 			}
 		}
 	}
 }
 
-void VoxelComponent::GenerateOctreeFaces()
+void VoxelComponent::GenerateOctreeFaces(XMFLOAT3 pos)
 {
 	int faceCount = 0;
 	short myBlock=0;
+	std::vector<OctreeNode<VoxelData>*> leafs;
+	int size = 0;
+
+	std::vector<VertexBuffer> vertices;
+	std::vector<unsigned long> indices;
+	OctreeNode<VoxelData>* node = gOctree->GetPartialNode(pos,partitionSize);
+	node->GetLeafs(leafs);
+	for (auto i : leafs)
+	{
+		myBlock = i->GetValue().material;
+		if (myBlock == 0)
+			continue;
+		int x = i->GetCenerPosition().x;
+		int y = i->GetCenerPosition().y;
+		int z = i->GetCenerPosition().z;
+		if (GetChunk(x - 1, y, z,node).material == 0)//LEFT
+		{
+			CreateFaceLeft(x*unit, y*unit, z*unit, unit, myBlock, faceCount,vertices,indices);
+		}
+		if (GetChunk(x + 1, y, z, node).material == 0)//RIGHT
+		{
+			CreateFaceRight(x*unit, y*unit, z*unit, unit, myBlock, faceCount, vertices, indices);
+		}
+		if (GetChunk(x, y + 1, z, node).material == 0)//UP
+		{
+			CreateFaceUp(x*unit, y*unit, z*unit, unit, myBlock, faceCount, vertices, indices);
+		}
+		if (GetChunk(x, y - 1, z, node).material == 0)//DOWN
+		{
+			CreateFaceDown(x*unit, y*unit, z*unit, unit, myBlock, faceCount, vertices, indices);
+		}
+		if (GetChunk(x, y, z + 1, node).material == 0)//FORWARD
+		{
+			CreateFaceForward(x*unit, y*unit, z*unit, unit, myBlock, faceCount, vertices, indices);
+		}
+		if (GetChunk(x, y, z - 1, node).material == 0)//BACKWARD
+		{
+			CreateFaceBackward(x*unit, y*unit, z*unit, unit, myBlock, faceCount, vertices, indices);
+		}
+	}
+
+	Mesh* newMesh = new Mesh();
+	if (vertices.size())
+	{
+		newMesh->SetVertices(&vertices[0], vertices.size());
+		if (indices.size())
+			newMesh->SetIndices(&indices[0], indices.size());
+		if (!useGeometry)
+			newMesh->RecalculateNormals();
+		newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
+
+		OctreeNode<MeshRenderer*>* node2;
+		node2 = gOctreeMeshRenderer->root->Subdivide(pos, node->GetDepth(), true);
+		if (node2->GetValue() == NULL)
+		{
+			GameObject* gobj = new GameObject("voxel partition");
+			MeshRenderer* newRenderer = new MeshRenderer;
+			newRenderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_texture"));
+			gobj->AddComponent(newRenderer);
+			node2->SetValue(newRenderer);
+		}
+		else if (node2->GetValue()->GetMesh())
+		{
+			node2->GetValue()->GetMesh()->ShutdownBuffers();
+			delete node2->GetValue()->GetMesh();
+		}
+		node2->GetValue()->SetMesh(newMesh);
+	}
+	/*
+	//AOctree
 	VoxelData* nodes;
 	int size = 0;
+
 	aOctree->GetNodes(&size, nodes);
 
 	int size1=width;
@@ -829,6 +934,7 @@ void VoxelComponent::GenerateOctreeFaces()
 			}
 		}
 	}
+	*/
 }
 
 
@@ -857,7 +963,7 @@ XMFLOAT2 VoxelComponent::GetUV(BYTE type)
 	return XMFLOAT2(tUnit*(type - 1), (int)(type / tAmount) * tUnit);
 }
 
-VoxelData VoxelComponent::GetChunk(int x, int y, int z)
+VoxelData VoxelComponent::GetChunk(int x, int y, int z, OctreeNode<VoxelData>* _startNode)
 {
 	VoxelData v;
 	v.material = 0;
@@ -865,9 +971,19 @@ VoxelData VoxelComponent::GetChunk(int x, int y, int z)
 		return v;
 	if (x < 0 || y < 0 || z < 0)
 		return v;
-	if (useOctree&&!chunksData)
+	if (useOctree&&!chunksData) 
 	{
-		return aOctree->GetValue(XMFLOAT3(x, y, z));
+		if (_startNode)
+		{
+			if ((x < _startNode->GetPosition().x || x >= _startNode->GetPosition().x + _startNode->GetCellSize())
+				|| (y < _startNode->GetPosition().y || y >= _startNode->GetPosition().y + _startNode->GetCellSize())
+				|| (z < _startNode->GetPosition().z || z >= _startNode->GetPosition().z + _startNode->GetCellSize()))
+				_startNode = NULL;
+		}
+		VoxelData v=gOctree->GetNodeAtPosition(XMFLOAT3(x, y, z), 0, _startNode)->GetValue();
+		return v;
+		////AOctree
+		//return aOctree->GetValue(XMFLOAT3(x, y, z));
 	}
 	return chunksData[x + y * width + z * width*height];
 }
@@ -880,23 +996,32 @@ void VoxelComponent::SetChunk(int x, int y, int z, VoxelData value)
 		return;
 	if (x < 0 || y < 0 || z < 0)
 		return;
-	if (useOctree && aOctree)
+	if (useOctree && gOctree)
 	{
 		XMFLOAT3 pos(x, y, z);
-		//aOctree->SetValue(pos, value);
 		VoxelData vox = value;
 		VoxelData lastVox;
 		lastVox = vox;
-		int idx = aOctree->GetNodeIDX(pos);
-		aOctree->SetValue(idx, vox, aOctree->depth);
-		for (int i = aOctree->depth-1; i >= 0; i--)
-		{
-			int idx = aOctree->GetNodeIDX(pos, i);
-			int idxChild = aOctree->GetNodeIDX(pos, i+1);
-			lastVox = aOctree->GetValue(idxChild, i + 1);
-			aOctree->SetValue(idx, aOctree->GetValue(idxChild,i+1), i);
-		}
+		OctreeNode<VoxelData>* node = gOctree->root->Subdivide(pos,0,true);
+		node->SetValue(vox);
 	}
+	////AOctree
+	//if (useOctree && aOctree)
+	//{
+	//	XMFLOAT3 pos(x, y, z);
+	//	VoxelData vox = value;
+	//	VoxelData lastVox;
+	//	lastVox = vox;
+	//	int idx = aOctree->GetNodeIDX(pos);
+	//	aOctree->SetValue(idx, vox, aOctree->depth);
+	//	for (int i = aOctree->depth-1; i >= 0; i--)
+	//	{
+	//		int idx = aOctree->GetNodeIDX(pos, i);
+	//		int idxChild = aOctree->GetNodeIDX(pos, i+1);
+	//		lastVox = aOctree->GetValue(idxChild, i + 1);
+	//		aOctree->SetValue(idx, aOctree->GetValue(idxChild,i+1), i);
+	//	}
+	//}
 	else
 	{
 		if (value.isoValue < isoLevel)
@@ -938,12 +1063,36 @@ void VoxelComponent::UpdateMesh(bool isNew)
 	printf("Update Mesh : %dms\n", GetTickCount64() - tick);
 }
 
+void VoxelComponent::UpdatePartialMesh(XMFLOAT3 pos, bool isNew)
+{
+	if (useOctree)
+	{
+		ULONG tick = GetTickCount64();
+		T_mutex.lock();
+		if (!useMarchingCube)
+		{
+			//pos = gOctree->GetNodeAtPosition(pos, 0)->GetPosition();
+			GenerateOctreeFaces(pos);
+		}
+		T_mutex.unlock();
+		printf("Update Mesh : %dms\n", GetTickCount64() - tick);
+	}
+}
+
 void VoxelComponent::UpdateVoxelMesh()
 {
+	std::vector<VertexBuffer> vertices;
+	std::vector<unsigned long> indices;
 	if (!useOctree)
-		GenerateVoxelFaces();
+		GenerateVoxelFaces(vertices,indices);
 	else
-		GenerateOctreeFaces();
+	{
+		for(int i=0;i<width;i+=partitionSize)
+			for (int j = 0; j<height; j += partitionSize)
+				for (int k = 0; k<depth; k += partitionSize)
+					GenerateOctreeFaces(XMFLOAT3(i,j,k));
+		return;
+	}
 
 	Mesh* newMesh = new Mesh();
 	if (vertices.size())
@@ -964,24 +1113,22 @@ void VoxelComponent::UpdateVoxelMesh()
 	}
 	mesh = newMesh;
 	renderer->SetMesh(newMesh);
-	//vertices.clear();
-	//indices.clear();
-	//mesh->SetVertices(NULL, 0);
-	//mesh->SetIndices(NULL, 0);
 }
 
 void VoxelComponent::UpdateMarchingCubeMesh(bool isNew)
 {
+	std::vector<VertexBuffer> vertices;
+	std::vector<unsigned long> indices;
 	if (useMarchingCube)
 	{
 		if (useGPGPU)
-			GenerateMarchingCubeFaces_GPGPU(isNew);
+			GenerateMarchingCubeFaces_GPGPU(vertices,indices,isNew);
 		else if (useOctree && !useGeometry)
-			GenerateMarchingCubeFaces_Octree(isNew);
+			GenerateMarchingCubeFaces_Octree(vertices, indices, isNew);
 		else if(useGeometry)
-			GenerateMarchingCubeFaces_GS(isNew);
+			GenerateMarchingCubeFaces_GS(vertices,isNew);
 		else
-			GenerateMarchingCubeFaces(isNew);
+			GenerateMarchingCubeFaces(vertices, indices, isNew);
 	}
 	else
 		return;
@@ -1023,11 +1170,6 @@ void VoxelComponent::UpdateMarchingCubeMesh(bool isNew)
 			mesh = NULL;
 			renderer->SetMesh(NULL);
 		}
-		if (!useGeometry)
-		{
-			vertices.clear();
-			indices.clear();
-		}
 	}
 }
 
@@ -1040,36 +1182,36 @@ void VoxelComponent::CheckLOD()
 {
 	if (!useOctree)
 		return;
-	if (useMultiThread)
-	{
-		if (vertBuildState == VERT_BUILD_NONE)
-		{
-			XMFLOAT3 camPos = camera->transform->GetWorldPosition();
-			XMFLOAT3 centerPos = transform()->GetWorldPosition() + XMFLOAT3(width*0.5f, height*0.5f, depth*0.5f);
-			int lodLevel = GetLODLevel(camPos, centerPos);
-			if (currentOctreeDepth != aOctree->depth - lodLevel)
-			{
-				BuildVertexBufferAsync(this, aOctree->depth - lodLevel);
-			}
-		}
-		else if (vertBuildState == VERT_BUILD_FINISHED)
-		{
-			UpdateMesh(true);
-			CloseHandle(T_BuildThread);
-			vertBuildState = VERT_BUILD_NONE;
-		}
-	}
-	else
-	{
-		XMFLOAT3 camPos = camera->transform->GetWorldPosition();
-		XMFLOAT3 centerPos = transform()->GetWorldPosition() + XMFLOAT3(width*0.5f, height*0.5f, depth*0.5f);
-		int lodLevel = GetLODLevel(camPos, centerPos);
-		if (currentOctreeDepth != aOctree->depth - lodLevel)
-		{
-			currentOctreeDepth = aOctree->depth-lodLevel;
-			UpdateMesh(true);
-		}
-	}
+	//if (useMultiThread)
+	//{
+	//	if (vertBuildState == VERT_BUILD_NONE)
+	//	{
+	//		XMFLOAT3 camPos = camera->transform->GetWorldPosition();
+	//		XMFLOAT3 centerPos = transform()->GetWorldPosition() + XMFLOAT3(width*0.5f, height*0.5f, depth*0.5f);
+	//		int lodLevel = GetLODLevel(camPos, centerPos);
+	//		if (currentOctreeDepth != aOctree->depth - lodLevel)
+	//		{
+	//			BuildVertexBufferAsync(this, aOctree->depth - lodLevel);
+	//		}
+	//	}
+	//	else if (vertBuildState == VERT_BUILD_FINISHED)
+	//	{
+	//		UpdateMesh(true);
+	//		CloseHandle(T_BuildThread);
+	//		vertBuildState = VERT_BUILD_NONE;
+	//	}
+	//}
+	//else
+	//{
+	//	XMFLOAT3 camPos = camera->transform->GetWorldPosition();
+	//	XMFLOAT3 centerPos = transform()->GetWorldPosition() + XMFLOAT3(width*0.5f, height*0.5f, depth*0.5f);
+	//	int lodLevel = GetLODLevel(camPos, centerPos);
+	//	if (currentOctreeDepth != aOctree->depth - lodLevel)
+	//	{
+	//		currentOctreeDepth = aOctree->depth-lodLevel;
+	//		UpdateMesh(true);
+	//	}
+	//}
 }
 
 bool VoxelComponent::FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius)
@@ -1204,7 +1346,7 @@ void VoxelComponent::ConstructFrustum(float screenDepth, XMMATRIX projectionMatr
 void VoxelComponent::BuildVertexBufferFrustumCulling(int targetDepth)
 {
 	int length = width;
-	vertices.clear();
+	std::vector<VertexBuffer> vertices;
 	float _unit = unit;
 	if (useOctree)
 	{
@@ -1257,7 +1399,8 @@ void VoxelComponent::CallGenerateFunction(LPVOID _buffer)
 {
 	printf("CallGenerateFunction\n");
 	VertAsyncBuffer* buffer = (VertAsyncBuffer*)_buffer;
-	buffer->voxel->BuildVertexBufferGS(buffer->targetDepth);
+	std::vector<VertexBuffer> vertices;
+	buffer->voxel->BuildVertexBufferGS(buffer->targetDepth,vertices);
 	buffer->voxel->SetOctreeDepth(buffer->targetDepth);
 	buffer->voxel->SetVertexBuildState(VERT_BUILD_FINISHED);
 	delete buffer;
@@ -1406,20 +1549,22 @@ void VoxelComponent::NewOctree(int _size)
 	width = _size;
 	height = _size;
 	depth = _size;
-	if (aOctree)
-	{
-		delete aOctree;
-	}
-	aOctree = new ArrayedOctree<VoxelData>(_size);
-	for (int i = 0; i < aOctree->depth+1; i++)
-	{
-		VoxelData vox;
-		vox.isoValue = -1 * aOctree->GetUnitSize(i);
-		for (int j = 0; j < aOctree->GetLength(i); j++)
-		{
-			aOctree->SetValue(j, vox, i);
-		}
-	}
+	gOctree = new Octree<VoxelData>(_size);
+	gOctreeMeshRenderer = new Octree<MeshRenderer*>(_size);
+	//if (aOctree)
+	//{
+	//	delete aOctree;
+	//}
+	//aOctree = new ArrayedOctree<VoxelData>(_size);
+	//for (int i = 0; i < aOctree->depth+1; i++)
+	//{
+	//	VoxelData vox;
+	//	vox.isoValue = -1 * aOctree->GetUnitSize(i);
+	//	for (int j = 0; j < aOctree->GetLength(i); j++)
+	//	{
+	//		aOctree->SetValue(j, vox, i);
+	//	}
+	//}
 }
 
 void VoxelComponent::SetOctreeDepth(int _targetDepth)

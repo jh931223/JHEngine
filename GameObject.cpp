@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "GameObject.h"
+#include "HierachyClass.h"
 
 GameObject::GameObject()
 {
@@ -36,6 +37,7 @@ void GameObject::Initialize()
 	for (auto i : childObjects)
 		delete i;
 	childObjects.clear();
+	HierachyClass::GetInstance()->AddGameObject(this);
 }
 
 bool GameObject::AddChild(GameObject* _childObject, int _index)
@@ -80,6 +82,11 @@ bool GameObject::AddComponent(Component* _newComponent)
 	components.push_back(_newComponent);
 	_newComponent->gameObject = this;
 	return true;
+}
+
+void GameObject::Destroy(GameObject * _gameObject)
+{
+	HierachyClass::GetInstance()->DestroyGameObject(_gameObject);
 }
 
 void GameObject::Update()
