@@ -9,6 +9,7 @@ public:
 	std::vector<GameObject*> childObjects;
 	std::string name;
 	CTransform* transform;
+private:
 public:
 	GameObject();
 	GameObject(const std::string& _name);

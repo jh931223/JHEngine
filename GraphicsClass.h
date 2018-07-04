@@ -1,5 +1,6 @@
 #pragma once
-#include<list>
+#include<vector>
+#include<mutex>
 /////////////
 // GLOBALS //
 /////////////
@@ -32,6 +33,14 @@ public:
 	void Shutdown();
 	bool Frame();
 	D3DClass* GetD3D();
+
+	void PushRenderer(MeshRenderer* renderer);
+	void PushLights(LightComponent* renderer);
+	void PushCameras(CameraComponent* renderer);
+	void RemoveRenderer(MeshRenderer* renderer);
+	void RemoveLights(LightComponent* renderer);
+	void RemoveCameras(CameraComponent* renderer);
+	CameraComponent* GetMainCamera();
 private:
 	bool Render();
 	bool RenderScene(CameraComponent* camera,Material* customMaterial);
@@ -39,13 +48,12 @@ private:
 	bool RenderToTexture(CameraComponent* camera);
 	bool RenderToDepthTexture(CameraComponent* camera);
 
-public:
-
-	std::list<MeshRenderer*> meshRenderers;
-	std::list<LightComponent*> lights;
-	std::list<CameraComponent*> cameras;
 private:
+	std::mutex renderMutex;
 	D3DClass* m_Direct3D = nullptr;
 	ViewPointClass* m_ViewPoint = nullptr;
 	BitmapClass* m_Bitmap = nullptr;
+	std::vector<MeshRenderer*> meshRenderers;
+	std::vector<LightComponent*> lights;
+	std::vector<CameraComponent*> cameras;
 };

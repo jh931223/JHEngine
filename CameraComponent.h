@@ -19,4 +19,5 @@ public:
 	float m_aspectRatio = 0;
 	float m_nearPlane = 0;
 	float m_farPlane = 0;
+	int depth=0;
 };

@@ -15,46 +15,48 @@
 #include <string>
 using namespace std;
 
-HierachyClass::HierachyClass()
+HierarchyClass::HierarchyClass()
 {
 }
 
 
-HierachyClass::~HierachyClass()
+HierarchyClass::~HierarchyClass()
 {
 	for (auto i : gameObjects)
 		DestroyGameObject(i);
 }
 
-void HierachyClass::AddGameObject(GameObject * _gameObject)
+void HierarchyClass::AddGameObject(GameObject * _gameObject)
 {
 	gameObjects.push_back(_gameObject);
 	newGameObjects.push_back(_gameObject);
 }
 
-void HierachyClass::DestroyGameObject(GameObject * _gameObject)
+void HierarchyClass::DestroyGameObject(GameObject * _gameObject)
 {
-	std::vector<GameObject*>::iterator iter;
-	for (iter=gameObjects.begin();iter!=gameObjects.end();iter++)
+	int j=0;
+	for (auto i:gameObjects)
 	{
-		if (*iter == _gameObject)
+		if (i == _gameObject)
 		{
-			gameObjects.erase(iter);
 			break;
 		}
+		j++;
 	}
-	for (iter = newGameObjects.begin(); iter != newGameObjects.end(); iter++)
+	delete _gameObject;
+	gameObjects.erase(gameObjects.begin()+j);
+	/*for (iter = newGameObjects.begin(); iter != newGameObjects.end(); iter++)
 	{
 		if (*iter == _gameObject)
 		{
 			newGameObjects.erase(iter);
 			break;
 		}
-	}
+	}*/
 }
 
 
-void HierachyClass::Setup()
+void HierarchyClass::Setup()
 {
 	GameObject* gobj;
 	MeshRenderer* renderer;
@@ -115,28 +117,34 @@ void HierachyClass::Setup()
 	
 }
 
-void HierachyClass::Start()
+void HierarchyClass::Start()
 {
 	for (auto iterObj : newGameObjects)
-		iterObj->OnStart();
+	{
+		if(iterObj)
+			iterObj->OnStart();
+	}
 	newGameObjects.clear();
 }
 
-void HierachyClass::Update()
+void HierarchyClass::Update()
 {
-	if (newGameObjects.size())
+	vector<GameObject*> gObjects = gameObjects;
+	vector<GameObject*> newGObjects = newGameObjects;
+	newGameObjects.clear();
+	if (newGObjects.size())
 	{
-		for (auto i : newGameObjects)
+		for (auto i : newGObjects)
 		{
 			i->OnStart();
 		}
-		newGameObjects.clear();
+		newGObjects.clear();
 	}
-	for (auto i : gameObjects)
+	for (auto i : gObjects)
 	{
 		i->Update();
 	}
-	for (auto i : gameObjects)
+	for (auto i : gObjects)
 	{
 		i->LateUpdate();
 	}

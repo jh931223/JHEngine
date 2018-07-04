@@ -5,14 +5,14 @@
 
 LightComponent::LightComponent()
 {
-	SystemClass::GetInstance()->GetGraphics()->lights.push_back(this);
+	SystemClass::GetInstance()->GetGraphics()->PushLights(this);
 }
 
 
 
 LightComponent::~LightComponent()
 {
-	SystemClass::GetInstance()->GetGraphics()->lights.remove(this);
+	SystemClass::GetInstance()->GetGraphics()->RemoveLights(this);
 }
 
 
@@ -87,8 +87,7 @@ void LightComponent::GetProjectionMatrix(XMMATRIX& projectionMatrix)
 
 LightComponent * LightComponent::mainLight()
 {
-	return
-		SystemClass::GetInstance()->GetGraphics()->lights.front();
+	return NULL;
 }
 
 void LightComponent::SetPosition(float x, float y, float z)

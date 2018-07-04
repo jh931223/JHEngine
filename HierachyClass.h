@@ -3,14 +3,14 @@
 #include<string>
 #include"Singleton.h"
 class GameObject;
-class HierachyClass : public Singleton<HierachyClass>
+class HierarchyClass : public Singleton<HierarchyClass>
 {
 	std::vector<GameObject*> gameObjects;
 	std::vector<GameObject*> newGameObjects;
 
 public:
-	HierachyClass();
-	virtual ~HierachyClass();
+	HierarchyClass();
+	virtual ~HierarchyClass();
 	void AddGameObject(GameObject* _gameObject);
 	void DestroyGameObject(GameObject* _gameObject);
 	template<class T> GameObject* FindGameObjectWithComponent()
@@ -36,4 +36,4 @@ public:
 	void Start();
 };
 
-inline HierachyClass* Hierachy() { return HierachyClass::GetInstance(); }
+inline HierarchyClass* Hierarchy() { return HierarchyClass::GetInstance(); }

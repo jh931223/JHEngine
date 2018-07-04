@@ -31,13 +31,14 @@ GameObject::~GameObject()
 void GameObject::Initialize()
 {
 	transform = new CTransform(this);
+
 	for (auto i : components)
 		delete i;
 	components.clear();
 	for (auto i : childObjects)
 		delete i;
 	childObjects.clear();
-	HierachyClass::GetInstance()->AddGameObject(this);
+	HierarchyClass::GetInstance()->AddGameObject(this);
 }
 
 bool GameObject::AddChild(GameObject* _childObject, int _index)
@@ -86,21 +87,28 @@ bool GameObject::AddComponent(Component* _newComponent)
 
 void GameObject::Destroy(GameObject * _gameObject)
 {
-	HierachyClass::GetInstance()->DestroyGameObject(_gameObject);
+	HierarchyClass::GetInstance()->DestroyGameObject(_gameObject);
 }
 
 void GameObject::Update()
 {
-	for (auto i : components)
-		i->Update();
+	if (components.size())
+	{
+		for (auto i : components)
+		{
+			i->Update();
+		}
+	}
 	//for (auto i : childObjects)
 	//	i->Update();
 }
 
 void GameObject::LateUpdate()
 {
-	for (auto i : components)
-		i->LateUpdate();
-
+	if (components.size())
+	{
+		for (auto i : components)
+			i->LateUpdate();
+	}
 }
 

@@ -54,7 +54,7 @@ bool SystemClass::Initialize()
 	m_Resources->Initialize(m_hwnd);
 
 
-	m_Hierachy = HierachyClass::GetInstance();
+	m_Hierachy = HierarchyClass::GetInstance();
 	if (!m_Hierachy)
 		return false;
 	m_Hierachy->Setup();

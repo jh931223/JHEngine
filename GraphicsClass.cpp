@@ -12,6 +12,7 @@
 #include "ResourcesClass.h"
 #include "RenderTextureClass.h"
 #include"Transform.h"
+#include "HierachyClass.h"
 GraphicsClass::GraphicsClass()
 {
 }
@@ -122,6 +123,48 @@ D3DClass * GraphicsClass::GetD3D()
 {
 	return m_Direct3D;
 }
+void GraphicsClass::PushRenderer(MeshRenderer * renderer)
+{
+	meshRenderers.push_back(renderer);
+}
+void GraphicsClass::PushLights(LightComponent * light)
+{
+	lights.push_back(light);
+}
+void GraphicsClass::PushCameras(CameraComponent * cam)
+{
+	cameras.push_back(cam);
+}
+void GraphicsClass::RemoveRenderer(MeshRenderer * renderer)
+{
+	for(int i=0;i<meshRenderers.size();i++)
+		if(meshRenderers[i]==renderer)
+			meshRenderers.erase(meshRenderers.begin()+i);
+}
+void GraphicsClass::RemoveLights(LightComponent * light)
+{
+	for (int i = 0; i<lights.size(); i++)
+		if (lights[i] == light)
+			lights.erase(lights.begin() + i);
+}
+void GraphicsClass::RemoveCameras(CameraComponent * cam)
+{
+	for (int i = 0; i<cameras.size(); i++)
+		if (cameras[i] == cam)
+			cameras.erase(cameras.begin() + i);
+}
+CameraComponent * GraphicsClass::GetMainCamera()
+{
+	CameraComponent* top=NULL;
+	for (auto i : cameras)
+	{
+		if (top == NULL || i->depth > top->depth)
+		{
+			top = i;
+		}
+	}
+	return top;
+}
 bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMaterial = nullptr)
 {
 	if (m_Camera != 0)
@@ -137,9 +180,11 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 	{
 		m_Direct3D->GetWorldMatrix(worldMatrix);
 		GameObject* gameObject = i->gameObject;
-
-		//  yaw, pitch, roll 값을 통해 회전 행렬을 만듭니다.
-		i->Render(m_Direct3D->GetDeviceContext(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix);
+		if (gameObject)
+		{
+			//  yaw, pitch, roll 값을 통해 회전 행렬을 만듭니다.
+			i->Render(m_Direct3D->GetDeviceContext(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix);
+		}
 		//i->GetMesh()->Render(m_Direct3D->GetDeviceContext());
 		//if (lights.size() == 0)
 		//{
@@ -236,18 +281,7 @@ bool GraphicsClass::RenderToDepthTexture(CameraComponent * camera)
 bool GraphicsClass::Render()
 {
 
-	CameraComponent* m_Camera = 0;
-	if (cameras.size() > 0)
-	{
-		for (const auto i : cameras)
-		{
-			if (i->enabled)
-			{
-				m_Camera = i;
-				break;
-			}
-		}
-	}
+	CameraComponent* m_Camera = GetMainCamera();
 	LightComponent* m_Light = 0;
 	if (lights.size() > 0)
 	{

@@ -6,13 +6,13 @@
 #include "MaterialClass.h"
 MeshRenderer::MeshRenderer()
 {
-	SystemClass::GetInstance()->GetGraphics()->meshRenderers.push_back(this);
+	SystemClass::GetInstance()->GetGraphics()->PushRenderer(this);
 }
 
 
 MeshRenderer::~MeshRenderer()
 {
-	SystemClass::GetInstance()->GetGraphics()->meshRenderers.remove(this);
+	SystemClass::GetInstance()->GetGraphics()->RemoveRenderer(this);
 }
 
 TextureClass * MeshRenderer::GetTexture()

@@ -2,7 +2,7 @@
 #include"Singleton.h"
 class InputClass;
 class GraphicsClass;
-class HierachyClass;
+class HierarchyClass;
 class ResourcesClass;
 class SystemClass : public Singleton<SystemClass>
 {
@@ -33,7 +33,7 @@ private:
 
 	InputClass* m_Input = nullptr;
 	GraphicsClass* m_Graphics = nullptr;
-	HierachyClass* m_Hierachy = nullptr;
+	HierarchyClass* m_Hierachy = nullptr;
 	ResourcesClass* m_Resources = nullptr;
 	int screenWidth = 0;
 	int screenHeight = 0;
