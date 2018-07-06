@@ -174,10 +174,14 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 	m_Direct3D->GetWorldMatrix(worldMatrix);
 	m_Camera->GetViewMatrix(viewMatrix);
 	m_Camera->GetProjectionMatrix(projectionMatrix);
-
+	std::vector<MeshRenderer*> renderers = meshRenderers;
 	// 메쉬를 그립니다.
-	for (const auto i : meshRenderers)
+	for (const auto i : renderers)
 	{
+		if (!i)
+		{
+			continue;
+		}
 		m_Direct3D->GetWorldMatrix(worldMatrix);
 		GameObject* gameObject = i->gameObject;
 		if (gameObject)

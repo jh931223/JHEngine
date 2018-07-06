@@ -24,30 +24,6 @@ bool DepthShaderClass::Initialize(ID3D11Device* device, HWND hwnd)
 	return InitializeShader(device, hwnd, L"hlsl/depth_vs.hlsl", L"hlsl/depth_ps.hlsl");
 }
 
-
-void DepthShaderClass::Shutdown()
-{
-	// 버텍스 및 픽셀 쉐이더와 관련된 객체를 종료합니다.
-	ShutdownShader();
-}
-
-
-bool DepthShaderClass::Render(ID3D11DeviceContext* deviceContext, int indexCount,
-	XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM& params)
-{
-	// 렌더링에 사용할 셰이더 매개 변수를 설정합니다.
-	if (!DrawCall(deviceContext, worldMatrix, viewMatrix, projectionMatrix,params))
-	{
-		return false;
-	}
-
-	// 설정된 버퍼를 셰이더로 렌더링한다.
-	RenderShader(deviceContext, indexCount);
-
-	return true;
-}
-
-
 bool DepthShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename, const WCHAR* gsFileName)
 {
 	ID3D10Blob* errorMessage = nullptr;
@@ -141,35 +117,8 @@ bool DepthShaderClass::InitializeShader(ID3D11Device* device, HWND hwnd, const W
 }
 
 
-void DepthShaderClass::ShutdownShader()
+void DepthShaderClass::ShutdownShaderCustomBuffer()
 {
-	// 행렬 상수 버퍼를 해제합니다.
-	if (m_matrixBuffer)
-	{
-		m_matrixBuffer->Release();
-		m_matrixBuffer = 0;
-	}
-
-	// 레이아웃을 해제합니다.
-	if (m_layout)
-	{
-		m_layout->Release();
-		m_layout = 0;
-	}
-
-	// 픽셀 쉐이더를 해제합니다.
-	if (m_pixelShader)
-	{
-		m_pixelShader->Release();
-		m_pixelShader = 0;
-	}
-
-	// 버텍스 쉐이더를 해제합니다.
-	if (m_vertexShader)
-	{
-		m_vertexShader->Release();
-		m_vertexShader = 0;
-	}
 }
 
 

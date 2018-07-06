@@ -112,10 +112,11 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -170,6 +171,7 @@
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DepthShaderClass.h" />
     <ClInclude Include="DxDefine.h" />
+    <ClInclude Include="TriplanarShaderClass.h" />
     <ClInclude Include="VoxelComponent.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GraphicsClass.h" />
@@ -211,6 +213,7 @@
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="DepthShaderClass.cpp" />
+    <ClCompile Include="TriplanarShaderClass.cpp" />
     <ClCompile Include="VoxelComponent.cpp" />
     <ClCompile Include="InputComponent.cpp" />
     <ClCompile Include="JHEngine.cpp" />
@@ -285,6 +288,11 @@
     <FxCompile Include="hlsl\texture_vs.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="hlsl\triplanar.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">main</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

@@ -55,7 +55,7 @@ void VoxelComponent::SetMeshToRenderer(Mesh* newMesh, OctreeNode<MeshRenderer*>*
 		{
 			GameObject* gobj = new GameObject("voxel partition");
 			MeshRenderer* newRenderer = new MeshRenderer;
-			newRenderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_texture"));
+			newRenderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_triplanar"));
 			gobj->AddComponent(newRenderer);
 			rendererNode->SetValue(newRenderer);
 		}
@@ -80,15 +80,7 @@ void VoxelComponent::SetMeshToRenderer(Mesh* newMesh, OctreeNode<MeshRenderer*>*
 }
 void VoxelComponent::Update()
 {
-	if (vertBuildState == VERT_BUILD_FINISHED)
-	{
-		for (auto i : asyncBuildResult)
-		{
-			SetMeshToRenderer(i.newMesh, i.rendererNode);
-		}
-		asyncBuildResult.clear();
-		vertBuildState = VERT_BUILD_NONE;
-	}
+	AsyncBuildCheck();
 	CheckLOD();
 	if (Input()->GetKey(DIK_UP))
 	{
@@ -148,8 +140,17 @@ void VoxelComponent::Update()
 							{
 								vox.material = 0;
 							}
-							if(SetChunk((int)x, (int)y, (int)z, vox))
+							if (SetChunk((int)x, (int)y, (int)z, vox, true))
+							{
 								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y, z), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x - 1, y, z), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y - 1, z), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y, z - 1), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x - 1, y - 1, z), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x - 1, y, z - 1), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y - 1, z - 1), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x - 1, y - 1, z - 1), partitionSize));
+							}
 							//isUpdated = true;
 						}
 					}
@@ -183,8 +184,17 @@ void VoxelComponent::Update()
 							{
 								vox.material = 1;
 							}
-							if(SetChunk((int)x, (int)y, (int)z, vox))
+							if (SetChunk((int)x, (int)y, (int)z, vox, true))
+							{
 								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y, z), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x-1, y, z), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y-1, z), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y, z-1), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x-1, y-1, z), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x-1, y, z-1), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y-1, z-1), partitionSize));
+								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x-1, y-1,z-1), partitionSize));
+							}
 							//isUpdated = true;
 						}
 					}
@@ -195,20 +205,20 @@ void VoxelComponent::Update()
 		}
 		if (uSet.size() && vertBuildState == VERT_BUILD_NONE)
 		{
-			for (auto i : uSet)
-				UpdatePartialMesh(i->GetPosition());
-			uSet.clear();
-			//if (!useMultiThread)
-			//{
-			//	for (auto i : uSet)
-			//		UpdatePartialMesh(i->GetPosition());
-			//	uSet.clear();
-			//}
-			//else
-			//{
-			//	printf("%d 개 업데이트\n", uSet.size());
-			//	UpdatePartialMeshAsync(this, 0);
-			//}
+			//for (auto i : uSet)
+			//	UpdatePartialMesh(i->GetPosition());
+			//uSet.clear();
+			if (!useAsyncBuild)
+			{
+				for (auto i : uSet)
+					UpdatePartialMesh(i->GetPosition());
+				uSet.clear();
+			}
+			else
+			{
+				printf("%d 개 업데이트\n", uSet.size());
+				UpdatePartialMeshAsync(this, 0);
+			}
 		}
 	}
 }
@@ -238,7 +248,7 @@ void VoxelComponent::Initialize()
 	useOctree = true;
 	useGPGPU = false;
 	useGeometry = false;
-	useMultiThread = false;
+	useAsyncBuild = true;
 	//useFrustum = true;
 
 	partitionSize = 16;
@@ -256,11 +266,11 @@ void VoxelComponent::Initialize()
 		renderer->SetMaterial(material);
 	}
 	else
-		renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_texture"));
+		renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_triplanar"));
 
 
 	//LoadCube(32, 32, 32);
-	LoadPerlin(32, 32, 32, 64, 0.3);
+	LoadPerlin(256, 256, 256, 128, 0.3);
 	//int h = ReadTXT("/data/height.txt");
 
 
@@ -270,7 +280,7 @@ void VoxelComponent::Initialize()
 	//LoadHeightMapFromRaw(1025, 512, 1025, "data/heightmap.r16");// , 0, 0, 255, 255);
 	if (useOctree && !gOctree)
 		BuildOctree(width, lastBasePosition);
-	if (!useMultiThread)
+	if (!useAsyncBuild)
 	{
 		if (useOctree)
 			currentOctreeDepth = 0;
@@ -526,7 +536,7 @@ void VoxelComponent::CreateFaceMarchingCube(float x, float y, float z, int _unit
 	short material = 0;
 	if (useOctree)
 	{
-		VoxelData pData = gOctree->GetNodeAtPosition(p3,0)->GetValue();
+		VoxelData pData = gOctree->GetNodeAtPosition(p3, 0)->GetValue();
 		value0 = pData.isoValue;
 		value1 = gOctree->GetNodeAtPosition(px3, 0)->GetValue().isoValue;
 		value2 = gOctree->GetNodeAtPosition(py3, 0)->GetValue().isoValue;
@@ -760,7 +770,7 @@ void VoxelComponent::GenerateMarchingCubeFaces_GS(std::vector<VertexBuffer>& ver
 {
 	ULONG time = GetTickCount();
 	int length = width;
-	if (isNew&&!useMultiThread)
+	if (isNew&&!useAsyncBuild)
 	{
 		BuildVertexBufferGS(currentOctreeDepth,vertices);
 	}
@@ -817,10 +827,8 @@ void VoxelComponent::GenerateMarchingCubeFaces_Octree(XMFLOAT3 pos, bool isAsync
 	node->GetLeafs(leafs);
 	for (auto i : leafs)
 	{
-		int x = i->GetCenerPosition().x;
-		int y = i->GetCenerPosition().y;
-		int z = i->GetCenerPosition().z;
-		CreateFaceMarchingCube(x, y, z, unit, vertices, indices);
+		XMFLOAT3 cPos = i->GetCenerPosition();
+		CreateFaceMarchingCube(cPos.x, cPos.y, cPos.z, unit, vertices, indices);
 	}
 	printf("Marching Cube Create Buffer ( CPU ): %d ms\n", GetTickCount() - time);
 	CreatePartialMesh(pos, node, vertices, indices,isAsync);
@@ -869,7 +877,7 @@ void VoxelComponent::GenerateVoxelFaces(std::vector<VertexBuffer>& vertices, std
 	}
 }
 
-void VoxelComponent::GenerateOctreeFaces(XMFLOAT3 pos)
+void VoxelComponent::GenerateOctreeFaces(XMFLOAT3 pos, bool isAsync)
 {
 	int faceCount = 0;
 	short myBlock=0;
@@ -914,7 +922,7 @@ void VoxelComponent::GenerateOctreeFaces(XMFLOAT3 pos)
 		}
 	}
 
-	CreatePartialMesh(pos, node, vertices, indices);
+	CreatePartialMesh(pos, node, vertices, indices,isAsync);
 	/*
 	//AOctree
 	VoxelData* nodes;
@@ -1017,7 +1025,7 @@ VoxelData VoxelComponent::GetChunk(int x, int y, int z, OctreeNode<VoxelData>* _
 
 
 
-OctreeNode<VoxelData>* VoxelComponent::SetChunk(int x, int y, int z, VoxelData value)
+OctreeNode<VoxelData>* VoxelComponent::SetChunk(int x, int y, int z, VoxelData value,bool isDeforming)
 {
 	if (x >= width || y >= height || z >= depth)
 		return NULL;
@@ -1031,6 +1039,16 @@ OctreeNode<VoxelData>* VoxelComponent::SetChunk(int x, int y, int z, VoxelData v
 		lastVox = vox;
 		OctreeNode<VoxelData>* node = gOctree->root->Subdivide(pos,0,true);
 		node->SetValue(vox);
+		if (isDeforming)
+		{
+			gOctree->root->Subdivide(pos + XMFLOAT3(-1, 0, 0), 0, true);
+			gOctree->root->Subdivide(pos + XMFLOAT3(-1, -1, 0), 0, true);
+			gOctree->root->Subdivide(pos + XMFLOAT3(-1, 0, -1), 0, true);
+			gOctree->root->Subdivide(pos + XMFLOAT3(-1, -1, -1), 0, true);
+			gOctree->root->Subdivide(pos + XMFLOAT3(0, -1, 0), 0, true);
+			gOctree->root->Subdivide(pos + XMFLOAT3(0, -1, -1), 0, true);
+			gOctree->root->Subdivide(pos + XMFLOAT3(0, 0, -1), 0, true);
+		}
 		return node;
 	}
 	////AOctree
@@ -1100,15 +1118,17 @@ void VoxelComponent::CreatePartialMesh(XMFLOAT3 pos, OctreeNode<VoxelData>* node
 		newMesh->SetVertices(&vertices[0], vertices.size());
 		if (indices.size())
 			newMesh->SetIndices(&indices[0], indices.size());
-		if (!useGeometry)
+		if (!useGeometry&&!useMarchingCube)
 			newMesh->RecalculateNormals();
 		newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
 		if (isAsync)
 		{
+			T_mutex.lock();
 			ASYNC_BUILD_BUFFER buffer;
 			buffer.newMesh = newMesh;
 			buffer.rendererNode = rendererNode;
 			asyncBuildResult.push_back(buffer);
+			T_mutex.unlock();
 		}
 		else
 			SetMeshToRenderer(newMesh, rendererNode);
@@ -1119,10 +1139,12 @@ void VoxelComponent::CreatePartialMesh(XMFLOAT3 pos, OctreeNode<VoxelData>* node
 		{
 			if (isAsync)
 			{
+				T_mutex.lock();
 				ASYNC_BUILD_BUFFER buffer;
 				buffer.newMesh = NULL;
 				buffer.rendererNode = rendererNode;
 				asyncBuildResult.push_back(buffer);
+				T_mutex.unlock();
 			}
 			else
 				SetMeshToRenderer(newMesh, rendererNode);
@@ -1132,7 +1154,7 @@ void VoxelComponent::CreatePartialMesh(XMFLOAT3 pos, OctreeNode<VoxelData>* node
 }
 
 
-void VoxelComponent::UpdatePartialMesh(XMFLOAT3 pos, bool isAsync)
+void VoxelComponent::UpdatePartialMesh(XMFLOAT3 pos)
 {
 	if (useOctree)
 	{
@@ -1140,11 +1162,11 @@ void VoxelComponent::UpdatePartialMesh(XMFLOAT3 pos, bool isAsync)
 		if (!useMarchingCube)
 		{
 			//pos = gOctree->GetNodeAtPosition(pos, 0)->GetPosition();
-			GenerateOctreeFaces(pos);
+			GenerateOctreeFaces(pos,VERT_BUILD_NONE!=vertBuildState);
 		}
 		else
 		{
-			GenerateMarchingCubeFaces_Octree(pos, isAsync);
+			GenerateMarchingCubeFaces_Octree(pos, VERT_BUILD_NONE != vertBuildState);
 		}
 		printf("Update Mesh : %dms\n", GetTickCount64() - tick);
 	}
@@ -1161,7 +1183,7 @@ void VoxelComponent::UpdateVoxelMesh()
 		for(int i=0;i<width;i+=partitionSize)
 			for (int j = 0; j<height; j += partitionSize)
 				for (int k = 0; k<depth; k += partitionSize)
-					GenerateOctreeFaces(XMFLOAT3(i,j,k));
+					GenerateOctreeFaces(XMFLOAT3(i,j,k), VERT_BUILD_NONE != vertBuildState);
 		return;
 	}
 
@@ -1197,7 +1219,7 @@ void VoxelComponent::UpdateMarchingCubeMesh(bool isNew)
 			for (int i = 0; i<width; i += partitionSize)
 				for (int j = 0; j<height; j += partitionSize)
 					for (int k = 0; k<depth; k += partitionSize)
-						GenerateMarchingCubeFaces_Octree(XMFLOAT3(i, j, k));
+						GenerateMarchingCubeFaces_Octree(XMFLOAT3(i, j, k), VERT_BUILD_NONE!=vertBuildState);
 			return;
 		}
 		else if(useGeometry)
@@ -1209,7 +1231,7 @@ void VoxelComponent::UpdateMarchingCubeMesh(bool isNew)
 		return;
 	if (!useGeometry || isNew )
 	{
-		if (useMultiThread&&vertBuildState!= VERT_BUILD_FINISHED)
+		if (useAsyncBuild&&vertBuildState!= VERT_BUILD_FINISHED)
 		{
 			return;
 		}
@@ -1486,17 +1508,17 @@ void VoxelComponent::UpdatePartialMeshAsync(VoxelComponent * voxel, int targetDe
 		VertAsyncBuffer* buffer = new VertAsyncBuffer;
 		buffer->voxel = voxel;
 		buffer->targetDepth = targetDepth;
-		voxel->T_BuildThread = (HANDLE)_beginthreadex(NULL, 0, (_beginthreadex_proc_type)CallGeneratePartialFunction, buffer, 0, NULL);
+		voxel->T_BuildThread = (HANDLE)_beginthreadex(NULL, 0, (_beginthreadex_proc_type)CallGenerateAsyncFunction, buffer, 0, NULL);
 	}
 }
 
-void VoxelComponent::CallGeneratePartialFunction(LPVOID _buffer)
+void VoxelComponent::CallGenerateAsyncFunction(LPVOID _buffer)
 {
-	printf("CallGeneratePartialFunction\n");
+	printf("CallGenerateAsyncFunction\n");
 	VertAsyncBuffer* buffer = (VertAsyncBuffer*)_buffer;
 	std::vector<VertexBuffer> vertices;
 	for(auto i: buffer->voxel->uSet)
-		buffer->voxel->UpdatePartialMesh(i->GetPosition(),true);
+		buffer->voxel->UpdatePartialMesh(i->GetPosition());
 	buffer->voxel->uSet.clear();
 	//buffer->voxel->BuildVertexBufferGS(buffer->targetDepth,vertices);
 	buffer->voxel->SetOctreeDepth(buffer->targetDepth);
@@ -1738,6 +1760,24 @@ void VoxelComponent::SetLODLevel(int level, float distance)
 	if (level < 0 || level >= 8)
 		return;
 	LODDistance[level] = distance;
+}
+
+void VoxelComponent::AsyncBuildCheck()
+{
+	T_mutex.lock();
+	if (asyncBuildResult.size())
+	{
+		for (auto i : asyncBuildResult)
+		{
+			SetMeshToRenderer(i.newMesh, i.rendererNode);
+		}
+		asyncBuildResult.clear();
+	}
+	T_mutex.unlock();
+	if (vertBuildState == VERT_BUILD_FINISHED)
+	{
+		vertBuildState = VERT_BUILD_NONE;
+	}
 }
 
 int VoxelComponent::ReadTXT(const char * filename)

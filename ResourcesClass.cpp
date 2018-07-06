@@ -14,6 +14,7 @@
 #include "RenderTextureClass.h"
 #include "DepthShaderClass.h"
 #include "MarchingCubeShaderClass.h"
+#include "TriplanarShaderClass.h"
 
 #include <map>
 #include <string>
@@ -68,7 +69,10 @@ ResourcesClass * ResourcesClass::GetInstance()
 
 Material * ResourcesClass::FindMaterial(string _name)
 {
-	return materialMap[_name];
+	Material * m = materialMap[_name];
+	if (!m)
+		printf("Failed to find %s\n", _name.c_str());
+	return m;
 }
 
 Mesh * ResourcesClass::FindMesh(string _name)
@@ -82,7 +86,12 @@ TextureClass * ResourcesClass::FindTexture(string _name)
 }
 ShaderClass * ResourcesClass::FindShader(string _name)
 {
-	return shaderMap[_name];
+	ShaderClass * s = shaderMap[_name];
+	if (s == NULL)
+	{
+		printf("Failed to find %s shader\n", _name.c_str());
+	}
+	return s;
 }
 
 RenderTextureClass * ResourcesClass::FindRenderTexture(std::string _name)
@@ -109,6 +118,10 @@ void ResourcesClass::InitializeShader(HWND hwnd)
 	result = new MarchingCubeShaderClass;
 	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
 	shaderMap["MarchingCubeShader"] = result;
+
+	result = new TriplanarShaderClass;
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
+	shaderMap["TriplanarShader"] = result;
 }
 
 void ResourcesClass::InitializeRenderTexture(HWND hwnd)
@@ -161,11 +174,19 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	result->GetParams()->SetTexture("Texture1", FindTexture("soil"));
 	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
 	result->GetParams()->SetTexture("Texture3", FindTexture("soil"));
-	materialMap["m_marchingCube"] = result;	result = new Material;
-
+	materialMap["m_marchingCube"] = result;	
+	
+	result = new Material;
 	result->SetShader(new TextureShaderClass, hwnd);
 	result->GetParams()->SetTexture("Texture", FindTexture("tile"));
 	materialMap["m_texture"] = result;
+
+	result = new Material;
+	result->SetShader(FindShader("TriplanarShader"), hwnd);
+	result->GetParams()->SetTexture("Texture1", FindTexture("soil"));
+	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
+	result->GetParams()->SetTexture("Texture3", FindTexture("soil"));
+	materialMap["m_triplanar"] = result;
 }
 
 

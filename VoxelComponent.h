@@ -52,27 +52,25 @@ public:
 	void GenerateMarchingCubeFaces_Octree(XMFLOAT3 pos,bool isAsync=false);
 
 	void GenerateVoxelFaces(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
-	void GenerateOctreeFaces(XMFLOAT3 pos);
+	void GenerateOctreeFaces(XMFLOAT3 pos, bool isAsync = false);
 
 	void CalcNormal(VertexBuffer& v1, VertexBuffer& v2, VertexBuffer& v3);
 	void LoadHeightMapFromRaw(int,int,int,const char*, int startX = -1, int startZ = -1, int endX = -1, int endZ = -1);
 	void LoadCube(int,int,int);
 	void LoadPerlin(int _width,int _height, int _depth, int _maxHeight,float refinement);
-	OctreeNode<VoxelData>* SetChunk(int x,int y,int z, VoxelData);
+	OctreeNode<VoxelData>* SetChunk(int x,int y,int z, VoxelData,bool isDeforming=false);
 
 	void BuildOctree(int, XMFLOAT3);
 	void NewOctree(int _length);
 	void SetOctreeDepth(int _targetDepth);
 
-	void ConnectComponent(int index,VoxelComponent* component);
-	void SetTerrainManager(VoxelTerrainComponent* _mangaer);
 
 	XMFLOAT2 GetUV(BYTE);
 	VoxelData GetChunk(int x, int y, int z,OctreeNode<VoxelData>* _startNode = NULL);
 	XMFLOAT3 CovertToChunkPos(XMFLOAT3 targetpos,bool returnNan=true);
 	void UpdateMesh(bool isNew = true);
 	void CreatePartialMesh(XMFLOAT3 pos, OctreeNode<VoxelData>* node,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices,bool isAsync=false);
-	void UpdatePartialMesh(XMFLOAT3 pos,bool isAsync = false);
+	void UpdatePartialMesh(XMFLOAT3 pos);
 	void UpdateVoxelMesh();
 	void UpdateMarchingCubeMesh(bool isNew=true);
 	void BuildVertexBufferGS(int, std::vector<VertexBuffer>&);
@@ -92,7 +90,7 @@ public:
 	static void UpdateMeshAsync(VoxelComponent* voxel,int targetDepth);
 	static void CallGenerateFunction(LPVOID);
 	static void UpdatePartialMeshAsync(VoxelComponent * voxel, int targetDepth);
-	static void CallGeneratePartialFunction(LPVOID _buffer);
+	static void CallGenerateAsyncFunction(LPVOID _buffer);
 private:
 	void ReleaseChunks();
 	void ReleaseOctree();
@@ -103,6 +101,7 @@ private:
 	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height, int&, int&);
 	int GetLODLevel(XMFLOAT3 basePos, XMFLOAT3 targetPos);
 	void SetLODLevel(int level, float distance);
+	void AsyncBuildCheck();
 	XMFLOAT3 lerpSelf(XMFLOAT3 p, XMFLOAT3 target, float acc)
 	{
 		return p + (target - p)*acc;
@@ -129,7 +128,7 @@ private:
 	bool useOctree;
 	bool useGPGPU;
 	bool useGeometry;
-	bool useMultiThread;
+	bool useAsyncBuild;
 	bool useFrustum;
 	VoxelData * chunksData;
 	ArrayedOctree<VoxelData>* aOctree;

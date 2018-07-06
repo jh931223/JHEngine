@@ -152,11 +152,14 @@
     <ClInclude Include="resource.h">
       <Filter>EngineFrameworks\Source</Filter>
     </ClInclude>
+    <ClInclude Include="VoxelTerrainComponent.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
     <ClInclude Include="VoxelComponent.h">
       <Filter>Scripts</Filter>
     </ClInclude>
-    <ClInclude Include="VoxelTerrainComponent.h">
-      <Filter>Scripts</Filter>
+    <ClInclude Include="TriplanarShaderClass.h">
+      <Filter>Shaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -258,11 +261,14 @@
     <ClCompile Include="ArrayedOctree.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
+    <ClCompile Include="VoxelTerrainComponent.cpp">
+      <Filter>Scripts</Filter>
+    </ClCompile>
     <ClCompile Include="VoxelComponent.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
-    <ClCompile Include="VoxelTerrainComponent.cpp">
-      <Filter>Scripts</Filter>
+    <ClCompile Include="TriplanarShaderClass.cpp">
+      <Filter>Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -291,6 +297,9 @@
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
     <FxCompile Include="hlsl\texture_vs.hlsl">
+      <Filter>Shaders\HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="hlsl\triplanar.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
   </ItemGroup>

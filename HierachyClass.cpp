@@ -34,6 +34,7 @@ void HierarchyClass::AddGameObject(GameObject * _gameObject)
 
 void HierarchyClass::DestroyGameObject(GameObject * _gameObject)
 {
+	printf("%s »èÁ¦µÊ\n", _gameObject->name);
 	int j=0;
 	for (auto i:gameObjects)
 	{
@@ -45,6 +46,7 @@ void HierarchyClass::DestroyGameObject(GameObject * _gameObject)
 	}
 	delete _gameObject;
 	gameObjects.erase(gameObjects.begin()+j);
+
 	/*for (iter = newGameObjects.begin(); iter != newGameObjects.end(); iter++)
 	{
 		if (*iter == _gameObject)

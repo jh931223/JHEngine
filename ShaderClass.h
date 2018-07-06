@@ -2,6 +2,7 @@
 #include <map>
 #include <string>
 #include"StructuredBuffer.h"
+#include"TextureClass.h"
 class TextureClass;
 class RenderTextureClass;
 class ID3D11ShaderResourceView;
@@ -62,9 +63,22 @@ public:
 	ShaderClass(const ShaderClass&) {};
 	virtual ~ShaderClass() {};
 
-	virtual bool Initialize(ID3D11Device*, HWND) = 0;
-	virtual void Shutdown() = 0;
-	virtual bool Render(ID3D11DeviceContext*, int, XMMATRIX, XMMATRIX, XMMATRIX, PARAM& params) = 0;
+	virtual bool Initialize(ID3D11Device* device, HWND hwnd) = 0;
+	void Shutdown()
+	{
+		ShutdownShader();
+	}
+	bool Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix,
+		XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM& params)
+	{
+		// 렌더링에 사용할 셰이더 매개 변수를 설정합니다.
+		if (!DrawCall(deviceContext, worldMatrix, viewMatrix, projectionMatrix, params))
+		{
+			return false;
+		}
+		// 설정된 버퍼를 셰이더로 렌더링한다.
+		RenderShader(deviceContext, indexCount);
+	}
 	void OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND hwnd, const WCHAR* shaderFilename)
 	{
 		// 에러 메시지를 출력창에 표시합니다.
@@ -79,9 +93,43 @@ public:
 	}
 protected:
 	virtual bool InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename, const WCHAR* gsFileName=NULL) = 0;
-	virtual void ShutdownShader() = 0;
-	virtual bool DrawCall(ID3D11DeviceContext*, XMMATRIX, XMMATRIX, XMMATRIX, PARAM& params) = 0;
-	virtual void RenderShader(ID3D11DeviceContext*, int)=0;
+	virtual void ShutdownShaderCustomBuffer() = 0;
+	void ShutdownShader() 
+	{ 
+		// 레이아웃을 해제합니다.
+		if (m_layout)
+		{
+			m_layout->Release();
+			m_layout = 0;
+		}
+		// 픽셀 쉐이더를 해제합니다.
+		if (m_pixelShader)
+		{
+			m_pixelShader->Release();
+			m_pixelShader = 0;
+		}
+		// 버텍스 쉐이더를 해제합니다.
+		if (m_vertexShader)
+		{
+			m_vertexShader->Release();
+			m_vertexShader = 0;
+		}
+		// 지오메트리 쉐이더를 해제합니다.
+		if (m_geometryShader)
+		{
+			m_geometryShader->Release();
+			m_geometryShader = 0;
+		}
+		if (m_sampleState)
+		{
+			m_sampleState->Release();
+			m_sampleState = 0;
+		}
+		ShutdownShaderCustomBuffer();
+	};
+	virtual bool DrawCall(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix,
+		XMMATRIX projectionMatrix, PARAM& params) = 0;
+	virtual void RenderShader(ID3D11DeviceContext* deviceContext, int indexCount) =0;
 	bool CreateVertexLayout(ID3D11Device* device, ID3D10Blob* vertexShaderBuffer, const D3D11_INPUT_ELEMENT_DESC* polygonLayout, UINT numElements)
 	{
 		HRESULT result;
@@ -101,8 +149,5 @@ protected:
 	ID3D11GeometryShader* m_geometryShader = nullptr;
 	ID3D11InputLayout* m_layout = nullptr;
 	ID3D11Buffer* m_matrixBuffer = nullptr;
-
 	ID3D11SamplerState* m_sampleState = nullptr;
-
-	// 이 설정은 ModelClass와 셰이더의 VertexType 구조와 일치해야합니다.
 };
