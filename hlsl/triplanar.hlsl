@@ -9,6 +9,7 @@ cbuffer MatrixBuffer
 struct vInput
 {
 	float4 position : POSITION;
+	float2 uv : TEXCOORD0;
 	float3 normal : NORMAL;
 };
 
@@ -16,7 +17,8 @@ struct v2f
 {
 	float4 position : SV_POSITION;
 	float3 normal : NORMAL;
-	float4 worldPos : TEXCOORD0;
+	float2 uv : TEXCOORD0;
+	float4 worldPos : TEXCOORD1;
 };
 
 Texture2D shaderTexture1;
@@ -34,12 +36,14 @@ v2f vs(vInput input)
 	output.worldPos = mul(input.position, worldMatrix);
 	output.position = mul(output.worldPos, viewMatrix);
 	output.position = mul(output.position, projectionMatrix);
-	output.normal = mul(input.normal, worldMatrix);
+	output.uv = input.uv;
+	output.normal = input.normal;
 	return output;
 }
 
 float4 ps(v2f input) : SV_TARGET
 {
+//	float4 tex = float4(input.normal,1);
 	float scale = 0.2f;
 	float sharpness = 8;
 	float3 blending = pow(abs(input.normal), sharpness);

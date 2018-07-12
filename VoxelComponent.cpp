@@ -10,6 +10,7 @@
 #include"ArrayedOctree.h"
 #include<vector>
 #include<map>
+#include<list>
 #include<time.h>
 #include"PerlinNoise.h"
 #include<amp.h>
@@ -41,14 +42,18 @@ VoxelComponent ::~VoxelComponent()
 		delete material;
 	}
 	material = 0;
-	if (T_BuildThread)
+	if (thread_AsyncUpdate)
 	{
-		CloseHandle(T_BuildThread);
+		CloseHandle(thread_AsyncUpdate);
 	}
-	T_BuildThread = 0;
+	thread_AsyncUpdate = 0;
 }
-void VoxelComponent::SetMeshToRenderer(Mesh* newMesh, OctreeNode<MeshRenderer*>* rendererNode)
+void VoxelComponent::SetMeshToRenderer(Mesh* newMesh, XMFLOAT3 pos, int depth)
 {
+
+	OctreeNode<MeshRenderer*>* rendererNode;
+	rendererNode = gOctreeMeshRenderer->root->Subdivide(pos, depth, newMesh!=NULL);
+
 	if (newMesh)
 	{
 		if (rendererNode->GetValue() == NULL)
@@ -68,19 +73,22 @@ void VoxelComponent::SetMeshToRenderer(Mesh* newMesh, OctreeNode<MeshRenderer*>*
 	}
 	else
 	{
-		if (rendererNode->GetValue()->GetMesh())
+		if (rendererNode->GetValue())
 		{
-			rendererNode->GetValue()->GetMesh()->ShutdownBuffers();
-			delete rendererNode->GetValue()->GetMesh();
-			rendererNode->GetValue()->SetMesh(NULL);
+			if (rendererNode->GetValue()->GetMesh())
+			{
+				rendererNode->GetValue()->GetMesh()->ShutdownBuffers();
+				delete rendererNode->GetValue()->GetMesh();
+				rendererNode->GetValue()->SetMesh(NULL);
+			}
+			GameObject::Destroy(rendererNode->GetValue()->gameObject);
+			rendererNode->SetValue((NULL));
 		}
-		GameObject::Destroy(rendererNode->GetValue()->gameObject);
-		rendererNode->SetValue((NULL));
 	}
 }
 void VoxelComponent::Update()
 {
-	AsyncBuildCheck();
+	AsyncResultCheck();
 	CheckLOD();
 	if (Input()->GetKey(DIK_UP))
 	{
@@ -113,114 +121,116 @@ void VoxelComponent::Update()
 			currentOctreeDepth = 1;
 		UpdateMesh(true);
 	}
-	if (vertBuildState == VERT_BUILD_NONE)
+	if (Input()->GetKey(VK_RBUTTON))
 	{
-		if (Input()->GetKey(VK_RBUTTON))
+		//threadPool.AddTask([]()->void {for (int i = 0; i < 1000;i++)printf("test %d\n",i); });
+		XMFLOAT3 pos = camera->transform->GetWorldPosition() + camera->transform->forward() * brushRadius;
+		XMFLOAT3 cpos = CovertToChunkPos(pos, false);
+		int cX = (int)cpos.x;
+		int cY = (int)cpos.y;
+		int cZ = (int)cpos.z;
+		float radius = brushRadius;
+		bool isUpdated = false;
+		for (int x = cpos.x - radius; x < cpos.x + radius; x += 1)
 		{
-			XMFLOAT3 pos = camera->transform->GetWorldPosition() + camera->transform->forward() * brushRadius;
-			XMFLOAT3 cpos = CovertToChunkPos(pos, false);
-			int cX = (int)cpos.x;
-			int cY = (int)cpos.y;
-			int cZ = (int)cpos.z;
-			float radius = brushRadius;
-			bool isUpdated = false;
-			for (int x = cpos.x - radius; x < cpos.x + radius; x += 1)
+			for (int y = cpos.y - radius; y < cpos.y + radius; y += 1)
 			{
-				for (int y = cpos.y - radius; y < cpos.y + radius; y += 1)
+				for (int z = cpos.z - radius; z < cpos.z + radius; z += 1)
 				{
-					for (int z = cpos.z - radius; z < cpos.z + radius; z += 1)
+					float dis = GetDistance(XMFLOAT3(x + 0.5f, y + 0.5f, z + 0.5f), cpos);
+					if (radius >= dis)
 					{
-						float dis = GetDistance(XMFLOAT3(x + 0.5f, y + 0.5f, z + 0.5f), cpos);
-						if (radius >= dis)
+						float amount = 1 - dis / radius;
+						VoxelData vox = GetChunk(x, y, z);
+						vox.isoValue -= strength * amount;
+						if (!useMarchingCube)
 						{
-							float amount = 1 - dis / radius;
-							VoxelData vox = GetChunk(x, y, z);
-							vox.isoValue -= strength * amount;
-							if (!useMarchingCube)
-							{
-								vox.material = 0;
-							}
-							if (SetChunk((int)x, (int)y, (int)z, vox, true))
-							{
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y, z), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x - 1, y, z), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y - 1, z), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y, z - 1), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x - 1, y - 1, z), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x - 1, y, z - 1), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y - 1, z - 1), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x - 1, y - 1, z - 1), partitionSize));
-							}
-							//isUpdated = true;
+							vox.material = 0;
 						}
+						if (SetChunk((int)x, (int)y, (int)z, vox, true))
+						{
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x, y, z), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x - 1, y, z), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x, y - 1, z), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x, y, z - 1), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x - 1, y - 1, z), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x - 1, y, z - 1), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x, y - 1, z - 1), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x - 1, y - 1, z - 1), partitionSize), true);
+						}
+						//isUpdated = true;
 					}
 				}
-			}
-			if (isUpdated)
-				UpdateMesh(false);
-		}
-		else if (Input()->GetKey(VK_LBUTTON))
-		{
-			XMFLOAT3 pos = camera->transform->GetWorldPosition() + camera->transform->forward() *brushRadius;
-			XMFLOAT3 cpos = CovertToChunkPos(pos, false);
-			int cX = (int)cpos.x;
-			int cY = (int)cpos.y;
-			int cZ = (int)cpos.z;
-			float radius = brushRadius;
-			bool isUpdated = false;
-			for (int x = cpos.x - radius; x < cpos.x + radius; x += 1)
-			{
-				for (int y = cpos.y - radius; y < cpos.y + radius; y += 1)
-				{
-					for (int z = cpos.z - radius; z < cpos.z + radius; z += 1)
-					{
-						float dis = GetDistance(XMFLOAT3(x + 0.5f, y + 0.5f, z + 0.5f), cpos);
-						if (radius >= dis)
-						{
-							float amount = 1 - dis / radius;
-							VoxelData vox = GetChunk(x, y, z);
-							vox.isoValue += strength * amount;
-							if (!useMarchingCube)
-							{
-								vox.material = 1;
-							}
-							if (SetChunk((int)x, (int)y, (int)z, vox, true))
-							{
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y, z), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x-1, y, z), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y-1, z), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y, z-1), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x-1, y-1, z), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x-1, y, z-1), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x, y-1, z-1), partitionSize));
-								uSet.insert(gOctree->GetPartialNode(XMFLOAT3(x-1, y-1,z-1), partitionSize));
-							}
-							//isUpdated = true;
-						}
-					}
-				}
-			}
-			if (isUpdated)
-				UpdateMesh(false);
-		}
-		if (uSet.size() && vertBuildState == VERT_BUILD_NONE)
-		{
-			//for (auto i : uSet)
-			//	UpdatePartialMesh(i->GetPosition());
-			//uSet.clear();
-			if (!useAsyncBuild)
-			{
-				for (auto i : uSet)
-					UpdatePartialMesh(i->GetPosition());
-				uSet.clear();
-			}
-			else
-			{
-				printf("%d 개 업데이트\n", uSet.size());
-				UpdatePartialMeshAsync(this, 0);
 			}
 		}
 	}
+	else if (Input()->GetKey(VK_LBUTTON))
+	{
+		XMFLOAT3 pos = camera->transform->GetWorldPosition() + camera->transform->forward() *brushRadius;
+		XMFLOAT3 cpos = CovertToChunkPos(pos, false);
+		int cX = (int)cpos.x;
+		int cY = (int)cpos.y;
+		int cZ = (int)cpos.z;
+		float radius = brushRadius;
+		bool isUpdated = false;
+		for (int x = cpos.x - radius; x < cpos.x + radius; x += 1)
+		{
+			for (int y = cpos.y - radius; y < cpos.y + radius; y += 1)
+			{
+				for (int z = cpos.z - radius; z < cpos.z + radius; z += 1)
+				{
+					float dis = GetDistance(XMFLOAT3(x + 0.5f, y + 0.5f, z + 0.5f), cpos);
+					if (radius >= dis)
+					{
+						float amount = 1 - dis / radius;
+						VoxelData vox = GetChunk(x, y, z);
+						vox.isoValue += strength * amount;
+						if (!useMarchingCube)
+						{
+							vox.material = 1;
+						}
+						if (SetChunk((int)x, (int)y, (int)z, vox, true))
+						{
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x, y, z), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x-1, y, z), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x, y-1, z), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x, y, z-1), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x-1, y-1, z), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x-1, y, z-1), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x, y-1, z-1), partitionSize), true);
+							PushDeformingNode(gOctree->GetPartialNode(XMFLOAT3(x-1, y-1,z-1), partitionSize), true);
+						}
+						//isUpdated = true;
+					}
+				}
+			}
+		}
+	}
+	if (updateQueue.size() && vertBuildState == VERT_BUILD_NONE)
+	{
+		//for (auto i : uSet)
+		//	UpdatePartialMesh(i->GetPosition());
+		//uSet.clear();
+		if (!useAsyncBuild)
+		{
+			for (auto i : updateQueue)
+				UpdatePartialMesh(i->GetPosition());
+			updateQueue.clear();
+		}
+		else
+		{
+			while(updateQueue.size())
+			{
+				OctreeNode<VoxelData>* _node = updateQueue.front();
+				updateQueue.pop_front();
+				std::function<ASYNC_RESULT()> _task = ([&, this, _node]() { return this->UpdatePartialMesh(_node->GetPosition()); });
+				threadPool.AddTask(_task);
+			}
+			//printf("%d 개 업데이트\n", updateQueue.size());
+			//UpdatePartialMeshAsync(this, 0);
+		}
+	}
+	threadPool.ThreadPoolUpdate();
 }
 
 void VoxelComponent::OnStart()
@@ -239,6 +249,7 @@ void VoxelComponent::Initialize()
 {
 	camera = Hierarchy()->FindGameObjectWithName("mainCamera");
 
+	threadPool.Initialize(8);
 
 	unit = 1.0f;
 	tUnit = 0.25f;
@@ -270,7 +281,7 @@ void VoxelComponent::Initialize()
 
 
 	//LoadCube(32, 32, 32);
-	LoadPerlin(256, 256, 256, 128, 0.3);
+	LoadPerlin(512, 512, 512, 64, 0.3);
 	//int h = ReadTXT("/data/height.txt");
 
 
@@ -359,6 +370,14 @@ void VoxelComponent::CreateFaceUp(float x, float y, float z, float _unit, BYTE t
 	v2.uv = XMFLOAT2(uv.x, uv.y);
 	v3.uv = XMFLOAT2(uv.x + tUnit, uv.y);
 	v4.uv = XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
+
+
+	XMFLOAT3 normal(0, 1, 0);
+	v1.normal = normal;
+	v2.normal = normal;
+	v3.normal = normal;
+	v4.normal = normal;
+
 	vertices.push_back(v1);
 	vertices.push_back(v2);
 	vertices.push_back(v3);
@@ -387,6 +406,12 @@ void VoxelComponent::CreateFaceDown(float x, float y, float z, float _unit, BYTE
 	v3.uv = XMFLOAT2(uv.x + tUnit, uv.y);
 	v4.uv = XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
 
+	XMFLOAT3 normal(0, -1, 0);
+	v1.normal = normal;
+	v2.normal = normal;
+	v3.normal = normal;
+	v4.normal = normal;
+
 	vertices.push_back(v1);
 	vertices.push_back(v2);
 	vertices.push_back(v3);
@@ -403,6 +428,12 @@ void VoxelComponent::CreateFaceRight(float x, float y, float z, float _unit, BYT
 	v3.position = XMFLOAT3(x + offset, y + offset, z - offset);
 	v4.position = XMFLOAT3(x + offset, y - offset, z - offset);
 
+	XMFLOAT3 normal(1, 0, 0);
+	v1.normal = normal;
+	v2.normal = normal;
+	v3.normal = normal;
+	v4.normal = normal;
+
 	indices.push_back(faceCount * 4);
 	indices.push_back(faceCount * 4 + 2);
 	indices.push_back(faceCount * 4 + 1);
@@ -415,6 +446,7 @@ void VoxelComponent::CreateFaceRight(float x, float y, float z, float _unit, BYT
 	v2.uv = XMFLOAT2(uv.x, uv.y);
 	v3.uv = XMFLOAT2(uv.x + tUnit, uv.y);
 	v4.uv = XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
+
 
 	vertices.push_back(v1);
 	vertices.push_back(v2);
@@ -447,10 +479,17 @@ void VoxelComponent::CreateFaceLeft(float x, float y, float z, float _unit, BYTE
 	v3.uv = XMFLOAT2(uv.x + tUnit, uv.y);
 	v4.uv = XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
 
+	XMFLOAT3 normal(-1, 0, 0);
+	v1.normal = normal;
+	v2.normal = normal;
+	v3.normal = normal;
+	v4.normal = normal;
+
 	vertices.push_back(v1);
 	vertices.push_back(v2);
 	vertices.push_back(v3);
 	vertices.push_back(v4);
+
 
 	faceCount++;
 }
@@ -476,6 +515,12 @@ void VoxelComponent::CreateFaceForward(float x, float y, float z, float _unit, B
 	v2.uv = XMFLOAT2(uv.x, uv.y);
 	v3.uv = XMFLOAT2(uv.x + tUnit, uv.y);
 	v4.uv = XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
+
+	XMFLOAT3 normal(0, 0, 1);
+	v1.normal = normal;
+	v2.normal = normal;
+	v3.normal = normal;
+	v4.normal = normal;
 
 	vertices.push_back(v1);
 	vertices.push_back(v2);
@@ -505,6 +550,12 @@ void VoxelComponent::CreateFaceBackward(float x, float y, float z, float _unit, 
 	v2.uv = XMFLOAT2(uv.x, uv.y);
 	v3.uv = XMFLOAT2(uv.x + tUnit, uv.y);
 	v4.uv = XMFLOAT2(uv.x + tUnit, uv.y + tUnit);
+
+	XMFLOAT3 normal(0, 0, -1);
+	v1.normal = normal;
+	v2.normal = normal;
+	v3.normal = normal;
+	v4.normal = normal;
 
 	vertices.push_back(v1);
 	vertices.push_back(v2);
@@ -689,6 +740,7 @@ void VoxelComponent::CreateFaceMarchingCube(float x, float y, float z, int _unit
 			vert2.uv = XMFLOAT2(0,0);
 			vert3.uv = XMFLOAT2(1 * tUnit, 1 * tUnit);
 		}
+		CalcNormal(vert1, vert2, vert3);
 		int vertexIndex = vertices.size();
 		vertices.push_back(vert1);
 		indices.push_back(vertexIndex);
@@ -816,7 +868,7 @@ void VoxelComponent::GenerateMarchingCubeFaces_GPGPU(std::vector<VertexBuffer>& 
 	}
 	printf("Marching Cube Create Buffer ( GPU ): %d ms\n", GetTickCount() - time);
 }
-void VoxelComponent::GenerateMarchingCubeFaces_Octree(XMFLOAT3 pos, bool isAsync)
+VoxelComponent::ASYNC_RESULT VoxelComponent::GenerateMarchingCubeFaces_Octree(XMFLOAT3 pos, bool isAsync)
 {
 	ULONG time = GetTickCount();
 	std::vector<OctreeNode<VoxelData>*> leafs;
@@ -831,7 +883,7 @@ void VoxelComponent::GenerateMarchingCubeFaces_Octree(XMFLOAT3 pos, bool isAsync
 		CreateFaceMarchingCube(cPos.x, cPos.y, cPos.z, unit, vertices, indices);
 	}
 	printf("Marching Cube Create Buffer ( CPU ): %d ms\n", GetTickCount() - time);
-	CreatePartialMesh(pos, node, vertices, indices,isAsync);
+	return CreatePartialMesh(pos, node, vertices, indices,isAsync);
 }
 
 
@@ -877,7 +929,7 @@ void VoxelComponent::GenerateVoxelFaces(std::vector<VertexBuffer>& vertices, std
 	}
 }
 
-void VoxelComponent::GenerateOctreeFaces(XMFLOAT3 pos, bool isAsync)
+VoxelComponent::ASYNC_RESULT VoxelComponent::GenerateOctreeFaces(XMFLOAT3 pos, bool isAsync)
 {
 	int faceCount = 0;
 	short myBlock=0;
@@ -922,7 +974,7 @@ void VoxelComponent::GenerateOctreeFaces(XMFLOAT3 pos, bool isAsync)
 		}
 	}
 
-	CreatePartialMesh(pos, node, vertices, indices,isAsync);
+	return CreatePartialMesh(pos, node, vertices, indices,isAsync);
 	/*
 	//AOctree
 	VoxelData* nodes;
@@ -976,12 +1028,14 @@ void VoxelComponent::GenerateOctreeFaces(XMFLOAT3 pos, bool isAsync)
 void VoxelComponent::CalcNormal(VertexBuffer& v1, VertexBuffer& v2, VertexBuffer& v3)
 {
 	XMFLOAT3 f1 = v1.position - v2.position;
-	f1 = Normalize3(f1);
+	//f1 = Normalize3(f1);
 	XMFLOAT3 f2 = v3.position - v2.position;
-	f2 = Normalize3(f2);
+	//f2 = Normalize3(f2);
 	XMVECTOR V1 = XMLoadFloat3(&f1);
+	V1 = XMVector3Normalize(V1);
 	XMVECTOR V2 = XMLoadFloat3(&f2);
-	XMVECTOR UP = XMVector3Cross(V1, V2);
+	V2 = XMVector3Normalize(V2);
+	XMVECTOR UP = XMVector3Cross(V2, V1);
 	UP = XMVector3Normalize(UP);
 	XMFLOAT3 n;
 	XMStoreFloat3(&n, UP);
@@ -1107,55 +1161,37 @@ void VoxelComponent::UpdateMesh(bool isNew)
 	printf("Update Mesh : %dms\n", GetTickCount64() - tick);
 }
 
-void VoxelComponent::CreatePartialMesh(XMFLOAT3 pos, OctreeNode<VoxelData>* node,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices,bool isAsync)
+VoxelComponent::ASYNC_RESULT VoxelComponent::CreatePartialMesh(XMFLOAT3 pos, OctreeNode<VoxelData>* node,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices,bool isAsync)
 {
-	OctreeNode<MeshRenderer*>* rendererNode;
-	rendererNode = gOctreeMeshRenderer->root->Subdivide(pos, node->GetDepth(), true);
-	Mesh* newMesh = new Mesh();
+	ASYNC_RESULT buffer;
+	buffer.newMesh = 0;
+	buffer.depth = node->GetDepth();
+	buffer.pos = node->GetPosition();
 	if (vertices.size())
 	{
-		newMesh = new Mesh();
+		Mesh* newMesh = new Mesh();
 		newMesh->SetVertices(&vertices[0], vertices.size());
 		if (indices.size())
 			newMesh->SetIndices(&indices[0], indices.size());
-		if (!useGeometry&&!useMarchingCube)
-			newMesh->RecalculateNormals();
 		newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
 		if (isAsync)
 		{
-			T_mutex.lock();
-			ASYNC_BUILD_BUFFER buffer;
 			buffer.newMesh = newMesh;
-			buffer.rendererNode = rendererNode;
-			asyncBuildResult.push_back(buffer);
-			T_mutex.unlock();
 		}
 		else
-			SetMeshToRenderer(newMesh, rendererNode);
+			SetMeshToRenderer(newMesh,node->GetPosition(),node->GetDepth());
 	}
 	else
 	{
-		if (rendererNode->GetValue())
-		{
-			if (isAsync)
-			{
-				T_mutex.lock();
-				ASYNC_BUILD_BUFFER buffer;
-				buffer.newMesh = NULL;
-				buffer.rendererNode = rendererNode;
-				asyncBuildResult.push_back(buffer);
-				T_mutex.unlock();
-			}
-			else
-				SetMeshToRenderer(newMesh, rendererNode);
-		}
+		SetMeshToRenderer(NULL, node->GetPosition(), node->GetDepth());
 	}
-
+	return buffer;
 }
 
 
-void VoxelComponent::UpdatePartialMesh(XMFLOAT3 pos)
+VoxelComponent::ASYNC_RESULT VoxelComponent::UpdatePartialMesh(XMFLOAT3 pos)
 {
+	ASYNC_RESULT buffer;
 	if (useOctree)
 	{
 		ULONG tick = GetTickCount64();
@@ -1166,10 +1202,11 @@ void VoxelComponent::UpdatePartialMesh(XMFLOAT3 pos)
 		}
 		else
 		{
-			GenerateMarchingCubeFaces_Octree(pos, VERT_BUILD_NONE != vertBuildState);
+			buffer=GenerateMarchingCubeFaces_Octree(pos, useAsyncBuild);//VERT_BUILD_NONE != vertBuildState);
 		}
 		printf("Update Mesh : %dms\n", GetTickCount64() - tick);
 	}
+	return buffer;
 }
 
 void VoxelComponent::UpdateVoxelMesh()
@@ -1192,8 +1229,8 @@ void VoxelComponent::UpdateVoxelMesh()
 		newMesh->SetVertices(&vertices[0], vertices.size());
 	if (indices.size())
 		newMesh->SetIndices(&indices[0], indices.size());
-	if (!useGeometry)
-		newMesh->RecalculateNormals();
+	/*if (!useGeometry)
+		newMesh->RecalculateNormals();*/
 	newMesh->InitializeBuffers(SystemClass::GetInstance()->GetDevice());
 	vertices.clear();
 	indices.clear();
@@ -1480,11 +1517,31 @@ void VoxelComponent::BuildVertexBufferFrustumCulling(int targetDepth)
 
 void VoxelComponent::UpdateMeshAsync(VoxelComponent * voxel, int targetDepth)
 {
-	voxel->SetVertexBuildState(VERT_BUILD_LOADING);
-	VertAsyncBuffer* buffer=new VertAsyncBuffer;
-	buffer->voxel = voxel;
-	buffer->targetDepth = targetDepth;
-	voxel->T_BuildThread = (HANDLE)_beginthreadex(NULL, 0, (_beginthreadex_proc_type)CallGenerateFunction, buffer, 0, NULL);
+	if (voxel->vertBuildState == VERT_BUILD_NONE)
+	{
+		//voxel->SetVertexBuildState(VERT_BUILD_LOADING);
+		VertAsyncBuffer* buffer = new VertAsyncBuffer;
+		buffer->voxel = voxel;
+		std::vector<OctreeNode<VoxelData>*> leafs;
+		int partialDepth = 0;
+		int currentSize = 1;
+		while(currentSize<voxel->partitionSize)
+		{
+			partialDepth++;
+			currentSize = pow(2, partialDepth);
+		}
+		buffer->voxel->gOctree->root->GetLeafs(leafs, partialDepth);
+		if (leafs.size())
+		{
+			for (auto i : leafs)
+			{
+				buffer->voxel->PushDeformingNode(i,false,false);
+			}
+		}
+		buffer->targetDepth = targetDepth;
+		//voxel->thread_AsyncUpdate = (HANDLE)_beginthreadex(NULL, 0, (_beginthreadex_proc_type)CallGenerateAsyncFunction, buffer, 0, NULL);
+		//voxel->thread_AsyncUpdate = (HANDLE)_beginthreadex(NULL, 0, (_beginthreadex_proc_type)CallGenerateFunction, buffer, 0, NULL);
+	}
 }
 
 void VoxelComponent::CallGenerateFunction(LPVOID _buffer)
@@ -1508,7 +1565,7 @@ void VoxelComponent::UpdatePartialMeshAsync(VoxelComponent * voxel, int targetDe
 		VertAsyncBuffer* buffer = new VertAsyncBuffer;
 		buffer->voxel = voxel;
 		buffer->targetDepth = targetDepth;
-		voxel->T_BuildThread = (HANDLE)_beginthreadex(NULL, 0, (_beginthreadex_proc_type)CallGenerateAsyncFunction, buffer, 0, NULL);
+		voxel->thread_AsyncUpdate = (HANDLE)_beginthreadex(NULL, 0, (_beginthreadex_proc_type)CallGenerateAsyncFunction, buffer, 0, NULL);
 	}
 }
 
@@ -1517,10 +1574,22 @@ void VoxelComponent::CallGenerateAsyncFunction(LPVOID _buffer)
 	printf("CallGenerateAsyncFunction\n");
 	VertAsyncBuffer* buffer = (VertAsyncBuffer*)_buffer;
 	std::vector<VertexBuffer> vertices;
-	for(auto i: buffer->voxel->uSet)
-		buffer->voxel->UpdatePartialMesh(i->GetPosition());
-	buffer->voxel->uSet.clear();
+	while(true)
+	{
+		buffer->voxel->mutex_UpdateQueue.lock();
+		if (buffer->voxel->updateQueue.size())
+		{
+			buffer->voxel->UpdatePartialMesh(buffer->voxel->updateQueue.front()->GetPosition());
+			buffer->voxel->updateQueue.pop_front();
+		}
+		else
+		{
+			break;
+		}
+		buffer->voxel->mutex_UpdateQueue.unlock();
+	}
 	//buffer->voxel->BuildVertexBufferGS(buffer->targetDepth,vertices);
+	buffer->voxel->mutex_UpdateQueue.unlock();
 	buffer->voxel->SetOctreeDepth(buffer->targetDepth);
 	buffer->voxel->SetVertexBuildState(VERT_BUILD_FINISHED);
 	delete buffer;
@@ -1626,7 +1695,7 @@ void VoxelComponent::LoadPerlin(int _width,int _height, int _depth, int _maxHeig
 				vox.isoValue = noise-y;
 				if(y<=noise)
 					vox.material = 1;
-				SetChunk(x,y,z,vox);
+				OctreeNode<VoxelData>* node=SetChunk(x,y,z,vox);
 			}
 		}
 	}
@@ -1762,22 +1831,46 @@ void VoxelComponent::SetLODLevel(int level, float distance)
 	LODDistance[level] = distance;
 }
 
-void VoxelComponent::AsyncBuildCheck()
+void VoxelComponent::AsyncResultCheck()
 {
-	T_mutex.lock();
-	if (asyncBuildResult.size())
+	if (!threadPool.isInit)
 	{
-		for (auto i : asyncBuildResult)
-		{
-			SetMeshToRenderer(i.newMesh, i.rendererNode);
-		}
-		asyncBuildResult.clear();
+		return;
 	}
-	T_mutex.unlock();
+	if (threadPool.GetResultQueue()->size())
+	{
+		for (auto i : *(threadPool.GetResultQueue()))
+		{
+			SetMeshToRenderer(i.newMesh, i.pos,i.depth);
+		}
+		threadPool.GetResultQueue()->clear();
+	}
 	if (vertBuildState == VERT_BUILD_FINISHED)
 	{
 		vertBuildState = VERT_BUILD_NONE;
 	}
+}
+
+void VoxelComponent::PushDeformingNode(OctreeNode<VoxelData>* _node, bool isFront,bool checkDuplicated)
+{
+	isWaitingUpdate = true;
+	//mutex_UpdateQueue.lock();
+	if (checkDuplicated)
+	{
+		for (auto i : updateQueue)
+		{
+			if (i == _node)
+			{
+				return;
+			}
+		}
+	}
+	if (!isFront)
+		updateQueue.push_back(_node);
+	else
+		updateQueue.push_front(_node);
+	isWaitingUpdate = false;
+	//mutex_UpdateQueue.unlock();
 }
 
 int VoxelComponent::ReadTXT(const char * filename)

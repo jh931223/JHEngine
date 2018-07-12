@@ -112,7 +112,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -171,6 +171,7 @@
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DepthShaderClass.h" />
     <ClInclude Include="DxDefine.h" />
+    <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="TriplanarShaderClass.h" />
     <ClInclude Include="VoxelComponent.h" />
     <ClInclude Include="GameObject.h" />
@@ -213,6 +214,7 @@
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="DepthShaderClass.cpp" />
+    <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="TriplanarShaderClass.cpp" />
     <ClCompile Include="VoxelComponent.cpp" />
     <ClCompile Include="InputComponent.cpp" />

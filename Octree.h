@@ -123,15 +123,15 @@ public:
 	{
 		return Subdivide(this, targetPos, _targetDepth, makeChild);
 	}
-	void GetLeafs(std::vector<OctreeNode<T>*>& _nodeArray)
+	void GetLeafs(std::vector<OctreeNode<T>*>& _nodeArray,int targetDepth=0)
 	{
-		if (IsLeaf())
+		if (IsLeaf()||depth==targetDepth)
 			_nodeArray.push_back(this);
 		else
 		{
 			for (int i = 0; i<8; i++)
 			{
-				childNodes[i]->GetLeafs(_nodeArray);
+				childNodes[i]->GetLeafs(_nodeArray,targetDepth);
 			}
 		}
 	}

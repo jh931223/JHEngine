@@ -161,6 +161,9 @@
     <ClInclude Include="TriplanarShaderClass.h">
       <Filter>Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InputComponent.cpp">
@@ -269,6 +272,9 @@
     </ClCompile>
     <ClCompile Include="TriplanarShaderClass.cpp">
       <Filter>Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadPool.cpp">
+      <Filter>Scripts</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
