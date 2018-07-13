@@ -17,9 +17,10 @@ public:
 			workers[i].join();
 		}
 	}
-	void Initialize(int _maxThread)
+	void Initialize(int _maxThread,bool _keepOrder=true)
 	{
 		maxThreads = _maxThread;
+		keepOrder = _keepOrder;
 		for (int i = 0; i < _maxThread; i++)
 		{
 			workerFlag.push_back(false);
@@ -80,16 +81,37 @@ private:
 	}
 	void RunningQueueUpdate()
 	{
-		while (runningQueue.size())
+		if (!keepOrder)
 		{
-			int i = runningQueue.front();
-			if (workerFlag[i]|| !workerLocks[i]->try_lock())
+			std::list<int>::iterator iter = runningQueue.begin();
+			while (iter != runningQueue.end())
 			{
-				break;
+				int i = *iter;
+				if (workerFlag[i] || !workerLocks[i]->try_lock())
+				{
+					iter++;
+				}
+				else
+				{
+					endQueue.push_back(i);
+					runningQueue.erase(iter++);
+					workerLocks[i]->unlock();
+				}
 			}
-			endQueue.push_back(i);
-			runningQueue.pop_front();
-			workerLocks[i]->unlock();
+		}
+		else
+		{
+			while (runningQueue.size())
+			{
+				int i = runningQueue.front();
+				if (workerFlag[i] || !workerLocks[i]->try_lock())
+				{
+					break;
+				}
+				endQueue.push_back(i);
+				runningQueue.pop_front();
+				workerLocks[i]->unlock();
+			}
 		}
 	}
 	void EndQueueUpdate()
@@ -119,6 +141,7 @@ public:
 	bool isInit = false;
 private:
 	int maxThreads;
+	bool keepOrder;
 	std::vector<std::thread> workers;
 	std::vector<bool> workerFlag;
 

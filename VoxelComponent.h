@@ -4,7 +4,7 @@
 #include "MeshClass.h"
 #include <unordered_set>
 #include <unordered_map>
-#include <deque>
+#include <list>
 #include <mutex>
 #include "ThreadPool.h"
 class MeshRenderer;
@@ -22,14 +22,8 @@ class VoxelComponent : public Component
 {
 public:
 
-	enum VERT_BUILD_STATE
-	{
-		VERT_BUILD_NONE,
-		VERT_BUILD_LOADING,
-		VERT_BUILD_FINISHED
-	};
 
-	struct ASYNC_RESULT
+	struct MESH_RESULT
 	{
 		Mesh* newMesh;
 		XMFLOAT3 pos;
@@ -42,77 +36,69 @@ public:
 	void Update() override;
 	void OnStart() override;
 	void Initialize();
-	void CreateFaceUp(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
-	void CreateFaceDown(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
-	void CreateFaceRight(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
-	void CreateFaceLeft(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
-	void CreateFaceForward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
-	void CreateFaceBackward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
-	void CreateFaceMarchingCube(float x, float y, float z,int, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
 
-	void AddMarchingCase(int x, int y, int z, int _case);
-	void SubMarchingCase(int x, int y, int z,int _case);
-
-	void SetMarchingCubeChunkData(int x, int y, int z, bool isCreate, int length = 1);
-
-
-	void GenerateMarchingCubeFaces(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, bool isNew = true);
-	void GenerateMarchingCubeFaces_GS(std::vector<VertexBuffer>& vertices, bool isNew = true);
-	void GenerateMarchingCubeFaces_GPGPU(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, bool isNew = true);
-	ASYNC_RESULT GenerateMarchingCubeFaces_Octree(XMFLOAT3 pos,bool isAsync=false);
-
-	void GenerateVoxelFaces(std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
-	ASYNC_RESULT GenerateOctreeFaces(XMFLOAT3 pos, bool isAsync = false);
-
+	OctreeNode<VoxelData>* SetChunk(int x, int y, int z, VoxelData, bool isDeforming = false);
+private:
 	void CalcNormal(VertexBuffer& v1, VertexBuffer& v2, VertexBuffer& v3);
+
+	// 복셀큐브 face 생성 메소드
+	void CreateCubeFace_Up(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+	void CreateCubeFace_Down(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+	void CreateCubeFace_Right(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+	void CreateCubeFace_Left(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+	void CreateCubeFace_Forward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+	void CreateCubeFace_Backward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+
+	MESH_RESULT GenerateCubeFaces(XMFLOAT3 pos);
+
+	// 마칭큐브 face 생성 메소드
+
+	void CreateMarchingCubeFace(float x, float y, float z,int, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
+
+	MESH_RESULT GenerateMarchingCubeFaces(XMFLOAT3 pos);;
+
+
 	void LoadHeightMapFromRaw(int,int,int,const char*, int startX = -1, int startZ = -1, int endX = -1, int endZ = -1);
 	void LoadCube(int,int,int);
 	void LoadPerlin(int _width,int _height, int _depth, int _maxHeight,float refinement);
-	OctreeNode<VoxelData>* SetChunk(int x,int y,int z, VoxelData,bool isDeforming=false);
 
-	void BuildOctree(int, XMFLOAT3);
+
 	void NewOctree(int _length);
+	void ReleaseOctree();
+
 	void SetOctreeDepth(int _targetDepth);
 
 
 	XMFLOAT2 GetUV(BYTE);
 	VoxelData GetChunk(int x, int y, int z,OctreeNode<VoxelData>* _startNode = NULL);
+
 	XMFLOAT3 CovertToChunkPos(XMFLOAT3 targetpos,bool returnNan=true);
-	void UpdateMesh(bool isNew = true);
-	ASYNC_RESULT CreatePartialMesh(XMFLOAT3 pos, OctreeNode<VoxelData>* node,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices,bool isAsync=false);
-	ASYNC_RESULT UpdatePartialMesh(XMFLOAT3 pos);
+
+
+
+	MESH_RESULT CreatePartialMesh(XMFLOAT3 pos, OctreeNode<VoxelData>* node,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
+	MESH_RESULT UpdatePartialMesh(XMFLOAT3 pos);
+
+	void UpdateMesh();
 	void UpdateVoxelMesh();
-	void UpdateMarchingCubeMesh(bool isNew=true);
-	void BuildVertexBufferGS(int, std::vector<VertexBuffer>&);
-	void SetVertexBuildState(VERT_BUILD_STATE _state);
-	void CheckLOD();
+	void UpdateMarchingCubeMesh();
 	bool FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius);
 	bool FrustumCheckSphere(float xCenter, float yCenter, float zCenter, float radius);
 	void ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, XMMATRIX viewMatrix);
 
 	void BuildVertexBufferFrustumCulling(int targetDepth);
-	struct VertAsyncBuffer
-	{
-		VoxelComponent* voxel;
-		int targetDepth;
-		bool isNew;
-	};
-	static void UpdateMeshAsync(VoxelComponent* voxel,int targetDepth);
-	static void CallGenerateFunction(LPVOID);
-	static void UpdatePartialMeshAsync(VoxelComponent * voxel, int targetDepth);
-	static void CallGenerateAsyncFunction(LPVOID _buffer);
-	void PushDeformingNode(OctreeNode<VoxelData>* _node, bool isFront = false,bool checkDuplicated=true);
-private:
-	void ReleaseChunks();
-	void ReleaseOctree();
 
-	void NewChunks(int _width, int, int);
+	void UpdateMeshAsync(int targetDepth);
+	void ReserveUpdate(OctreeNode<VoxelData>* _node, bool isDeforming = false, bool checkDuplicated = true);
 
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
 	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height, int&, int&);
 	int GetLODLevel(XMFLOAT3 basePos, XMFLOAT3 targetPos);
 	void SetLODLevel(int level, float distance);
-	void AsyncResultCheck();
+
+	void ProcessLOD();
+	void ProcessUpdateQueue();
+	void ProcessBuildResultQueue();
 
 	XMFLOAT3 lerpSelf(XMFLOAT3 p, XMFLOAT3 target, float acc)
 	{
@@ -121,32 +107,15 @@ private:
 
 	int ReadTXT(const char* filename);
 
-public:
-	MeshRenderer* renderer;
-	Material* material;
-
-	std::deque<OctreeNode<VoxelData>*> updateQueue;
-	bool isWaitingUpdate;
-
-	HANDLE thread_AsyncUpdate;
-	std::mutex mutex_AsyncResult;
-	std::mutex mutex_UpdateQueue;
-	int loadType = 0;
 private:
-
 
 	int width, height, depth;
 	float unit;
 	float tUnit;
 	int tAmount;
 	bool useMarchingCube;
-	bool useOctree;
-	bool useGPGPU;
-	bool useGeometry;
 	bool useAsyncBuild;
 	bool useFrustum;
-	VoxelData * chunksData;
-	ArrayedOctree<VoxelData>* aOctree;
 	int currentOctreeDepth = 0;
 
 	Octree<VoxelData>* gOctree;
@@ -166,12 +135,16 @@ private:
 
 
 
-	ThreadPool<ASYNC_RESULT> threadPool;
+	ThreadPool<MESH_RESULT> threadPool_Main;
+	ThreadPool<MESH_RESULT> threadPool_Deform;
 
-	std::vector<ASYNC_RESULT> asyncBuildResult;
+
+	std::list<OctreeNode<VoxelData>*> updateQueue_Main;
+	std::list<OctreeNode<VoxelData>*> updateQueue_Deform;
+
+	std::vector<MESH_RESULT> meshBuildResult;
 	GameObject* camera;
 
-	VERT_BUILD_STATE vertBuildState;
 
 	//frustum
 	XMVECTOR m_planes[6];

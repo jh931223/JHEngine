@@ -9,7 +9,6 @@
 #include "CameraComponent.h"
 #include "InputComponent.h"
 #include "VoxelComponent.h"
-#include "VoxelTerrainComponent.h"
 #include "MeshClass.h"
 #include <map>
 #include <string>
@@ -102,18 +101,12 @@ void HierarchyClass::Setup()
 	GameObject* r = gobj;
 	r->transform->SetPosition(XMFLOAT3(0, 0, 0));
 
-	gobj = new GameObject("터레인 매니저");
-	VoxelTerrainComponent* terrainManager = new VoxelTerrainComponent;
-	gobj->AddComponent(terrainManager);
-
 	gobj = new GameObject("복셀");
 	//r->AddChild(gobj);
 	renderer = new MeshRenderer;
 	gobj->AddComponent(renderer);
 	VoxelComponent* voxel = new VoxelComponent;
-	voxel->renderer = renderer;
 	gobj->AddComponent(voxel);
-	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_texture"));// 머테리얼 설정
 	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));
 	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
 	

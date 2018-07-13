@@ -202,7 +202,6 @@
     <ClInclude Include="TextureShaderClass.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="ViewPointClass.h" />
-    <ClInclude Include="VoxelTerrainComponent.h" />
     <ClInclude Include="WICTextureLoader.h" />
   </ItemGroup>
   <ItemGroup>
@@ -247,7 +246,6 @@
     <ClCompile Include="TextureShaderClass.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="ViewPointClass.cpp" />
-    <ClCompile Include="VoxelTerrainComponent.cpp" />
     <ClCompile Include="WICTextureLoader.cpp" />
   </ItemGroup>
   <ItemGroup>

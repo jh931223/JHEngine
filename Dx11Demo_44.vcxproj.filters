@@ -152,9 +152,6 @@
     <ClInclude Include="resource.h">
       <Filter>EngineFrameworks\Source</Filter>
     </ClInclude>
-    <ClInclude Include="VoxelTerrainComponent.h">
-      <Filter>Scripts</Filter>
-    </ClInclude>
     <ClInclude Include="VoxelComponent.h">
       <Filter>Scripts</Filter>
     </ClInclude>
@@ -262,9 +259,6 @@
       <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
     </ClCompile>
     <ClCompile Include="ArrayedOctree.cpp">
-      <Filter>Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="VoxelTerrainComponent.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
     <ClCompile Include="VoxelComponent.cpp">

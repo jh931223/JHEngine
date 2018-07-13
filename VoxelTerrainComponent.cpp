@@ -23,7 +23,7 @@ void VoxelTerrainComponent::T_UpdateMesh()
 {
 	while(T_waitForUpdate.size()>0)
 	{
-		T_waitForUpdate.front()->UpdateMesh(true);
+		T_waitForUpdate.front()->UpdateMesh();
 		T_waitForUpdate.pop();
 	}
 	isUpdating = false;
