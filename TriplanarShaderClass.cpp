@@ -61,6 +61,7 @@ bool TriplanarShaderClass::InitializeShader(ID3D11Device * device, HWND hwnd, co
 		return false;
 	}
 
+
 	// 버퍼로부터 정점 셰이더를 생성한다.
 	result = device->CreateVertexShader(vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), NULL,
 		&m_vertexShader);

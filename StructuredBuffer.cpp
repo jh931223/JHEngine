@@ -6,9 +6,9 @@ StructuredBuffer::StructuredBuffer()
 {
 }
 
-StructuredBuffer::StructuredBuffer(ID3D11Device * pDevice, size_t structSize, int elementNum, void * data)
+StructuredBuffer::StructuredBuffer(ID3D11Device * pDevice, size_t structSize, UINT elementNum, VOID * data, BYTE _bufferType)
 {
-	InitializeBuffer(pDevice, structSize, elementNum, data);
+	InitializeBuffer(pDevice, structSize, elementNum, data,_bufferType);
 }
 
 
@@ -17,7 +17,7 @@ StructuredBuffer::~StructuredBuffer()
 	Release();
 }
 
-HRESULT StructuredBuffer::InitializeBuffer(ID3D11Device* pDevice, size_t structSize, int elementNum, void* data)
+HRESULT StructuredBuffer::InitializeBuffer(ID3D11Device* pDevice, size_t structSize, UINT elementNum, VOID* initData, BYTE _bufferType)
 {
 	HRESULT hr;
 	D3D11_BUFFER_DESC desc;
@@ -26,25 +26,51 @@ HRESULT StructuredBuffer::InitializeBuffer(ID3D11Device* pDevice, size_t structS
 	desc.ByteWidth = structSize * elementNum;
 	desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 	desc.StructureByteStride = structSize;
-
-	D3D11_SUBRESOURCE_DATA subResource;
-	subResource.pSysMem = data;
-	subResource.SysMemPitch = 0;
-	subResource.SysMemSlicePitch = 0;
-
-	hr = pDevice->CreateBuffer(&desc, &subResource, &buffer);
+	if (initData)
+	{
+		D3D11_SUBRESOURCE_DATA subResource;
+		subResource.pSysMem = initData;
+		subResource.SysMemPitch = 0;
+		subResource.SysMemSlicePitch = 0;
+		hr = pDevice->CreateBuffer(&desc, &subResource, &buffer);
+	}
+	else
+		hr = pDevice->CreateBuffer(&desc, NULL, &buffer);
 	if (FAILED(hr))
 	{
 		return hr;
 	}
+	if (_bufferType&S_BUFFER_TYPE_SRV)
+	{
+		D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
+		ZeroMemory(&descSRV, sizeof(descSRV));
+		descSRV.Format = DXGI_FORMAT_UNKNOWN;
+		descSRV.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
+		descSRV.BufferEx.FirstElement = 0;
+		descSRV.BufferEx.NumElements = elementNum;
 
-	D3D11_SHADER_RESOURCE_VIEW_DESC descSRV;
-	ZeroMemory(&descSRV, sizeof(descSRV));
-	descSRV.Format = DXGI_FORMAT_UNKNOWN;
-	descSRV.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-	descSRV.Buffer.ElementWidth = elementNum;
+		hr = pDevice->CreateShaderResourceView(buffer, &descSRV, &srv);
+		if (FAILED(hr))
+		{
+			return hr;
+		}
+	}
+	if (_bufferType&S_BUFFER_TYPE_UAV)
+	{
+		D3D11_UNORDERED_ACCESS_VIEW_DESC descUAV;
+		ZeroMemory(&descUAV, sizeof(descUAV));
+		descUAV.Format = DXGI_FORMAT_UNKNOWN;
+		descUAV.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+		descUAV.Buffer.FirstElement = 0;
+		descUAV.Buffer.NumElements = elementNum;
 
-	hr = pDevice->CreateShaderResourceView(buffer, &descSRV, &srv);
+		hr = pDevice->CreateUnorderedAccessView(buffer, &descUAV, &uav);
+		if (FAILED(hr))
+		{
+			return hr;
+		}
+	}
+	return 1;
 }
 
 void StructuredBuffer::Release()
@@ -60,4 +86,9 @@ void StructuredBuffer::Release()
 ID3D11ShaderResourceView * const * StructuredBuffer::GetSRV()
 {
 	return &srv;
+}
+
+ID3D11UnorderedAccessView** StructuredBuffer::GetUAV()
+{
+	return &uav;
 }

@@ -2,146 +2,106 @@
 #include"SystemClass.h"
 #include"GraphicsClass.h"
 #include"D3DClass.h"
+#include<map>
+#include"StructuredBuffer.h"
+class CShaderParameterCollections
+{
+public:
+	~CShaderParameterCollections()
+	{
+		if (params_SRV.size()>0)
+		{
+			for (auto i : params_SRV)
+			{
+				i.second->Release();
+				delete i.second;
+			}
+		}
+		if (params_UAV.size()>0)
+		{
+			for (auto i : params_UAV)
+			{
+				i.second->Release();
+				delete i.second;
+			}
+		}
+	}
+private:
+	std::map<std::string, StructuredBuffer*> params_SRV;
+	std::map<std::string, StructuredBuffer*> params_UAV;
+public:
+	inline void SetSRV(std::string name, StructuredBuffer* srv) { if (params_SRV[name]) { params_SRV[name]->Release(); } params_SRV[name] = srv; }
+	inline void SetUAV(std::string name, StructuredBuffer* uav) { if (params_UAV[name]) { params_UAV[name]->Release(); } params_UAV[name] = uav; }
+	inline ID3D11ShaderResourceView*const* GetSRV(std::string name) {
+		if (!params_SRV[name]) { return NULL; } return params_SRV[name]->GetSRV();
+	}
+	inline ID3D11UnorderedAccessView*const* GetUAV(std::string name) {
+		if (!params_UAV[name]) { return NULL; } return params_UAV[name]->GetUAV();
+	}
+};
 class ComputeShader : public AlignedAllocationPolicy<16>
 {
 public:
 	ComputeShader();
 	~ComputeShader();
-	bool Initialize(ID3D11Device* device)
-	{
-		char shader[] =
-			"int t;"  // implicit constant buffer
-			"RWTexture2D<float4> y;"
-			"[numthreads(16,16,1)]"
-			"void cs_5_0(uint3 i:sv_dispatchthreadid)"
-			"{"
-			"float3 v=i/float3(640,400,1)-1,"
-			"w=normalize(float3(v.x,-v.y*.8-1,2)),"
-			"p=float3(sin(t*.0044),sin(t*.0024)+2,sin(t*.0034)-5);"
-			"float b=dot(w,p),d=b*b-dot(p,p)+1,x=0;"
-			"if(d>0){"
-			"p-=w*(b+sqrt(d));"
-			"x=pow(d,8);"
-			"w=reflect(w,p);"
-			"}"
-			"if(w.y<0){"
-			"p-=w*(p.y+1)/w.y;"
-			"if(sin(p.z*6)*sin(p.x*6)>0)x+=2/length(p);"
-			"}"
-			"y[i.xy]=(abs(v.y-v.x)>.1&&abs(v.y+v.x)>.1)?x:float4(1,0,0,0);"
-			"}";
-		ID3D10Blob* pBlob;
-		D3DCompile(shader, 1024, 0, 0, 0, "cs_5_0", "cs_5_0", 0, 0, &pBlob, 0);
-		device->CreateComputeShader((void*)(((int*)pBlob)[3]), ((int*)pBlob)[2], NULL, &computeShader);
-	}
-
-	bool Dispatch(int x, int y, int z)
+	virtual bool Initialize(ID3D11Device* device, HWND hwnd) = 0;
+	bool Dispatch(int x, int y, int z, CShaderParameterCollections* params)
 	{
 		ID3D11DeviceContext* pD3D = SystemClass::GetInstance()->GetGraphics()->GetD3D()->GetDeviceContext();
-		pD3D->CSSetShader(computeShader,NULL,0);
-			
+
+		BindConstantBuffers(pD3D, params);
+		BindShaderResources(pD3D, params);
+		
+		pD3D->CSSetShader(computeShader, NULL, 0);
+		pD3D->Dispatch(x, y, z);
 	}
-
-	HRESULT CreateStructuredBufferOnGPU(ID3D11Device* pDevice,
-		UINT uElementSize, UINT uCount, VOID* pInitData,
-		ID3D11Buffer** ppBufOut)
+protected:
+	bool InitializeShader(ID3D11Device * device, HWND hwnd, const WCHAR * csFilename)
 	{
-
-		*ppBufOut = NULL;
-		D3D11_BUFFER_DESC desc;
-		ZeroMemory(&desc, sizeof(desc));
-
-		desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-		desc.ByteWidth = uElementSize * uCount;
-		desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-		desc.StructureByteStride = uElementSize;
-
-		if (pInitData)
+		ID3D10Blob* pBlob;
+		HRESULT result;
+		ID3D10Blob* errorMessage = nullptr;
+		result = D3DCompileFromFile(csFilename, NULL, NULL, "main", "cs_5_0", 0, 0, &pBlob, 0);
+		if (FAILED(result))
 		{
-			D3D11_SUBRESOURCE_DATA InitData;
-			InitData.pSysMem = pInitData;
-			return pDevice->CreateBuffer(&desc, &InitData, ppBufOut);
-		}
-		else
-			return pDevice->CreateBuffer(&desc, NULL, ppBufOut);
-	}
-
-	//for input buffer
-	HRESULT CreateBufferShaderResourceView(ID3D11Device* pDevice, ID3D11Buffer* pBuffer,
-		ID3D11ShaderResourceView** ppSRVOut)
-	{
-
-		D3D11_BUFFER_DESC descBuf;
-		ZeroMemory(&descBuf, sizeof(descBuf));
-		pBuffer->GetDesc(&descBuf);
-		D3D11_SHADER_RESOURCE_VIEW_DESC desc;
-		ZeroMemory(&desc, sizeof(desc));
-		desc.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
-		desc.BufferEx.FirstElement = 0;
-
-		if (descBuf.MiscFlags & D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS)
-		{
-			// This is a Raw Buffer
-			desc.Format = DXGI_FORMAT_R32_TYPELESS;
-			desc.BufferEx.Flags = D3D11_BUFFEREX_SRV_FLAG_RAW;
-			desc.BufferEx.NumElements = descBuf.ByteWidth / 4;
-		}
-		else
-			if (descBuf.MiscFlags & D3D11_RESOURCE_MISC_BUFFER_STRUCTURED)
+			// 셰이더 컴파일 실패시 오류메시지를 출력합니다.
+			if (errorMessage)
 			{
-
-				// This is a Structured Buffer
-				desc.Format = DXGI_FORMAT_UNKNOWN;
-				desc.BufferEx.NumElements =
-					descBuf.ByteWidth / descBuf.StructureByteStride;
+				OutputShaderErrorMessage(errorMessage, hwnd, csFilename);
 			}
+			// 컴파일 오류가 아니라면 셰이더 파일을 찾을 수 없는 경우입니다.
 			else
 			{
-				return E_INVALIDARG;
+				MessageBox(hwnd, csFilename, L"Missing Shader File", MB_OK);
 			}
-		return pDevice->CreateShaderResourceView(pBuffer, &desc, ppSRVOut);
-	}
-
-	//for output buffer    
-	HRESULT CreateBufferUnorderedAccessView(ID3D11Device* pDevice, ID3D11Buffer* pBuffer,
-		ID3D11UnorderedAccessView** ppUAVOut)
-	{
-		D3D11_BUFFER_DESC descBuf;
-		ZeroMemory(&descBuf, sizeof(descBuf));
-		pBuffer->GetDesc(&descBuf);
-
-		D3D11_UNORDERED_ACCESS_VIEW_DESC desc;
-		ZeroMemory(&desc, sizeof(desc));
-		desc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-		desc.Buffer.FirstElement = 0;
-
-		if (descBuf.MiscFlags & D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS)
-		{
-			// This is a Raw Buffer
-			desc.Format = DXGI_FORMAT_R32_TYPELESS;
-			// Format must be DXGI_FORMAT_R32_TYPELESS,
-			// when creating Raw Unordered Access View
-
-			desc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
-			desc.Buffer.NumElements = descBuf.ByteWidth / 4;
+			return false;
 		}
-		else
-			if (descBuf.MiscFlags & D3D11_RESOURCE_MISC_BUFFER_STRUCTURED)
-			{
-				// This is a Structured Buffer
-				desc.Format = DXGI_FORMAT_UNKNOWN;
-				// Format must be must be DXGI_FORMAT_UNKNOWN,
-				// when creating a View of a Structured Buffer
 
-				desc.Buffer.NumElements =
-					descBuf.ByteWidth / descBuf.StructureByteStride;
-			}
-			else
-			{
-				return E_INVALIDARG;
-			}
-		return pDevice->CreateUnorderedAccessView(pBuffer, &desc, ppUAVOut);
+		result = device->CreateComputeShader((void*)(((int*)pBlob)[3]), ((int*)pBlob)[2], NULL, &computeShader);
+		if (FAILED(result))
+		{
+			return false;
+		}
+		return true;
 	}
+	virtual bool BindConstantBuffers(ID3D11DeviceContext* pD3D, CShaderParameterCollections* params) = 0;
+	virtual bool BindShaderResources(ID3D11DeviceContext* pD3D, CShaderParameterCollections* params) = 0;
+
+	void OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND hwnd, const WCHAR* shaderFilename)
+	{
+		// 에러 메시지를 출력창에 표시합니다.
+		OutputDebugStringA(reinterpret_cast<const char*>(errorMessage->GetBufferPointer()));
+
+		// 에러 메세지를 반환합니다.
+		errorMessage->Release();
+		errorMessage = 0;
+
+		// 컴파일 에러가 있음을 팝업 메세지로 알려줍니다.
+		MessageBox(hwnd, L"Error compiling shader.", shaderFilename, MB_OK);
+	}
+
+
+
 
 protected:
 	ID3D11ComputeShader * computeShader;
