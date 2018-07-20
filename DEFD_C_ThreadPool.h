@@ -1,29 +1,30 @@
 #pragma once
+#include "ThreadPool.h"
+#include "SystemClass.h"
+#include "D3DClass.h"
 #include<vector>
 #include<list>
 #include<thread>
 #include<mutex>
 #include<functional>
 #include<condition_variable>
-template<typename TaskBuffer,typename ResultBuffer> class ThreadPool
+template<typename ResultBuffer> class DEFD_C_ThreadPool
 {
 public:
-	ThreadPool() {}
-
-	virtual ~ThreadPool() 
-	{
-		for (int i = 0; i < maxThreads; i++)
-		{
-			workers[i].join();
-		}
-	}
-	virtual void Initialize(int _maxThread,bool _keepOrder=true)
+	DEFD_C_ThreadPool() {}
+	virtual ~DEFD_C_ThreadPool() {}
+	void Initialize(int _maxThread, bool _keepOrder = true) override
 	{
 		maxThreads = _maxThread;
 		keepOrder = _keepOrder;
-		workerFlag.resize(_maxThread);
-		taskOfWorker.resize(_maxThread);
-		workerResult.resize(_maxThread);
+		for (int i = 0; i < _maxThread; i++)
+		{
+			workerFlag.push_back(false);
+			workerTask.push_back(0);
+			ResultBuffer b;
+			workerResult.push_back(b);
+			deferredContexts.push_back(SystemClass::GetInstance()->GetD3D()->CreateDeferredContext());
+		}
 		for (int i = 0; i < _maxThread; i++)
 		{
 			workerLocks.push_back(new std::mutex);
@@ -33,13 +34,13 @@ public:
 		}
 		isInit = true;
 	}
-	void AddTask(TaskBuffer _task)
+	void AddTask(std::function<ResultBuffer(ID3D11DeviceContext* deviceContext)> _task)
 	{
-		taskBuffers.push_back(_task);
+		tasks.push_back(_task);
 	}
-	void AddTaskFront(TaskBuffer _task)
+	void AddTaskFront(std::function<ResultBuffer(ID3D11DeviceContext* deviceContext)> _task)
 	{
-		taskBuffers.push_front(_task);
+		tasks.push_front(_task);
 	}
 	void ThreadPoolUpdate()
 	{
@@ -53,23 +54,20 @@ public:
 	{
 		return &resultQueue;
 	}
-	void SetTaskFunc(std::function<ResultBuffer(TaskBuffer)> func)
-	{
-		taskFunc = func;
-	}
-protected :
-	virtual void WaitQueueUpdate()
+protected:
+
+	void WaitQueueUpdate() override
 	{
 		while (waitQueue.size())
 		{
-			if (!taskBuffers.size())
+			if (!tasks.size())
 			{
 				break;
 			}
 			int i = waitQueue.front();
 			waitQueue.pop_front();
-			taskOfWorker[i] = taskBuffers.front();
-			taskBuffers.pop_front();
+			workerTask[i] = tasks.front();
+			tasks.pop_front();
 			runningQueue.push_back(i);
 			{
 				std::lock_guard<std::mutex> lg(*workerLocks[i]);
@@ -78,7 +76,7 @@ protected :
 			workerConditions[i]->notify_one();
 		}
 	}
-	virtual void RunningQueueUpdate()
+	void RunningQueueUpdate() override
 	{
 		if (!keepOrder)
 		{
@@ -113,6 +111,23 @@ protected :
 			}
 		}
 	}
+	void WorkerFunc(int id) override
+	{
+		while (true)
+		{
+			std::unique_lock<std::mutex> lg((*workerLocks[id]));
+			workerConditions[id]->wait(lg, [&]()->bool {return workerFlag[id]; });
+			ResultBuffer rBuffer = workerTask[id]();
+			if (deferredContexts[id]->context)
+			{
+
+			}
+			workerResult[id] = rBuffer;
+			printf("id:%d thread finished task\n", id);
+			workerTask[id] = NULL;
+			workerFlag[id] = false;
+		}
+	}
 	void EndQueueUpdate()
 	{
 		while (endQueue.size())
@@ -123,32 +138,20 @@ protected :
 			endQueue.pop_front();
 		}
 	}
-	virtual void WorkerFunc(int id)
-	{
-		while (true)
-		{
-			std::unique_lock<std::mutex> lg( (*workerLocks[id]) );
-			workerConditions[id]->wait(lg, [&]()->bool {return workerFlag[id]; });
-			ResultBuffer rBuffer = taskFunc(taskOfWorker[id]);
-			workerResult[id] = rBuffer;
-			printf("id:%d thread finished task\n", id);
-			workerFlag[id] = false;
-		}
-	}
 public:
 	bool isInit = false;
-protected:
+private:
+	std::vector<DEFERRED_CONTEXT_BUFFER*> deferredContexts;
+
 	int maxThreads;
 	bool keepOrder;
 	std::vector<std::thread> workers;
 	std::vector<bool> workerFlag;
 
-	std::vector<TaskBuffer> taskOfWorker;
+	std::vector<std::function<ResultBuffer(ID3D11DeviceContext* deviceContext)>> workerTask;
 	std::vector<ResultBuffer> workerResult;
 
-	std::list<TaskBuffer> taskBuffers;
-
-	std::function<ResultBuffer(TaskBuffer)> taskFunc;
+	std::list<std::function<ResultBuffer()>> tasks;
 
 	std::list<int> waitQueue;
 	std::list<int> runningQueue;

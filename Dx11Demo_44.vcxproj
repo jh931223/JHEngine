@@ -169,6 +169,7 @@
     <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="D3DClass.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="DEFD_C_ThreadPool.h" />
     <ClInclude Include="DepthShaderClass.h" />
     <ClInclude Include="DxDefine.h" />
     <ClInclude Include="ThreadPool.h" />
@@ -212,6 +213,7 @@
     <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="DEFD_C_ThreadPool.cpp" />
     <ClCompile Include="DepthShaderClass.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="TriplanarShaderClass.cpp" />

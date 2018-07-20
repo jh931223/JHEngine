@@ -116,6 +116,7 @@ void GraphicsClass::Shutdown()
 bool GraphicsClass::Frame()
 {
 	// 그래픽 장면을 렌더링합니다.
+	m_Direct3D->ExcuteCommandLists();
 	return Render();
 }
 
@@ -187,7 +188,7 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 		if (gameObject)
 		{
 			//  yaw, pitch, roll 값을 통해 회전 행렬을 만듭니다.
-			i->Render(m_Direct3D->GetDeviceContext(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix);
+			i->Render(m_Direct3D->GetImmDeviceContext(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix);
 		}
 		//i->GetMesh()->Render(m_Direct3D->GetDeviceContext());
 		//if (lights.size() == 0)
@@ -221,13 +222,13 @@ bool GraphicsClass::RenderCanvas(CameraComponent* m_Camera)
 
 	m_Direct3D->GetWorldMatrix(worldMatrix);
 	// 비트 맵 버텍스와 인덱스 버퍼를 그래픽 파이프 라인에 배치하여 그리기를 준비합니다.
-	if (!m_Bitmap->Render(m_Direct3D->GetDeviceContext(), 50, 100))
+	if (!m_Bitmap->Render(m_Direct3D->GetImmDeviceContext(), 50, 100))
 	{
 		return false;
 	}
 
 	// 텍스처 쉐이더로 비트 맵을 렌더링합니다.    
-	if (!ResourcesClass::GetInstance()->FindMaterial("cube")->Render(m_Direct3D->GetDeviceContext(), m_Bitmap->GetIndexCount(), worldMatrix, viewMatrix, orthoMatrix))
+	if (!ResourcesClass::GetInstance()->FindMaterial("cube")->Render(m_Direct3D->GetImmDeviceContext(), m_Bitmap->GetIndexCount(), worldMatrix, viewMatrix, orthoMatrix))
 	{
 		return false;
 	}
@@ -243,10 +244,10 @@ bool GraphicsClass::RenderToTexture(CameraComponent * camera)
 	// 렌더링 대상을 렌더링에 맞게 설정합니다.
 	RenderTextureClass* m_RenderTexture = ResourcesClass::GetInstance()->FindRenderTexture("rt_Shadow");
 
-	m_RenderTexture->SetRenderTarget(m_Direct3D->GetDeviceContext());
+	m_RenderTexture->SetRenderTarget(m_Direct3D->GetImmDeviceContext());
 
 	// 렌더링을 텍스처에 지웁니다.
-	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetDeviceContext(), 0.0f, 0.0f, 1.0f,1.0f);
+	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetImmDeviceContext(), 0.0f, 0.0f, 1.0f,1.0f);
 
 	// 이제 장면을 렌더링하면 백 버퍼 대신 텍스처로 렌더링됩니다.
 	if (!RenderScene(camera,ResourcesClass::GetInstance()->FindMaterial("depthMap")))
@@ -264,10 +265,10 @@ bool GraphicsClass::RenderToDepthTexture(CameraComponent * camera)
 	// 렌더링 대상을 렌더링에 맞게 설정합니다.
 	RenderTextureClass* m_RenderTexture = ResourcesClass::GetInstance()->FindRenderTexture("rt_Shadow");
 
-	m_RenderTexture->SetRenderTarget(m_Direct3D->GetDeviceContext());
+	m_RenderTexture->SetRenderTarget(m_Direct3D->GetImmDeviceContext());
 
 	// 렌더링을 텍스처에 지웁니다.
-	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetDeviceContext(), 0.0f, 0.3f, 0.5f, 1.0f);
+	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetImmDeviceContext(), 0.0f, 0.3f, 0.5f, 1.0f);
 
 	// 이제 장면을 렌더링하면 백 버퍼 대신 텍스처로 렌더링됩니다.
 	if (!RenderScene(camera, ResourcesClass::GetInstance()->FindMaterial("depthMap")))

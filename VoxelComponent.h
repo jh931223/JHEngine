@@ -98,7 +98,7 @@ private:
 
 	void ProcessLOD();
 	void ProcessUpdateQueue();
-	void ProcessBuildResultQueue();
+	void ProcessResultQueue();
 
 	XMFLOAT3 lerpSelf(XMFLOAT3 p, XMFLOAT3 target, float acc)
 	{
@@ -133,10 +133,13 @@ private:
 
 	int partitionSize=32;
 
+	struct TASK_BUFFER
+	{
+		OctreeNode<VoxelData>* _node;
+	};
 
-
-	ThreadPool<MESH_RESULT> threadPool_Main;
-	ThreadPool<MESH_RESULT> threadPool_Deform;
+	ThreadPool<TASK_BUFFER,MESH_RESULT> threadPool_Main;
+	ThreadPool<TASK_BUFFER,MESH_RESULT> threadPool_Deform;
 
 
 	std::list<OctreeNode<VoxelData>*> updateQueue_Main;

@@ -161,6 +161,9 @@
     <ClInclude Include="ThreadPool.h">
       <Filter>Scripts</Filter>
     </ClInclude>
+    <ClInclude Include="DEFD_C_ThreadPool.h">
+      <Filter>EngineFrameworks\Source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InputComponent.cpp">
@@ -270,6 +273,7 @@
     <ClCompile Include="ThreadPool.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
+    <ClCompile Include="DEFD_C_ThreadPool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="hlsl\depth_ps.hlsl">

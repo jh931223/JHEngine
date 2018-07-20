@@ -47,7 +47,7 @@ public:
 	virtual bool Initialize(ID3D11Device* device, HWND hwnd) = 0;
 	bool Dispatch(int x, int y, int z, CShaderParameterCollections* params)
 	{
-		ID3D11DeviceContext* pD3D = SystemClass::GetInstance()->GetGraphics()->GetD3D()->GetDeviceContext();
+		ID3D11DeviceContext* pD3D = SystemClass::GetInstance()->GetGraphics()->GetD3D()->GetImmDeviceContext();
 
 		BindConstantBuffers(pD3D, params);
 		BindShaderResources(pD3D, params);

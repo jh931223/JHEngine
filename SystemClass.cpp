@@ -253,6 +253,11 @@ GraphicsClass * SystemClass::GetGraphics()
 	return m_Graphics;
 }
 
+D3DClass * SystemClass::GetD3D()
+{
+	return m_Graphics->GetD3D();
+}
+
 ResourcesClass * SystemClass::GetResources()
 {
 	return m_Resources;

@@ -77,7 +77,7 @@ void VoxelComponent::SetMeshToRenderer(Mesh* newMesh, XMFLOAT3 pos, int depth)
 }
 void VoxelComponent::Update()
 {
-	ProcessBuildResultQueue();
+	ProcessResultQueue();
 	ProcessLOD();
 	if (Input()->GetKey(DIK_UP))
 	{
@@ -200,6 +200,13 @@ template<> OctreeNode<MeshRenderer*>::~OctreeNode()
 }
 void VoxelComponent::Initialize()
 {
+
+	std::function<MESH_RESULT(TASK_BUFFER)> _task = ([&, this](TASK_BUFFER buf)
+	{
+		return this->UpdatePartialMesh(buf._node->GetPosition());
+	});
+	threadPool_Main.SetTaskFunc(_task);
+
 	camera = Hierarchy()->FindGameObjectWithName("mainCamera");
 
 	threadPool_Main.Initialize(4,false);
@@ -1290,11 +1297,9 @@ void VoxelComponent::ProcessUpdateQueue()
 		{
 			OctreeNode<VoxelData>* _node = updateQueue_Main.front();
 			updateQueue_Main.pop_front();
-			std::function<MESH_RESULT()> _task = ([&, this, _node]() 
-			{ 
-				return this->UpdatePartialMesh(_node->GetPosition()); 
-			});
-			threadPool_Main.AddTask(_task);
+			TASK_BUFFER buf;
+			buf._node = _node;
+			threadPool_Main.AddTask(buf);
 		}
 		while (updateQueue_Deform.size())
 		{
@@ -1310,7 +1315,7 @@ void VoxelComponent::ProcessUpdateQueue()
 	}
 }
 
-void VoxelComponent::ProcessBuildResultQueue()
+void VoxelComponent::ProcessResultQueue()
 {
 	if (threadPool_Main.isInit)
 	{
@@ -1319,6 +1324,7 @@ void VoxelComponent::ProcessBuildResultQueue()
 			for (auto i : *(threadPool_Main.GetResultQueue()))
 			{
 				SetMeshToRenderer(i.newMesh, i.pos, i.depth);
+				
 			}
 			threadPool_Main.GetResultQueue()->clear();
 		}

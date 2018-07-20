@@ -4,6 +4,7 @@ class InputClass;
 class GraphicsClass;
 class HierarchyClass;
 class ResourcesClass;
+class D3DClass;
 class SystemClass : public Singleton<SystemClass>
 {
 public:
@@ -19,6 +20,7 @@ public:
 	int GetScreenWidth();
 	int GetScreenHeight();
 	GraphicsClass* GetGraphics();
+	D3DClass* GetD3D();
 	ResourcesClass* GetResources();
 	ID3D11Device* GetDevice();
 

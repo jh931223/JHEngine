@@ -174,7 +174,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
 	// 스왑 체인, Direct3D 장치 및 Direct3D 장치 컨텍스트를 만듭니다.
 	if (FAILED(D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, &featureLevel, 1,
-		D3D11_SDK_VERSION, &swapChainDesc, &m_swapChain, &m_device, NULL, &m_deviceContext)))
+		D3D11_SDK_VERSION, &swapChainDesc, &m_swapChain, &m_device, NULL, &m_immDeviceContext)))
 	{
 		return false;
 	}
@@ -251,7 +251,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	}
 
 	// 깊이 스텐실 상태를 설정합니다
-	m_deviceContext->OMSetDepthStencilState(m_depthStencilState, 1);
+	m_immDeviceContext->OMSetDepthStencilState(m_depthStencilState, 1);
 
 	// 깊이 스텐실 뷰의 구조체를 초기화합니다
 	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
@@ -269,7 +269,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	}
 
 	// 렌더링 대상 뷰와 깊이 스텐실 버퍼를 출력 렌더 파이프 라인에 바인딩합니다
-	m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
+	m_immDeviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
 
 	// 그려지는 폴리곤과 방법을 결정할 래스터 구조체를 설정합니다
 	D3D11_RASTERIZER_DESC rasterDesc;
@@ -293,7 +293,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	}
 
 	// 이제 래스터 라이저 상태를 설정합니다
-	m_deviceContext->RSSetState(m_rasterState);
+	m_immDeviceContext->RSSetState(m_rasterState);
 
 	// 렌더링을 위해 뷰포트를 설정합니다
 	m_viewport.Width = (float)screenWidth;
@@ -304,7 +304,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	m_viewport.TopLeftY = 0.0f;
 
 	// 뷰포트를 생성합니다
-	m_deviceContext->RSSetViewports(1, &m_viewport);
+	m_immDeviceContext->RSSetViewports(1, &m_viewport);
 
 	// 투영 행렬을 설정합니다
 	float fieldOfView = XM_PI / 4.0f;
@@ -318,6 +318,8 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 
 	// 2D 렌더링을위한 직교 투영 행렬을 만듭니다
 	m_orthoMatrix = XMMatrixOrthographicLH((float)screenWidth, (float)screenHeight, screenNear, screenDepth);
+
+	m_deferredContexts.resize(maxDeferredContextNum);
 
 	return true;
 }
@@ -361,10 +363,10 @@ void D3DClass::Shutdown()
 		m_renderTargetView = 0;
 	}
 
-	if (m_deviceContext)
+	if (m_immDeviceContext)
 	{
-		m_deviceContext->Release();
-		m_deviceContext = 0;
+		m_immDeviceContext->Release();
+		m_immDeviceContext = 0;
 	}
 
 	if (m_device)
@@ -378,6 +380,20 @@ void D3DClass::Shutdown()
 		m_swapChain->Release();
 		m_swapChain = 0;
 	}
+
+	for (int i = 0; i<maxDeferredContextNum; i++)
+	{
+		if (m_deferredContexts[i].context)
+		{
+			m_deferredContexts[i].context->Release();
+			m_deferredContexts[i].context = 0;
+		}
+		if (m_deferredContexts[i].commandList)
+		{
+			m_deferredContexts[i].commandList->Release();
+			m_deferredContexts[i].commandList = 0;
+		}
+	}
 }
 
 
@@ -387,10 +403,10 @@ void D3DClass::BeginScene(float red, float green, float blue, float alpha)
 	float color[4] = { red, green, blue, alpha };
 
 	// 백버퍼를 지웁니다
-	m_deviceContext->ClearRenderTargetView(m_renderTargetView, color);
+	m_immDeviceContext->ClearRenderTargetView(m_renderTargetView, color);
 
 	// 깊이 버퍼를 지웁니다
-	m_deviceContext->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	m_immDeviceContext->ClearDepthStencilView(m_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
 
@@ -416,9 +432,56 @@ ID3D11Device* D3DClass::GetDevice()
 }
 
 
-ID3D11DeviceContext* D3DClass::GetDeviceContext()
+ID3D11DeviceContext* D3DClass::GetImmDeviceContext()
 {
-	return m_deviceContext;
+	return m_immDeviceContext;
+}
+
+DEFERRED_CONTEXT_BUFFER * D3DClass::CreateDeferredContext()
+{
+	ID3D11DeviceContext* DDC=NULL;
+	for (int i = 0; i < maxDeferredContextNum; i++)
+	{
+		if (!m_deferredContexts[i].context)
+		{
+			m_device->CreateDeferredContext(i, &DDC);
+			m_deferredContexts[i].context=DDC;
+			return &m_deferredContexts[i];
+		}
+	}
+	return NULL;
+}
+
+bool D3DClass::ReleaseDeferredContex(DEFERRED_CONTEXT_BUFFER* _context)
+{
+	for (int i=0;i<maxDeferredContextNum;i++)
+	{
+		if (&m_deferredContexts[i] == _context)
+		{
+			m_deferredContexts[i].context->Release();
+			m_deferredContexts[i].context = 0;
+			if (m_deferredContexts[i].commandList)
+			{
+				m_deferredContexts[i].commandList->Release();
+				m_deferredContexts[i].commandList = 0;
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
+bool D3DClass::ExcuteCommandLists()
+{
+	if (m_deferredContexts.size() == 0)
+	{
+		return false;
+	}
+	for (auto i:m_deferredContexts)
+	{
+		i.ExcuteCommandList(m_immDeviceContext);
+	}
+	return true;
 }
 
 
@@ -450,12 +513,34 @@ void D3DClass::GetVideoCardInfo(char* cardName, int& memory)
 void D3DClass::SetBackBufferRenderTarget()
 {
 	// 렌더 타겟 뷰와 깊이 스텐실 버퍼를 출력 렌더 파이프 라인에 바인딩합니다.
-	m_deviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
+	m_immDeviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
 }
 
 
 void D3DClass::ResetViewport()
 {
 	// 뷰포트를 재설정합니다.
-	m_deviceContext->RSSetViewports(1, &m_viewport);
+	m_immDeviceContext->RSSetViewports(1, &m_viewport);
+}
+
+void DEFERRED_CONTEXT_BUFFER::FinishCommandList()
+{
+	if (context)
+	{
+		if (commandList)
+		{
+			commandList->Release();
+		}
+		context->FinishCommandList(FALSE, &commandList);
+	}
+}
+
+void DEFERRED_CONTEXT_BUFFER::ExcuteCommandList(ID3D11DeviceContext * immContext)
+{
+	if (commandList)
+	{
+		immContext->ExecuteCommandList(commandList, FALSE);
+		commandList->Release();
+		commandList = 0;
+	}
 }
