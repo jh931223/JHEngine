@@ -133,13 +133,9 @@ private:
 
 	int partitionSize=32;
 
-	struct TASK_BUFFER
-	{
-		OctreeNode<VoxelData>* _node;
-	};
 
-	ThreadPool<TASK_BUFFER,MESH_RESULT> threadPool_Main;
-	ThreadPool<TASK_BUFFER,MESH_RESULT> threadPool_Deform;
+	ThreadPool<OctreeNode<VoxelData>*,MESH_RESULT> threadPool_Main;
+	ThreadPool<OctreeNode<VoxelData>*,MESH_RESULT> threadPool_Deform;
 
 
 	std::list<OctreeNode<VoxelData>*> updateQueue_Main;

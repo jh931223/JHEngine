@@ -13,11 +13,12 @@ private:
 	ID3D11UnorderedAccessView* uav;
 public:
 	StructuredBuffer();
-	StructuredBuffer(ID3D11Device* pDevice, size_t stuctSize, UINT elementNum, VOID* data, BYTE _bufferType);
+	StructuredBuffer(ID3D11Device* pDevice, size_t stuctSize, UINT elementNum, VOID* data, UINT _bufferType);
 	~StructuredBuffer();
-	HRESULT InitializeBuffer(ID3D11Device* pDevice,size_t stuctSize,UINT elementNum, VOID* data, BYTE _bufferType);
+	HRESULT InitializeBuffer(ID3D11Device* pDevice,size_t stuctSize,UINT elementNum, VOID* data, UINT _bufferType);
 	void Release();
 	ID3D11ShaderResourceView*const* GetSRV();
 	ID3D11UnorderedAccessView** GetUAV();
+	ID3D11Buffer** GetBuffer();
 };
 

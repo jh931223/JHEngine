@@ -7,13 +7,11 @@ class MeshRenderer : public Component
 {
 private:
 	Mesh* mesh;
-	TextureClass* texture;
 	Material* material;
 public:
 	MeshRenderer();
 	virtual ~MeshRenderer();
 
-	TextureClass* GetTexture();
 	Mesh* GetMesh();
 	void SetMesh(Mesh* _mesh);
 	Material* GetMaterial();

@@ -15,10 +15,6 @@ MeshRenderer::~MeshRenderer()
 	SystemClass::GetInstance()->GetGraphics()->RemoveRenderer(this);
 }
 
-TextureClass * MeshRenderer::GetTexture()
-{
-	return texture;
-}
 
 Mesh * MeshRenderer::GetMesh()
 {

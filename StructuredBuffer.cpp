@@ -6,7 +6,7 @@ StructuredBuffer::StructuredBuffer()
 {
 }
 
-StructuredBuffer::StructuredBuffer(ID3D11Device * pDevice, size_t structSize, UINT elementNum, VOID * data, BYTE _bufferType)
+StructuredBuffer::StructuredBuffer(ID3D11Device * pDevice, size_t structSize, UINT elementNum, VOID * data, UINT _bufferType)
 {
 	InitializeBuffer(pDevice, structSize, elementNum, data,_bufferType);
 }
@@ -17,7 +17,7 @@ StructuredBuffer::~StructuredBuffer()
 	Release();
 }
 
-HRESULT StructuredBuffer::InitializeBuffer(ID3D11Device* pDevice, size_t structSize, UINT elementNum, VOID* initData, BYTE _bufferType)
+HRESULT StructuredBuffer::InitializeBuffer(ID3D11Device* pDevice, size_t structSize, UINT elementNum, VOID* initData, UINT _bufferType)
 {
 	HRESULT hr;
 	D3D11_BUFFER_DESC desc;
@@ -91,4 +91,10 @@ ID3D11ShaderResourceView * const * StructuredBuffer::GetSRV()
 ID3D11UnorderedAccessView** StructuredBuffer::GetUAV()
 {
 	return &uav;
+}
+
+ID3D11Buffer ** StructuredBuffer::GetBuffer()
+{
+	
+	return &buffer;
 }

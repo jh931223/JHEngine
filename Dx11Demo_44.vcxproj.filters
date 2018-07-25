@@ -161,8 +161,14 @@
     <ClInclude Include="ThreadPool.h">
       <Filter>Scripts</Filter>
     </ClInclude>
-    <ClInclude Include="DEFD_C_ThreadPool.h">
-      <Filter>EngineFrameworks\Source</Filter>
+    <ClInclude Include="ShaderParameterCollections.h">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClInclude>
+    <ClInclude Include="MarchingCubeCompute.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="RWLock.h">
+      <Filter>Scripts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -273,7 +279,15 @@
     <ClCompile Include="ThreadPool.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
-    <ClCompile Include="DEFD_C_ThreadPool.cpp" />
+    <ClCompile Include="ShaderParameterCollections.cpp">
+      <Filter>EngineFrameworks\Source\Frameworks\ResourceClass</Filter>
+    </ClCompile>
+    <ClCompile Include="MarchingCubeCompute.cpp">
+      <Filter>Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="RWLock.cpp">
+      <Filter>Scripts</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="hlsl\depth_ps.hlsl">

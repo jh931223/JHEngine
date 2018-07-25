@@ -286,7 +286,7 @@ bool MarchingCubeShaderClass::DrawCall(ID3D11DeviceContext* deviceContext, XMMAT
 	deviceContext->Unmap(m_marchingInfoBuffer, 0);
 	bufferNumber = 0;
 	deviceContext->GSSetConstantBuffers(1, 1, &m_marchingInfoBuffer);
-	deviceContext->GSSetShaderResources(0, 1, params.GetSRV("chunksData"));
+	deviceContext->GSSetShaderResources(0, 1, params.GetStructuredBuffer("chunksData")->GetSRV());
 
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
 	deviceContext->PSSetShaderResources(0, 1, params.GetTexture("Texture1")->GetResourceView());

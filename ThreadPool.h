@@ -1,6 +1,7 @@
 #pragma once
 #include<vector>
 #include<list>
+#include<algorithm>
 #include<thread>
 #include<mutex>
 #include<functional>
@@ -35,10 +36,17 @@ public:
 	}
 	void AddTask(TaskBuffer _task)
 	{
+		auto iter = std::find(taskBuffers.begin(), taskBuffers.end(), _task);
+		if (iter!=taskBuffers.end())
+			return;
 		taskBuffers.push_back(_task);
 	}
 	void AddTaskFront(TaskBuffer _task)
 	{
+
+		auto iter = std::find(taskBuffers.begin(), taskBuffers.end(), _task);
+		if (iter != taskBuffers.end())
+			taskBuffers.erase(_task);
 		taskBuffers.push_front(_task);
 	}
 	void ThreadPoolUpdate()
