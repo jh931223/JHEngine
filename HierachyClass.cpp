@@ -9,6 +9,7 @@
 #include "CameraComponent.h"
 #include "InputComponent.h"
 #include "VoxelComponent.h"
+#include "A_VoxelComponent.h"
 #include "MeshClass.h"
 #include <map>
 #include <string>
@@ -34,18 +35,13 @@ void HierarchyClass::AddGameObject(GameObject * _gameObject)
 void HierarchyClass::DestroyGameObject(GameObject * _gameObject)
 {
 	printf("%s »èÁ¦µÊ\n", _gameObject->name);
-	int j=0;
-	for (auto i:gameObjects)
-	{
-		if (i == _gameObject)
-		{
-			break;
-		}
-		j++;
-	}
 	delete _gameObject;
-	gameObjects.erase(gameObjects.begin()+j);
-
+	auto g1 = std::find(gameObjects.begin(), gameObjects.end(), _gameObject);
+	if (g1 != gameObjects.end())
+		gameObjects.erase(g1);
+	auto g = std::find(newGameObjects.begin(), newGameObjects.end(), _gameObject);
+	if (g != newGameObjects.end())
+		newGameObjects.erase(g);
 	/*for (iter = newGameObjects.begin(); iter != newGameObjects.end(); iter++)
 	{
 		if (*iter == _gameObject)
@@ -105,7 +101,7 @@ void HierarchyClass::Setup()
 	//r->AddChild(gobj);
 	renderer = new MeshRenderer;
 	gobj->AddComponent(renderer);
-	VoxelComponent* voxel = new VoxelComponent;
+	A_VoxelComponent* voxel = new A_VoxelComponent;
 	gobj->AddComponent(voxel);
 	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));
 	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));

@@ -13,16 +13,16 @@ class VoxelTerrainComponent;
 template<typename T> class Octree;
 template<typename T> class OctreeNode;
 template<typename T> class ArrayedOctree;
-struct VoxelData
-{
-	int material=0;
-	float isoValue=-1;
-};
 class VoxelComponent : public Component
 {
 public:
 
 
+	struct VoxelData
+	{
+		int material=0;
+		float isoValue=-1;
+	};
 	struct MESH_RESULT
 	{
 		Mesh* newMesh;
@@ -113,12 +113,17 @@ private:
 	float unit;
 	float tUnit;
 	int tAmount;
+
 	bool useMarchingCube;
 	bool useAsyncBuild;
 	bool useFrustum;
+
 	int currentOctreeDepth = 0;
 
 	Octree<VoxelData>* gOctree;
+
+	ArrayedOctree<VoxelData>* aOctree; // Serialized Octree
+
 	Octree<MeshRenderer*>* gOctreeMeshRenderer;
 
 	
@@ -127,7 +132,7 @@ private:
 
 	XMFLOAT3 lastBasePosition;
 
-	int isoLevel = 0;
+	float isoLevel = 0.0f;
 	float strength=0.5f;
 	float brushRadius = 3.0f;
 

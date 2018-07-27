@@ -163,6 +163,7 @@
   <ItemGroup>
     <ClInclude Include="AlignedAllocationPolicy.h" />
     <ClInclude Include="ArrayedOctree.h" />
+    <ClInclude Include="A_VoxelComponent.h" />
     <ClInclude Include="BitmapClass.h" />
     <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="Component.h" />
@@ -189,7 +190,6 @@
     <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MeshClass.h" />
     <ClInclude Include="Octree.h" />
-    <ClInclude Include="OctreeManagerComponent.h" />
     <ClInclude Include="PerlinNoise.h" />
     <ClInclude Include="RenderTextureClass.h" />
     <ClInclude Include="resource.h" />
@@ -209,6 +209,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ArrayedOctree.cpp" />
+    <ClCompile Include="A_VoxelComponent.cpp" />
     <ClCompile Include="BitmapClass.cpp" />
     <ClCompile Include="CameraComponent.cpp" />
     <ClCompile Include="Component.cpp" />
@@ -234,7 +235,6 @@
     <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="MeshClass.cpp" />
     <ClCompile Include="Octree.cpp" />
-    <ClCompile Include="OctreeManagerComponent.cpp" />
     <ClCompile Include="PerlinNoise.cpp" />
     <ClCompile Include="RenderTextureClass.cpp" />
     <ClCompile Include="ResourcesClass.cpp" />
