@@ -48,8 +48,8 @@ public:
 		if (targetDepth == -1)
 			targetDepth = depth;
 		
-		XMFLOAT3 resultPos = GetNodeXYZ(targetPosition, x, y, z, targetDepth);
-		int idx = (resultPos.z << targetDepth * 2) + (resultPos.y << targetDepth) + resultPos.x;
+		XMFLOAT3 resultPos = GetNodeXYZ(targetPosition, targetDepth);
+		int idx = ((int)resultPos.z << targetDepth * 2) + ((int)resultPos.y << targetDepth) + (int)resultPos.x;
 		return idx;
 	}
 	int GetDepthOfSize(int partitionSize)
@@ -150,12 +150,12 @@ public:
 		T* v = nodes[targetDepth];
 		return nodes[targetDepth][idx];
 	}
-	XMFLOAT3 GetNodeXYZ(XMFLOAT3 targetPosition,int&x,int&y,int&z, int targetDepth=-1)
+	XMFLOAT3 GetNodeXYZ(XMFLOAT3 targetPosition, int targetDepth=-1)
 	{
 		if (targetPosition.x < 0 || targetPosition.y < 0 || targetPosition.z < 0)
-			return;
+			return XMFLOAT3(-1,-1,-1);
 		if (targetPosition.x >= size || targetPosition.y >= size || targetPosition.z >= size)
-			return;
+			return XMFLOAT3(-1, -1, -1);
 		if (targetDepth == -1)
 			targetDepth = depth;
 		int unit = GetUnitSize(targetDepth);

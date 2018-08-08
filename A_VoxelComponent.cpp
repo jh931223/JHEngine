@@ -39,11 +39,84 @@ A_VoxelComponent ::~A_VoxelComponent()
 {
 	ReleaseOctree();
 }
+void A_VoxelComponent::Initialize()
+{
+
+	std::function<MESH_RESULT(INPUT_BUFFER)> _task = ([&, this](INPUT_BUFFER buf)
+	{
+		return this->UpdatePartialMesh(aOctree->GetNodePosition(buf.idx, buf.depth));
+	});
+
+
+	//std::function<MESH_RESULT(TASK_BUFFER)> _task2 = ([&,this](TASK_BUFFER buf)
+	//{
+	//	DEFERRED_CONTEXT_BUFFER* dc = SystemClass::GetInstance()->GetD3D()->CreateDeferredContext();
+	//	ID3D11Device* device = SystemClass::GetInstance()->GetDevice();
+	//	ComputeShader* compute;
+
+	//	ShaderParameterCollections* params=new ShaderParameterCollections;
+	//	StructuredBuffer* vBuffer=new StructuredBuffer(device, 4, 4, NULL, StructuredBuffer::S_BUFFER_TYPE_UAV);
+	//	StructuredBuffer* iBuffer = new StructuredBuffer(device, 4, 4, NULL, StructuredBuffer::S_BUFFER_TYPE_UAV);
+	//	params->SetStructuredBuffer("vertices",vBuffer);
+	//	params->SetStructuredBuffer("indices", iBuffer);
+	//	compute->Initialize(device);
+	//	
+	//	compute->Dispatch(dc->context, 4, 4, 0, params);
+	//	// 작업해야함
+
+	//	//
+	//	dc->FinishCommandList();
+	//	return MESH_RESULT();
+	//});
+	threadPool_Main.SetTaskFunc(_task);
+	threadPool_Deform.SetTaskFunc(_task);
+
+	camera = Hierarchy()->FindGameObjectWithName("mainCamera");
+
+	threadPool_Main.Initialize(8,false);
+	threadPool_Deform.Initialize(2, false);
+
+	unit = 1.0f;
+	tUnit = 0.25f;
+	tAmount = 4;
+
+	useMarchingCube = true;
+	useAsyncBuild = false;
+	//useFrustum = true;
+
+	partitionSize = 16;
+
+	SetLODLevel(0, 150);
+	SetLODLevel(1, 200);
+	SetLODLevel(2, 300);
+	SetLODLevel(3, 500);
+	lastBasePosition = CameraComponent::mainCamera()->transform()->GetWorldPosition();
+	
+
+
+	//LoadCube(32, 32, 32);
+	LoadPerlin(128, 128, 128, 64, 0.3);
+	//int h = ReadTXT("/data/height.txt");
+
+
+
+
+	ULONG tick = GetTickCount64();
+	//LoadHeightMapFromRaw(1025, 512, 1025, "data/heightmap.r16");// , 0, 0, 255, 255);
+	if (!useAsyncBuild)
+	{
+		currentOctreeDepth = 0;
+		UpdateMesh();
+	}
+	else UpdateMeshAsync(0);
+	printf("Init time : %dms\n", GetTickCount64() - tick);
+
+}
 void A_VoxelComponent::SetMeshToRenderer(Mesh* newMesh, XMFLOAT3 pos, int depth)
 {
 
 	OctreeNode<MeshRenderer*>* rendererNode;
-	rendererNode = gOctreeMeshRenderer->Subdivide(pos, depth, newMesh!=NULL);
+	rendererNode = gOctreeMeshRenderer->Subdivide(pos, aOctree->depth-depth, newMesh!=NULL);
 
 	if (newMesh)
 	{
@@ -204,79 +277,6 @@ template<> OctreeNode<MeshRenderer*>::~OctreeNode()
 		GameObject::Destroy(value->gameObject);
 	value = 0;
 	RemoveChilds();
-}
-void A_VoxelComponent::Initialize()
-{
-
-	std::function<MESH_RESULT(INPUT_BUFFER)> _task = ([&, this](INPUT_BUFFER buf)
-	{
-		return this->UpdatePartialMesh(aOctree->GetNodePosition(buf.idx, buf.depth));
-	});
-
-
-	//std::function<MESH_RESULT(TASK_BUFFER)> _task2 = ([&,this](TASK_BUFFER buf)
-	//{
-	//	DEFERRED_CONTEXT_BUFFER* dc = SystemClass::GetInstance()->GetD3D()->CreateDeferredContext();
-	//	ID3D11Device* device = SystemClass::GetInstance()->GetDevice();
-	//	ComputeShader* compute;
-
-	//	ShaderParameterCollections* params=new ShaderParameterCollections;
-	//	StructuredBuffer* vBuffer=new StructuredBuffer(device, 4, 4, NULL, StructuredBuffer::S_BUFFER_TYPE_UAV);
-	//	StructuredBuffer* iBuffer = new StructuredBuffer(device, 4, 4, NULL, StructuredBuffer::S_BUFFER_TYPE_UAV);
-	//	params->SetStructuredBuffer("vertices",vBuffer);
-	//	params->SetStructuredBuffer("indices", iBuffer);
-	//	compute->Initialize(device);
-	//	
-	//	compute->Dispatch(dc->context, 4, 4, 0, params);
-	//	// 작업해야함
-
-	//	//
-	//	dc->FinishCommandList();
-	//	return MESH_RESULT();
-	//});
-	threadPool_Main.SetTaskFunc(_task);
-	threadPool_Deform.SetTaskFunc(_task);
-
-	camera = Hierarchy()->FindGameObjectWithName("mainCamera");
-
-	threadPool_Main.Initialize(8,false);
-	threadPool_Deform.Initialize(2, false);
-
-	unit = 1.0f;
-	tUnit = 0.25f;
-	tAmount = 4;
-
-	useMarchingCube = true;
-	useAsyncBuild = false;
-	//useFrustum = true;
-
-	partitionSize = 16;
-
-	SetLODLevel(0, 150);
-	SetLODLevel(1, 200);
-	SetLODLevel(2, 300);
-	SetLODLevel(3, 500);
-	lastBasePosition = CameraComponent::mainCamera()->transform()->GetWorldPosition();
-	
-
-
-	//LoadCube(32, 32, 32);
-	LoadPerlin(128, 128, 128, 64, 0.3);
-	//int h = ReadTXT("/data/height.txt");
-
-
-
-
-	ULONG tick = GetTickCount64();
-	//LoadHeightMapFromRaw(1025, 512, 1025, "data/heightmap.r16");// , 0, 0, 255, 255);
-	if (!useAsyncBuild)
-	{
-		currentOctreeDepth = 0;
-		UpdateMesh();
-	}
-	else UpdateMeshAsync(0);
-	printf("Init time : %dms\n", GetTickCount64() - tick);
-
 }
 
 
@@ -515,24 +515,25 @@ void A_VoxelComponent::CreateMarchingCubeFace(XMFLOAT3 pos,int depth, int _unit,
 	float size2 = width * height;
 	int idx = aOctree->GetNodeIDX(pos, depth);
 	XMFLOAT3 p3= aOctree->GetNodePosition(idx, depth);
-	XMFLOAT3 px3 = p3 + XMFLOAT3(1, 0, 0);
-	XMFLOAT3 py3 = p3 + XMFLOAT3(0, 1, 0);;
-	XMFLOAT3 pxy3 = p3 + XMFLOAT3(1, 1, 0);
-	XMFLOAT3 pz3 = p3 + XMFLOAT3(0, 0, 1);
-	XMFLOAT3 pxz3 = p3 + XMFLOAT3(1, 0, 1);
-	XMFLOAT3 pyz3 = p3 + XMFLOAT3(0, 1, 1);
-	XMFLOAT3 pxyz3 = p3 + XMFLOAT3(1, 1, 1);
+	XMFLOAT3 px3 = p3 + XMFLOAT3(1, 0, 0) * _unit;
+	XMFLOAT3 py3 = p3 + XMFLOAT3(0, 1, 0) * _unit;
+	XMFLOAT3 pxy3 = p3 + XMFLOAT3(1, 1, 0) * _unit;
+	XMFLOAT3 pz3 = p3 + XMFLOAT3(0, 0, 1) * _unit;
+	XMFLOAT3 pxz3 = p3 + XMFLOAT3(1, 0, 1) * _unit;
+	XMFLOAT3 pyz3 = p3 + XMFLOAT3(0, 1, 1) * _unit;
+	XMFLOAT3 pxyz3 = p3 + XMFLOAT3(1, 1, 1) * _unit;
 	float value0, value1, value2,  value3,  value4,  value5, value6, value7;
+
 	short material = 0;
 	VoxelData pData = aOctree->GetValue(idx, depth);
 	value0 = pData.isoValue;
 	value1 = aOctree->GetValue(p3 + XMFLOAT3(1, 0, 0), depth).isoValue;
-	value2 = aOctree->GetValue(p3 + XMFLOAT3(0, 1, 0), depth).isoValue;
-	value3 = aOctree->GetValue(p3 + XMFLOAT3(1, 1, 0), depth).isoValue;
-	value4 = aOctree->GetValue(p3 + XMFLOAT3(0, 0, 1), depth).isoValue;
-	value5 = aOctree->GetValue(p3 + XMFLOAT3(1, 0, 1), depth).isoValue;
-	value6 = aOctree->GetValue(p3 + XMFLOAT3(0, 1, 1), depth).isoValue;
-	value7 = aOctree->GetValue(p3 + XMFLOAT3(1, 1, 1), depth).isoValue;
+	value2 = aOctree->GetValue(py3, depth).isoValue;
+	value3 = aOctree->GetValue(pxy3, depth).isoValue;
+	value4 = aOctree->GetValue(pz3, depth).isoValue;
+	value5 = aOctree->GetValue(pxz3, depth).isoValue;
+	value6 = aOctree->GetValue(pyz3, depth).isoValue;
+	value7 = aOctree->GetValue(pxyz3, depth).isoValue;
 	material = pData.material;
 
 
@@ -673,16 +674,17 @@ A_VoxelComponent::MESH_RESULT A_VoxelComponent::GenerateMarchingCubeFaces(XMFLOA
 	std::vector<VertexBuffer> vertices;
 	std::vector<unsigned long> indices;
 	int pDepth = aOctree->GetDepthOfSize(partitionSize);
-	int targetDepth = aOctree->depth;
+	int targetDepth = aOctree->depth-1;
 	int parentIDX = aOctree->GetNodeIDX(pos,pDepth);
 	XMFLOAT3 originPos = aOctree->GetNodePosition(parentIDX, pDepth);
-	for (int i=0;i<partitionSize;i++)
+	int _unit = aOctree->GetUnitSize(targetDepth);
+	for (int i=0;i<partitionSize;i+=_unit)
 	{
-		for (int j = 0; j < partitionSize; j++)
+		for (int j = 0; j < partitionSize; j += _unit)
 		{
-			for (int k = 0; k < partitionSize; k++)
+			for (int k = 0; k < partitionSize; k += _unit)
 			{
-				CreateMarchingCubeFace(originPos + XMFLOAT3(i, j, k), targetDepth, unit, vertices, indices);
+				CreateMarchingCubeFace(originPos + XMFLOAT3(i, j, k), targetDepth, _unit, vertices, indices);
 			}
 		}
 	}
@@ -803,6 +805,8 @@ bool A_VoxelComponent::SetChunk(int x, int y, int z, VoxelData value, int target
 		if (targetDepth == -1)
 			targetDepth = aOctree->depth;
 		aOctree->SetValue(pos, vox, targetDepth);
+		for(int i=0;i<targetDepth;i++)
+			aOctree->SetValue(pos, vox, targetDepth-i);
 		return true;
 	}
 	return false;
