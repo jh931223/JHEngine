@@ -40,6 +40,8 @@ public:
 	void SetBackBufferRenderTarget();
 	void ResetViewport();
 
+	void ChangeFillMode(bool isSolid=true);
+
 
 private:
 	bool m_vsync_enabled = false;

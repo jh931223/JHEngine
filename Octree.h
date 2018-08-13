@@ -147,6 +147,16 @@ public:
 		}
 		root = new OctreeNode<T>(XMFLOAT3(0,0,0), pow(2,depth),depth,NULL);
 	}
+	Octree(float _size,float unitSize)
+	{
+		int depth = 0;
+		int s = _size/unitSize;
+		while ((s = s >> 1))
+		{
+			depth++;
+		}
+		root = new OctreeNode<T>(XMFLOAT3(0, 0, 0), _size, depth, NULL);
+	}
 	~Octree()
 	{
 		if (root)

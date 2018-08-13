@@ -544,3 +544,43 @@ void DEFERRED_CONTEXT_BUFFER::ExcuteCommandList(ID3D11DeviceContext * immContext
 		commandList = 0;
 	}
 }
+
+void D3DClass::ChangeFillMode(bool isSolid)
+{
+
+	if (m_rasterState)
+	{
+		m_rasterState->Release();
+		m_rasterState = 0;
+	}
+
+	// 그려지는 폴리곤과 방법을 결정할 래스터 구조체를 설정합니다
+	D3D11_RASTERIZER_DESC rasterDesc;
+	rasterDesc.AntialiasedLineEnable = false;
+	rasterDesc.DepthBias = 0;
+	rasterDesc.DepthBiasClamp = 0.0f;
+	rasterDesc.DepthClipEnable = true;
+	if (isSolid)
+	{
+		rasterDesc.CullMode = D3D11_CULL_BACK;
+		rasterDesc.FillMode = D3D11_FILL_SOLID;
+	}
+	else
+	{
+		rasterDesc.CullMode = D3D11_CULL_NONE;
+		rasterDesc.FillMode = D3D11_FILL_WIREFRAME;
+	}
+	rasterDesc.FrontCounterClockwise = false;
+	rasterDesc.MultisampleEnable = false;
+	rasterDesc.ScissorEnable = false;
+	rasterDesc.SlopeScaledDepthBias = 0.0f;
+
+	// 방금 작성한 구조체에서 래스터 라이저 상태를 만듭니다
+	if (FAILED(m_device->CreateRasterizerState(&rasterDesc, &m_rasterState)))
+	{
+		return;
+	}
+
+	// 이제 래스터 라이저 상태를 설정합니다
+	m_immDeviceContext->RSSetState(m_rasterState);
+}

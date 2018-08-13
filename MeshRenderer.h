@@ -13,6 +13,7 @@ public:
 	virtual ~MeshRenderer();
 
 	Mesh* GetMesh();
+	void ReleaseMesh();
 	void SetMesh(Mesh* _mesh);
 	Material* GetMaterial();
 	void SetMaterial(Material* _material);

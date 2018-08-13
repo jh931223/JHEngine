@@ -10,6 +10,7 @@
 #include "InputComponent.h"
 #include "VoxelComponent.h"
 #include "A_VoxelComponent.h"
+#include "VoxelComp.h"
 #include "MeshClass.h"
 #include <map>
 #include <string>
@@ -90,7 +91,7 @@ void HierarchyClass::Setup()
 	m_Camera->transform()->SetPosition(XMFLOAT3(25.0f, 0.0f, -50.0f));
 	m_Camera->transform()->SetRotation(XMFLOAT3(0.0f, 0.0f, 0.0f));
 	float screenAspect = (float)SystemClass::GetInstance()->GetScreenWidth() / (float)SystemClass::GetInstance()->GetScreenHeight();
-	m_Camera->SetProjectionParameters((float)(XM_PI / 4.0f), screenAspect, 0.1f, 1000.0f);
+	m_Camera->SetProjectionParameters((float)(XM_PI / 4.0f), screenAspect, 0.1f, 1500.0f);
 	gobj->AddComponent(new InputComponent);
 	// º¹¼¿ »ý¼º
 	gobj = new GameObject("º¹¼¿·çÆ®");
@@ -101,7 +102,7 @@ void HierarchyClass::Setup()
 	//r->AddChild(gobj);
 	renderer = new MeshRenderer;
 	gobj->AddComponent(renderer);
-	A_VoxelComponent* voxel = new A_VoxelComponent;
+	VoxelComp* voxel = new VoxelComp;
 	gobj->AddComponent(voxel);
 	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));
 	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));

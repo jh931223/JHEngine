@@ -177,6 +177,7 @@
     <ClInclude Include="ShaderParameterCollections.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="TriplanarShaderClass.h" />
+    <ClInclude Include="VoxelComp.h" />
     <ClInclude Include="VoxelComponent.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GraphicsClass.h" />
@@ -205,6 +206,7 @@
     <ClInclude Include="TextureShaderClass.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="ViewPointClass.h" />
+    <ClInclude Include="VoxelTable.h" />
     <ClInclude Include="WICTextureLoader.h" />
   </ItemGroup>
   <ItemGroup>
@@ -222,6 +224,7 @@
     <ClCompile Include="ShaderParameterCollections.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="TriplanarShaderClass.cpp" />
+    <ClCompile Include="VoxelComp.cpp" />
     <ClCompile Include="VoxelComponent.cpp" />
     <ClCompile Include="InputComponent.cpp" />
     <ClCompile Include="JHEngine.cpp" />

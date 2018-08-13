@@ -170,6 +170,12 @@
     <ClInclude Include="A_VoxelComponent.h">
       <Filter>Scripts</Filter>
     </ClInclude>
+    <ClInclude Include="VoxelComp.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="VoxelTable.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InputComponent.cpp">
@@ -286,6 +292,9 @@
       <Filter>Scripts</Filter>
     </ClCompile>
     <ClCompile Include="A_VoxelComponent.cpp">
+      <Filter>Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="VoxelComp.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
   </ItemGroup>
