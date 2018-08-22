@@ -80,5 +80,49 @@ namespace JHDev
 			return one;
 		return one / sqrt(one.x*one.x + one.y*one.y + one.z*one.z);
 	}
+	inline void SetMatrix3X3(XMFLOAT3X3& matrix, XMFLOAT3 a, XMFLOAT3 b, XMFLOAT3 c)
+	{
+		matrix._11 = a.x;
+		matrix._12 = a.y;
+		matrix._13 = a.z;
+		matrix._21 = b.x;
+		matrix._22 = b.y;
+		matrix._23 = b.z;
+		matrix._31 = c.x;
+		matrix._32 = c.y;
+		matrix._33 = c.z;
+	}
+	inline XMFLOAT3 operator*(const XMFLOAT3& vec, const XMFLOAT3X3& matrix)
+	{
+		XMMATRIX m = XMLoadFloat3x3(&matrix);
+		XMVECTOR v = XMLoadFloat3(&vec);
+		XMFLOAT3 store;
+		XMStoreFloat3(&store,XMVector3Transform(v, m));
+		return store;
+	}
+	inline XMFLOAT3 operator*(const XMFLOAT3& vec, const XMFLOAT4X4& matrix)
+	{
+		XMMATRIX m = XMLoadFloat4x4(&matrix);
+		XMFLOAT4 newVec(vec.x, vec.y, vec.z, 1);
+		XMVECTOR v = XMLoadFloat4(&newVec);
+		XMFLOAT4 store;
+		XMStoreFloat4(&store, XMVector4Transform(v, m));
+		return XMFLOAT3(store.x,store.y,store.z);
+	}
+	inline XMFLOAT4X4 operator*(const XMFLOAT4X4& _m1, const XMFLOAT4X4& _m2)
+	{
+		XMMATRIX m1 = XMLoadFloat4x4(&_m1);
+		XMMATRIX m2 = XMLoadFloat4x4(&_m2);
+		XMFLOAT4X4 store;
+		XMStoreFloat4x4(&store, m1*m2);
+		return store;
+	}
+	template<typename T> void swap(T& a, T& b)
+	{
+		T c;
+		c = b;
+		b = a;
+		a = c;
+	}
 }
 

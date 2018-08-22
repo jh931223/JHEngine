@@ -30,6 +30,8 @@ public:
 	struct INPUT_BUFFER
 	{
 		int x, y, z;
+		int lodLevel;
+		short transitionCellBasis;
 		void SetXYZ(XMFLOAT3 pos, int _partitionSize)
 		{
 			float s = 1 / _partitionSize;
@@ -39,7 +41,7 @@ public:
 		}
 		friend bool operator==(const INPUT_BUFFER& data1, const INPUT_BUFFER& data2)
 		{
-			return  ((data1.x == data2.x) && (data1.y == data2.y) && (data1.z == data2.z));
+			return  ((data1.x == data2.x) && (data1.y == data2.y) && (data1.z == data2.z)&& (data1.lodLevel==data2.lodLevel));
 		}
 	};
 
@@ -58,7 +60,7 @@ public:
 	XMFLOAT3 GetLastBasePosition() { return lastBasePosition; }
 
 private:
-	void CalcNormal(VertexBuffer& v1, VertexBuffer& v2, VertexBuffer& v3);
+	XMFLOAT3 CalcNormal(const XMFLOAT3& v1, const XMFLOAT3& v2, const XMFLOAT3& v3);
 
 	// 복셀큐브 face 생성 메소드
 	void CreateCubeFace_Up(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
@@ -68,13 +70,19 @@ private:
 	void CreateCubeFace_Forward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
 	void CreateCubeFace_Backward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
 
+	void PolygonizeCell(XMFLOAT3 pos, int _unit,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices,XMFLOAT3 min=XMFLOAT3(0,0,0),XMFLOAT3 max=XMFLOAT3(1,1,1));
+
+	void PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
+
 	MESH_RESULT GenerateCubeFaces(XMFLOAT3 pos);
+
+	XMFLOAT3 AverageNormal(XMFLOAT3 n1, XMFLOAT3 n2);
 
 	// 마칭큐브 face 생성 메소드
 
 	void CreateMarchingCubeFace(XMFLOAT3 pos,int, std::vector<VertexBuffer>&, std::vector<unsigned long>&,bool isTransitionCell =false);
 
-	MESH_RESULT GeneratePartitionFaces(XMFLOAT3 pos,int lodLevel=0);
+	MESH_RESULT GeneratePartitionFaces(XMFLOAT3 pos,int lodLevel=0, short transitionCellBasis=0);
 
 
 	void LoadHeightMapFromRaw(int,int,int,const char*, int startX = -1, int startZ = -1, int endX = -1, int endZ = -1);
@@ -97,7 +105,7 @@ private:
 
 
 	MESH_RESULT CreateNewMesh(INPUT_BUFFER input,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
-	MESH_RESULT UpdatePartialMesh(XMFLOAT3 pos, int lodLevel = 0);
+	MESH_RESULT UpdatePartialMesh(XMFLOAT3 pos, int lodLevel = 0, short transitionCellBasis=0);
 
 	void UpdateMesh(int lodLevel=0);
 	void UpdateVoxelMesh();
@@ -113,7 +121,8 @@ private:
 
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
 	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height, int&, int&);
-	int GetLODLevel(XMFLOAT3 basePos, XMFLOAT3 targetPos);
+	XMFLOAT3 GetPartionCenter(XMFLOAT3 basePos);
+	int GetLODLevel(const XMFLOAT3& basePos, const XMFLOAT3& targetPos);
 	void SetLODLevel(int level, float distance);
 
 	void ProcessLOD();
@@ -152,6 +161,8 @@ private:
 	std::list<OctreeNode<MeshRenderer*>*> nodes_lv0;
 	std::list<OctreeNode<MeshRenderer*>*> nodes_lv1;
 	std::list<OctreeNode<MeshRenderer*>*> nodes_lv2;
+
+	BYTE* lodLevels;
 
 	XMFLOAT3 lastBasePosition;  
 

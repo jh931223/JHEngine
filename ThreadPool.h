@@ -139,7 +139,7 @@ protected :
 			workerConditions[id]->wait(lg, [&]()->bool {return workerFlag[id]; });
 			ResultBuffer rBuffer = taskFunc(taskOfWorker[id]);
 			workerResult[id] = rBuffer;
-			printf("id:%d thread finished task\n", id);
+			//printf("id:%d thread finished task\n", id);
 			workerFlag[id] = false;
 		}
 	}

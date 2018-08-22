@@ -1,5 +1,5 @@
 #pragma once
-struct RegularCellData
+struct RegularCell
 {
 	unsigned char	geometryCounts;		// High nibble is vertex count, low nibble is triangle count.
 	unsigned char	vertexIndex[15];	// Groups of 3 indexes giving the triangulation.
@@ -13,6 +13,10 @@ struct RegularCellData
 	{
 		return (geometryCounts & 0x0F);
 	}
+	unsigned char* Indices()
+	{
+		return vertexIndex;
+	}
 };
 
 
@@ -20,7 +24,7 @@ struct RegularCellData
 // used for a single equivalence class in the Transvoxel Algorithm transition cell,
 // described in Section 4.3.
 
-struct TransitionCellData
+struct TransitionCell
 {
 	long			geometryCounts;		// High nibble is vertex count, low nibble is triangle count.
 	unsigned char	vertexIndex[36];	// Groups of 3 indexes giving the triangulation.
@@ -34,6 +38,23 @@ struct TransitionCellData
 	{
 		return (geometryCounts & 0x0F);
 	}
+	unsigned char* Indices()
+	{
+		return vertexIndex;
+	}
+};
+
+
+static const XMFLOAT3 regularCorners[] = 
+{
+	XMFLOAT3(0, 0, 0),
+	XMFLOAT3(1, 0, 0),
+	XMFLOAT3(0, 0, 1),
+	XMFLOAT3(1, 0, 1),
+	XMFLOAT3(0, 1, 0),
+	XMFLOAT3(1, 1, 0),
+	XMFLOAT3(0, 1, 1),
+	XMFLOAT3(1, 1, 1)
 };
 
 
@@ -67,7 +88,7 @@ const unsigned char regularCellClass[256] =
 // The regularCellData table holds the triangulation data for all 16 distinct classes to
 // which a case can be mapped by the regularCellClass table.
 
-const RegularCellData regularCellData[16] =
+const RegularCell regularCellData[16] =
 {
 	{ 0x00,{} },
 	{ 0x31,{ 0, 1, 2 } },
@@ -403,9 +424,10 @@ const unsigned char transitionCellClass[512] =
 // which a case can be mapped by the transitionCellClass table. The class index should be ANDed
 // with 0x7F before using it to look up triangulation data in this table.
 
-const TransitionCellData transitionCellData[56] =
+
+const TransitionCell transitionCellData[56] =
 {
-	{ 0x00,{} },
+{ 0x00,{} },
 { 0x42,{ 0, 1, 3, 1, 2, 3 } },
 { 0x31,{ 0, 1, 2 } },
 { 0x42,{ 0, 1, 2, 0, 2, 3 } },
@@ -463,6 +485,82 @@ const TransitionCellData transitionCellData[56] =
 { 0xA8,{ 0, 1, 5, 1, 4, 5, 1, 2, 4, 2, 3, 4, 2, 6, 3, 3, 6, 7, 0, 8, 9, 0, 5, 8 } }
 };
 
+static const XMFLOAT3 transitionCorners[] =
+{
+	 XMFLOAT3(0,0,0),  XMFLOAT3(0.5f,0,0),  XMFLOAT3(1,0,0), // High-res lower row
+	 XMFLOAT3(0,0.5,0),  XMFLOAT3(0.5,0.5,0),  XMFLOAT3(1,0.5,0), // High-res middle row
+	 XMFLOAT3(0,1,0),  XMFLOAT3(0.5,1,0),  XMFLOAT3(1,1,0), // High-res upper row
+	 XMFLOAT3(0,0,1),  XMFLOAT3(1,0,1), // Low-res lower row
+	 XMFLOAT3(0,1,1),  XMFLOAT3(1,1,1)  // Low-res upper row
+};
+static const XMFLOAT3X3 TransitionCellBasis[] =
+{
+	//  뒤: (1, 0, 0) (0, 1, 0) (0, 0, 1)
+	//	앞 : (-1, 0, 0) (0, 1, 0) (0, 0, -1)
+	//	왼 : (0, 0, -1) (0, 1, 0) (1, 0, 0)
+	//	오 : (0, 0, 1) (0, 1, 0) (-1, 0, 0)
+	//	아래 : (1, 0, 0) (0, 0, -1) (0, 1, 0)
+	//	위 : (1, 0, 0) (0, 0, 1) (0, -1, 0)
+	XMFLOAT3X3(1, 0, 0,0, 1, 0,0, 0, 1),
+	XMFLOAT3X3(-1, 0, 0,0, 1, 0,0, 0, -1),
+	XMFLOAT3X3(0, 0, -1,0, 1, 0,1, 0, 0),
+	XMFLOAT3X3(0, 0, 1,0, 1, 0,-1, 0, 0),
+	XMFLOAT3X3(1, 0, 0,0, 0, -1,0, 1, 0),
+	XMFLOAT3X3(1, 0, 0,0, 0, 1,0, -1, 0)
+};
+static const XMFLOAT3 transitionCornersByBasis[6][9] =
+{
+	//  뒤: (1, 0, 0) (0, 1, 0) (0, 0, 1)
+	//	앞 : (-1, 0, 0) (0, 1, 0) (0, 0, -1)
+	//	왼 : (0, 0, -1) (0, 1, 0) (1, 0, 0)
+	//	오 : (0, 0, 1) (0, 1, 0) (-1, 0, 0)
+	//	아래 : (1, 0, 0) (0, 0, -1) (0, 1, 0)
+	//	위 : (1, 0, 0) (0, 0, 1) (0, -1, 0)
+	{ XMFLOAT3(0,0,0),XMFLOAT3(0.5f,0,0) ,XMFLOAT3(1,0,0) ,XMFLOAT3(0,0.5f,0) ,XMFLOAT3(0.5f,0.5f,0) ,XMFLOAT3(1,0.5f,0) ,XMFLOAT3(0,1,0) ,XMFLOAT3(0.5f,1,0),XMFLOAT3(1,1,0) },
+	{ XMFLOAT3(1,0,1),XMFLOAT3(0.5f,0,1) ,XMFLOAT3(0,0,1) ,XMFLOAT3(1,0.5f,1) ,XMFLOAT3(0.5f,0.5f,1) ,XMFLOAT3(0,0.5f,1) ,XMFLOAT3(1,1,1) ,XMFLOAT3(0.5f,1,1),XMFLOAT3(0,1,1)},
+	{ XMFLOAT3(0,0,1),XMFLOAT3(0,0,0.5f) ,XMFLOAT3(0,0,0) ,XMFLOAT3(0,0.5f,1) ,XMFLOAT3(0,0.5f,0.5f) ,XMFLOAT3(0,0.5f,0) ,XMFLOAT3(0,1,1) ,XMFLOAT3(0,1,0.5f),XMFLOAT3(0,1,0) },
+	{ XMFLOAT3(1,0,0),XMFLOAT3(1,0,0.5f) ,XMFLOAT3(1,0,1) ,XMFLOAT3(1,0.5f,0) ,XMFLOAT3(1,0.5f,0.5f) ,XMFLOAT3(1,0.5f,1) ,XMFLOAT3(1,1,0) ,XMFLOAT3(1,1,0.5f),XMFLOAT3(1,1,1) },
+	{ XMFLOAT3(0,0,1),XMFLOAT3(0.5f,0,1) ,XMFLOAT3(1,0,1) ,XMFLOAT3(0,0,0.5f) ,XMFLOAT3(0.5f,0,0.5f) ,XMFLOAT3(1,0,0.5f) ,XMFLOAT3(0,0,0) ,XMFLOAT3(0.5f,0,0),XMFLOAT3(1,0,0) },
+	{ XMFLOAT3(0,1,0),XMFLOAT3(0.5f,1,0) ,XMFLOAT3(1,1,0) ,XMFLOAT3(0,1,0.5f) ,XMFLOAT3(0.5f,1,0.5f) ,XMFLOAT3(1,1,0.5f) ,XMFLOAT3(0,1,1) ,XMFLOAT3(0.5f,1,1),XMFLOAT3(1,1,1) }
+
+	/*{ XMFLOAT3(0,0,0),XMFLOAT3(0.5f,0,0) ,XMFLOAT3(1,0,0) ,XMFLOAT3(0,0.5f,0) ,XMFLOAT3(0.5f,0.5f,0) ,XMFLOAT3(1,0.5f,0) ,XMFLOAT3(0,1,0) ,XMFLOAT3(0.5f,1,0),XMFLOAT3(1,1,0),XMFLOAT3(0,0,1),XMFLOAT3(1,0,1),XMFLOAT3(0,1,1),XMFLOAT3(1,1,1) },
+	{ XMFLOAT3(1,0,1),XMFLOAT3(0.5f,0,1) ,XMFLOAT3(0,0,1) ,XMFLOAT3(1,0.5f,1) ,XMFLOAT3(0.5f,0.5f,1) ,XMFLOAT3(0,0.5f,1) ,XMFLOAT3(1,1,1) ,XMFLOAT3(0.5f,1,1),XMFLOAT3(0,1,1),XMFLOAT3(1,0,0),XMFLOAT3(0,0,0),XMFLOAT3(1,1,0),XMFLOAT3(0,1,0) },
+	{ XMFLOAT3(0,0,1),XMFLOAT3(0,0,0.5f) ,XMFLOAT3(0,0,0) ,XMFLOAT3(0,0.5f,1) ,XMFLOAT3(0,0.5f,0.5f) ,XMFLOAT3(0,0.5f,0) ,XMFLOAT3(0,1,1) ,XMFLOAT3(0,1,0.5f),XMFLOAT3(0,1,0),XMFLOAT3(1,0,1),XMFLOAT3(1,0,0),XMFLOAT3(1,1,1),XMFLOAT3(1,1,0) },
+	{ XMFLOAT3(1,0,0),XMFLOAT3(1,0,0.5f) ,XMFLOAT3(1,0,1) ,XMFLOAT3(1,0.5f,0) ,XMFLOAT3(1,0.5f,0.5f) ,XMFLOAT3(1,0.5f,1) ,XMFLOAT3(1,1,0) ,XMFLOAT3(1,1,0.5f),XMFLOAT3(1,1,1),XMFLOAT3(0,0,0),XMFLOAT3(0,0,1),XMFLOAT3(0,1,0),XMFLOAT3(0,1,1) },
+	{ XMFLOAT3(0,0,1),XMFLOAT3(0.5f,0,1) ,XMFLOAT3(1,0,1) ,XMFLOAT3(0,0,0.5f) ,XMFLOAT3(0.5f,0,0.5f) ,XMFLOAT3(1,0,0.5f) ,XMFLOAT3(0,0,0) ,XMFLOAT3(0.5f,0,0),XMFLOAT3(1,0,0),XMFLOAT3(0,1,1),XMFLOAT3(1,1,1),XMFLOAT3(0,1,0),XMFLOAT3(1,1,0) },
+	{ XMFLOAT3(0,1,0),XMFLOAT3(0.5f,1,0) ,XMFLOAT3(1,1,0) ,XMFLOAT3(0,1,0.5f) ,XMFLOAT3(0.5f,1,0.5f) ,XMFLOAT3(1,1,0.5f) ,XMFLOAT3(0,1,1) ,XMFLOAT3(0.5f,1,1),XMFLOAT3(1,1,1),XMFLOAT3(0,0,0),XMFLOAT3(1,0,0),XMFLOAT3(0,0,1),XMFLOAT3(1,0,1) }*/
+};
+static const int transitionCornerOrder[6][13]=
+{
+	{ 0,1,2,3,4,5,6,7,8,9,10,11,12 },
+	{ 6,5,4,9,8,7,12,11,10,1,0,3,2 },
+	{ 3,2,0,7,6,5,11,10,8,1,4,9,12 },
+	{ 1,2,4,5,6,7,9,10,12,0,3,8,11 },
+	{ 6,7,8,3,4,5,0,1,2,11,12,9,10 },
+	{ 4,5,6,7,8,9,10,11,12,0,1,2,3 }
+};
+
+
+static const XMFLOAT4X4 tvmR[6]=
+{
+	XMFLOAT4X4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1),
+	XMFLOAT4X4(-1,0,0,0,0,1,0,0,0,0,-1,0,0,0,0,1),
+	XMFLOAT4X4(0,0,-1,0,0,1,0,0,0,1,0,0,0,0,0,1),
+	XMFLOAT4X4(0,0,1,0,0,1,0,0,0,0,-1,0,0,0,0,1),
+	XMFLOAT4X4(1,0,0,0,0,0,1,0,0,-1,0,0,0,0,0,1),
+	XMFLOAT4X4(1,0,0,0,0,0,-1,0,0,1,0,0,0,0,0,1)
+};
+
+static const XMFLOAT4X4 tvmT[6] =
+{
+	XMFLOAT4X4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1),
+	XMFLOAT4X4(1,0,0,0,0,1,0,0,0,0,1,0,1,0,1,1),
+	XMFLOAT4X4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,1,1),
+	XMFLOAT4X4(1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,1),
+	XMFLOAT4X4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,1,1),
+	XMFLOAT4X4(1,0,0,0,0,1,0,0,0,0,1,0,0,1,0,1)
+};
+
 
 // The transitionCornerData table contains the transition cell corner reuse data
 // shown in Figure 4.18.
@@ -471,17 +569,14 @@ const unsigned char transitionCornerData[13] =
 {
 	0x30, 0x21, 0x20, 0x12, 0x40, 0x82, 0x10, 0x81, 0x80, 0x37, 0x27, 0x17, 0x87
 };
-
-
 // The transitionVertexData table gives the vertex locations for every one of the 512 possible
 // cases in the Tranvoxel Algorithm. Each 16-bit value also provides information about whether
 // a vertex can be reused from a neighboring cell. See Section 4.5 for details. The low byte
 // contains the indexes for the two endpoints of the edge on which the vertex lies, as numbered
 // in Figure 4.16. The high byte contains the vertex reuse data shown in Figure 4.17.
-
 const unsigned short transitionVertexData[512][12] =
 {
-	{},
+{},
 { 0x2301, 0x1503, 0x199B, 0x289A },
 { 0x2301, 0x2412, 0x4514 },
 { 0x1503, 0x4514, 0x2412, 0x289A, 0x199B },
