@@ -7,11 +7,12 @@
 #include"TextureClass.h"
 #include"CameraComponent.h"
 #include"Octree.h"
-#include"ArrayedOctree.h"
+
 #include<vector>
 #include<map>
 #include<algorithm>
 #include<list>
+#include<unordered_map>
 #include<time.h>
 #include"PerlinNoise.h"
 #include<amp.h>
@@ -39,7 +40,6 @@ VoxelComp::VoxelComp()
 VoxelComp ::~VoxelComp()
 {
 	delete[] chunks;
-	delete[] lodLevels;
 	ReleaseOctree();
 }
 void VoxelComp::Initialize()
@@ -58,28 +58,29 @@ void VoxelComp::Initialize()
 
 	partitionSize = 32;
 
-	SetLODLevel(0, 100);
-	SetLODLevel(1, 300);
-	SetLODLevel(2, 500);
-	SetLODLevel(3, 700);
-	lastBasePosition = XMFLOAT3(0,0,0);
-	
+	SetLODLevel(0, 64);
+	SetLODLevel(1, 96);
+	SetLODLevel(2, 128);
+	SetLODLevel(3, 200);
+	lastBasePosition = XMFLOAT3(0, 0, 0);
+	//lastBasePosition = XMFLOAT3(3000,3000,3000);
+	customPos = lastBasePosition;
 
 
 	//LoadCube(32, 32, 32);
-	//LoadPerlin(1025, 256, 1025, 256, 0.1);
+	LoadPerlin(256, 256, 256, 256, 0.1);
 	//int h = ReadTXT("/data/height.txt");
-	LoadHeightMapFromRaw(1025, 512, 1025, "data/heightmap.r16");// , 0, 0, 255, 255);
+	//LoadHeightMapFromRaw(1025, 512, 1025, "data/heightmap.r16");// , 0, 0, 255, 255);
 
 	std::function<MESH_RESULT(INPUT_BUFFER)> _task = ([&, this](INPUT_BUFFER buf)
 	{
 		float halfSize = this->GetPartitionSize()*0.5f;
-		XMFLOAT3 targetPos = XMFLOAT3(buf.x + halfSize, buf.y + halfSize, buf.z + halfSize);
+		//XMFLOAT3 targetPos = XMFLOAT3(buf.x + halfSize, buf.y + halfSize, buf.z + halfSize);
 		return this->UpdatePartialMesh(XMFLOAT3(buf.x, buf.y, buf.z), buf.lodLevel,buf.transitionCellBasis);
 	});
 	threadPool_Main.SetTaskFunc(_task);
 	threadPool_Deform.SetTaskFunc(_task);
-	threadPool_Main.Initialize(8, false);
+	threadPool_Main.Initialize(16, false);
 	threadPool_Deform.Initialize(2, false);
 
 
@@ -101,7 +102,6 @@ void VoxelComp::Initialize()
 }
 void VoxelComp::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel)
 {
-
 	OctreeNode<MeshRenderer*>* rendererNode;
 	rendererNode = gOctreeMeshRenderer->Subdivide(pos, 0, newMesh!=NULL);
 	if (newMesh)
@@ -168,12 +168,12 @@ void VoxelComp::Update()
 	}
 	if (Input()->GetKeyDown(DIK_R))
 	{
-		//lastBasePosition = camera->transform->GetWorldPosition();
-		if (!useAsyncBuild)
-		{
-			UpdateMesh(0);
-		}
-		else UpdateMeshAsync(0);
+		customPos = camera->transform->GetWorldPosition();
+		//if (!useAsyncBuild)
+		//{
+		//	UpdateMesh(0);
+		//}
+		//else UpdateMeshAsync(0);
 	}
 
 	if (Input()->GetKeyDown(DIK_1))
@@ -883,7 +883,7 @@ VoxelComp::MESH_RESULT VoxelComp::GeneratePartitionFaces(XMFLOAT3 pos, int lodLe
 	ULONG time = GetTickCount();
 	std::vector<VertexBuffer> vertices;
 	std::vector<unsigned long> indices;
-	pos = XMFLOAT3((int)(pos.x / partitionSize), (int)(pos.y / partitionSize), (int)(pos.z / partitionSize))* partitionSize;
+	pos = GetPartitionStartPos(pos);
 	float  _cellUnit=pow(2,lodLevel);
 	int max = partitionSize - 1;
 	for (int i=0;i<partitionSize && (pos.x + i<width);i+= _cellUnit)
@@ -912,7 +912,6 @@ VoxelComp::MESH_RESULT VoxelComp::GeneratePartitionFaces(XMFLOAT3 pos, int lodLe
 					}
 					else
 						PolygonizeCell(pos + XMFLOAT3(i, j, k), _cellUnit,vertices, indices);
-
 					//CreateMarchingCubeFace(pos + XMFLOAT3(i, j, k), _cellUnit, vertices, indices);
 				}
 				else
@@ -1127,13 +1126,81 @@ void VoxelComp::UpdateMarchingCubeMesh(int lodLevel)
 				}
 	}*/
 }
+XMFLOAT3 VoxelComp::GetPositionFromIndex(int index)
+{
+	int x = (int)index % width;
+	int y = ((int)index / width) % height;
+	int z = (int)index / (width* height);
+	return XMFLOAT3(x, y, z);
+}
+void VoxelComp::RefreshLODNodes(XMFLOAT3 centerPos)
+{
+	std::unordered_map<int,int> newLODGroupsReserved;
+	std::unordered_map<int, int> newLODGroups;
+	int halfSize = partitionSize * 0.5f;
+	centerPos = GetPartitionCenter(centerPos);
+	int min = -LODDistance[2] - partitionSize;
+	int max = LODDistance[2] + partitionSize;
+	for (int i = min; i <= max; i += partitionSize)
+	{
+		for (int j = min; j <= max; j += partitionSize)
+		{
+			for (int k = min; k <=  max; k += partitionSize)
+			{
+				//if(i==min)
+				XMFLOAT3 targetPos = centerPos + XMFLOAT3(i, j, k);
+				XMFLOAT3 targetStartPos = GetPartitionStartPos(targetPos);
+				if (targetStartPos.x < 0 || targetStartPos.y < 0 || targetStartPos.z < 0 || targetStartPos.x >= width || targetStartPos.y >= height || targetStartPos.z >= depth)
+					continue;
 
+				int lodLevel = GetLODLevel(centerPos, targetPos);
+				if (lodLevel >= 0)
+				{
+					int index = (int)targetStartPos.x + (int)targetStartPos.y*width + (int)targetStartPos.z*width*height;
+					auto iter = lodGropups.find(index);
+					if (iter == lodGropups.end())
+					{
+						newLODGroupsReserved[index] = lodLevel;
+					}
+					else
+					{
+						int lastLevel = (*iter).second;
+						lodGropups.erase(iter);
+						if (lodLevel != lastLevel)
+							newLODGroupsReserved[index] = lodLevel;
+						else newLODGroupsReserved[index] = lodLevel;
+
+					}
+				}
+				else
+				{ }
+			}
+		}
+	}
+	for (auto i : lodGropups)
+	{
+		ReserveUpdate(GetPositionFromIndex(i.first), false, false);
+	}
+	lodGropups.clear();
+	for (auto i : newLODGroupsReserved)
+	{
+		ReserveUpdate(GetPositionFromIndex(i.first), false, false);
+		lodGropups[i.first] = i.second;
+	}
+	for (auto i : newLODGroups)
+	{
+		lodGropups[i.first] = i.second;
+	}
+}
 
 void VoxelComp::ProcessLOD()
 {
-	XMFLOAT3 newPosition = CameraComponent::mainCamera()->transform()->GetWorldPosition();
-	std::list<OctreeNode<VoxelData>> lodLevel0;
-	//lastBasePosition = newPosition;
+	XMFLOAT3 newPosition = customPos;//GetPartitionCenter(CameraComponent::mainCamera()->transform()->GetWorldPosition());
+	if (newPosition!=lastBasePosition)
+	{
+		lastBasePosition = newPosition;
+		//RefreshLODNodes(newPosition);
+	}
 	return;
 }
 
@@ -1519,22 +1586,27 @@ void VoxelComp::ReadRawEX16(unsigned short** &data, const char* filename, int _w
 	}
 }
 
-XMFLOAT3 VoxelComp::GetPartionCenter(XMFLOAT3 basePos)
+XMFLOAT3 VoxelComp::GetPartitionCenter(XMFLOAT3 basePos)
 {
 	float hSize = partitionSize * 0.5f;
-
-	int x = (int)(basePos.x / partitionSize) * partitionSize;
-	int y = (int)(basePos.y / partitionSize) * partitionSize;
-	int z = (int)(basePos.z / partitionSize) * partitionSize;
-	return XMFLOAT3(x + hSize, y + hSize, z + hSize);
+	return GetPartitionStartPos(basePos) + XMFLOAT3(hSize, hSize, hSize);
+}
+XMFLOAT3 VoxelComp::GetPartitionStartPos(XMFLOAT3 basePos)
+{
+	float x, y, z;
+	float size = 1 / (float)partitionSize;
+	x = floor((basePos.x *size));
+	y = floor((basePos.y *size));
+	z = floor((basePos.z *size));
+	return XMFLOAT3(x, y, z)*partitionSize;
 }
 
 int VoxelComp::GetLODLevel(const XMFLOAT3& basePos, const XMFLOAT3& targetPos)
 {
 	XMVECTOR v1, v2;
 	float dis;
-	if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= width+partitionSize || targetPos.y >= height + partitionSize || targetPos.z >= depth+partitionSize)
-		return -1;
+	/*if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= width+partitionSize || targetPos.y >= height + partitionSize || targetPos.z >= depth+partitionSize)
+		return -1;*/
 	XMFLOAT3 n = targetPos - basePos;
 	for (int i = 0; i < 4; i++)
 	{
@@ -1636,29 +1708,36 @@ void VoxelComp::ProcessResultQueue()
 	}
 }
 
-void VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool checkDuplicated)
+short VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool checkDuplicated)
 {
+	short upperLODBasis = 0;
 	//mutex_UpdateQueue.lock();
 	if (pos.x >= width || pos.y >= height || pos.z >= depth)
-		return;
+		return upperLODBasis;
 	if (pos.x < 0 || pos.y < 0 || pos.z < 0)
-		return;
+		return upperLODBasis;
 	INPUT_BUFFER input;
-	input.x = ((int)(pos.x / partitionSize))*partitionSize;
-	input.y = ((int)(pos.y / partitionSize))*partitionSize;
-	input.z = ((int)(pos.z / partitionSize))*partitionSize;
-	XMFLOAT3 targetPos = GetPartionCenter(pos);
+	XMFLOAT3 startPos = GetPartitionStartPos(pos);
+	input.x = (int)startPos.x;
+	input.y = (int)startPos.y;
+	input.z = (int)startPos.z;
+	//input.x = ((int)(pos.x / partitionSize))*partitionSize;
+	//input.y = ((int)(pos.y / partitionSize))*partitionSize;
+	//input.z = ((int)(pos.z / partitionSize))*partitionSize;
+	XMFLOAT3 targetPos = GetPartitionCenter(pos);
 	XMFLOAT3 basePos = GetLastBasePosition();
-
+	basePos = GetPartitionCenter(basePos);
 	input.lodLevel = GetLODLevel(basePos, targetPos);
 	input.transitionCellBasis = 0; 
 	XMFLOAT3 r(partitionSize, 0, 0), u(0, partitionSize, 0), f(0, 0, partitionSize);
 	if (input.lodLevel > 0)
 	{
 		int l[6] = { GetLODLevel(basePos, targetPos - f),GetLODLevel(basePos, targetPos + f),GetLODLevel(basePos, targetPos - r),GetLODLevel(basePos, targetPos + r),GetLODLevel(basePos, targetPos - u),GetLODLevel(basePos, targetPos + u) };
-		for(int i=0;i<6;i++)
-			if(l[i]>=0&&l[i]<input.lodLevel)
-				input.transitionCellBasis |= (1<<i);
+		for (int i = 0; i < 6; i++)
+			if (l[i] >= 0 && l[i] < input.lodLevel)
+				input.transitionCellBasis |= (1 << i);
+			else if (l[i] >= 0 && l[i] > input.lodLevel)
+				upperLODBasis |= (1 << i);
 	}
 	if (checkDuplicated)
 	{
@@ -1666,13 +1745,13 @@ void VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool checkDuplicate
 		{
 			for (auto i : updateQueue_Deform)
 				if (i == input)
-					return;
+					return upperLODBasis;
 		}
 		else
 		{
 			for (auto i : updateQueue_Main)
 				if (i == input)
-					return;
+					return upperLODBasis;
 		}
 	}
 	if (!isDeforming)
@@ -1680,6 +1759,7 @@ void VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool checkDuplicate
 	else
 		updateQueue_Deform.push_back(input);
 	//mutex_UpdateQueue.unlock();
+	return upperLODBasis;
 }
 
 int VoxelComp::ReadTXT(const char * filename)

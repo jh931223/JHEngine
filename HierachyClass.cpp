@@ -8,8 +8,8 @@
 #include "LightComponent.h"
 #include "CameraComponent.h"
 #include "InputComponent.h"
-#include "VoxelComponent.h"
-#include "A_VoxelComponent.h"
+//#include "VoxelComponent.h"
+//#include "A_VoxelComponent.h"
 #include "VoxelComp.h"
 #include "MeshClass.h"
 #include <map>

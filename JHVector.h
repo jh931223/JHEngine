@@ -124,5 +124,9 @@ namespace JHDev
 		b = a;
 		a = c;
 	}
+	inline int SIGN(float x)
+	{
+		return x >= 0 ? 1 : -1;
+	}
 }
 

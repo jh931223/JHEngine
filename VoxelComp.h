@@ -4,12 +4,11 @@
 #include "MeshClass.h"
 #include <list>
 #include "ThreadPool.h"
+#include<unordered_map>
 class MeshRenderer;
 class Material;
-class VoxelTerrainComponent;
 template<typename T> class Octree;
 template<typename T> class OctreeNode;
-template<typename T> class ArrayedOctree;
 class VoxelComp : public Component
 {
 public:
@@ -110,6 +109,8 @@ private:
 	void UpdateMesh(int lodLevel=0);
 	void UpdateVoxelMesh();
 	void UpdateMarchingCubeMesh(int lodLevel = 0);
+	XMFLOAT3 GetPositionFromIndex(int index);
+	void RefreshLODNodes(XMFLOAT3 centerPos);
 	bool FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius);
 	bool FrustumCheckSphere(float xCenter, float yCenter, float zCenter, float radius);
 	void ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, XMMATRIX viewMatrix);
@@ -117,11 +118,12 @@ private:
 	void BuildVertexBufferFrustumCulling(int targetDepth);
 
 	void UpdateMeshAsync(int lodLevel);
-	void ReserveUpdate(XMFLOAT3 pos, bool isDeforming = false, bool checkDuplicated = true);
+	short ReserveUpdate(XMFLOAT3 pos, bool isDeforming = false, bool checkDuplicated = true);
 
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
 	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height, int&, int&);
-	XMFLOAT3 GetPartionCenter(XMFLOAT3 basePos);
+	XMFLOAT3 GetPartitionCenter(XMFLOAT3 basePos);
+	XMFLOAT3 GetPartitionStartPos(XMFLOAT3 basePos);
 	int GetLODLevel(const XMFLOAT3& basePos, const XMFLOAT3& targetPos);
 	void SetLODLevel(int level, float distance);
 
@@ -157,14 +159,12 @@ private:
 
 	int LODDistance[3]{ 0, };
 
-	OctreeNode<MeshRenderer*>* currentOctreeNode;
-	std::list<OctreeNode<MeshRenderer*>*> nodes_lv0;
-	std::list<OctreeNode<MeshRenderer*>*> nodes_lv1;
-	std::list<OctreeNode<MeshRenderer*>*> nodes_lv2;
+	OctreeNode<MeshRenderer*>* currentLODNode;
+	std::unordered_map<int, int> lodGropups;
 
-	BYTE* lodLevels;
 
-	XMFLOAT3 lastBasePosition;  
+	XMFLOAT3 lastBasePosition;
+	XMFLOAT3 customPos;
 
 	int isoLevel = 0;
 	float strength=0.5f;

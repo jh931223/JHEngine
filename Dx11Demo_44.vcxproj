@@ -163,7 +163,6 @@
   <ItemGroup>
     <ClInclude Include="AlignedAllocationPolicy.h" />
     <ClInclude Include="ArrayedOctree.h" />
-    <ClInclude Include="A_VoxelComponent.h" />
     <ClInclude Include="BitmapClass.h" />
     <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="Component.h" />
@@ -178,7 +177,6 @@
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="TriplanarShaderClass.h" />
     <ClInclude Include="VoxelComp.h" />
-    <ClInclude Include="VoxelComponent.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GraphicsClass.h" />
     <ClInclude Include="InputClass.h" />
@@ -211,7 +209,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ArrayedOctree.cpp" />
-    <ClCompile Include="A_VoxelComponent.cpp" />
     <ClCompile Include="BitmapClass.cpp" />
     <ClCompile Include="CameraComponent.cpp" />
     <ClCompile Include="Component.cpp" />
@@ -225,7 +222,6 @@
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="TriplanarShaderClass.cpp" />
     <ClCompile Include="VoxelComp.cpp" />
-    <ClCompile Include="VoxelComponent.cpp" />
     <ClCompile Include="InputComponent.cpp" />
     <ClCompile Include="JHEngine.cpp" />
     <ClCompile Include="GameObject.cpp" />

@@ -46,7 +46,7 @@ public:
 
 		auto iter = std::find(taskBuffers.begin(), taskBuffers.end(), _task);
 		if (iter != taskBuffers.end())
-			taskBuffers.erase(_task);
+			taskBuffers.erase(iter);
 		taskBuffers.push_front(_task);
 	}
 	void ThreadPoolUpdate()
