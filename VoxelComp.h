@@ -31,7 +31,6 @@ public:
 		int x, y, z;
 		int lodLevel;
 		short transitionCellBasis;
-		float isoValues[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
 		void SetXYZ(XMFLOAT3 pos, int _partitionSize)
 		{
 			float s = 1 / _partitionSize;
