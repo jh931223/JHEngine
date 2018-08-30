@@ -45,7 +45,7 @@ float4 ps(v2f input) : SV_TARGET
 {
 //	float4 tex = float4(input.normal,1);
 	float scale = 0.2f;
-	float sharpness = 8;
+	float sharpness = 1.3;
 	float3 blending = pow(abs(input.normal), sharpness);
 	blending = blending / (blending.x + blending.y + blending.z);
 

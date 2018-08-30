@@ -70,6 +70,9 @@ private:
 	void CreateCubeFace_Backward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
 
 	void PolygonizeCell(XMFLOAT3 pos, int _unit,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices,XMFLOAT3 min=XMFLOAT3(0,0,0),XMFLOAT3 max=XMFLOAT3(1,1,1));
+	void PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, XMFLOAT3 corners[]);
+
+	void GetVertexInnerBox(short _basis, XMFLOAT3 offset,int _unit, XMFLOAT3 vertOut[]);
 
 	void PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
 
@@ -84,7 +87,7 @@ private:
 	MESH_RESULT GeneratePartitionFaces(XMFLOAT3 pos,int lodLevel=0, short transitionCellBasis=0);
 
 
-	void LoadHeightMapFromRaw(int,int,int,const char*, int startX = -1, int startZ = -1, int endX = -1, int endZ = -1);
+	void LoadHeightMapFromRaw(int,int,int,int,const char*,int startX = -1, int startZ = -1, int endX = -1, int endZ = -1);
 	void LoadCube(int,int,int);
 	void LoadPerlin(int _width,int _height, int _depth, int _maxHeight,float refinement);
 
@@ -118,6 +121,7 @@ private:
 	void BuildVertexBufferFrustumCulling(int targetDepth);
 
 	void UpdateMeshAsync(int lodLevel);
+	short ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, bool isDeforming, bool checkDuplicated);
 	short ReserveUpdate(XMFLOAT3 pos, bool isDeforming = false, bool checkDuplicated = true);
 
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
@@ -131,6 +135,8 @@ private:
 	void ProcessUpdateQueue();
 	void ProcessResultQueue();
 
+	short GetTransitionBasis(int lodLevel, XMFLOAT3 basePos, XMFLOAT3 targetPos);
+
 	XMFLOAT3 lerpSelf(XMFLOAT3 p, XMFLOAT3 target, float acc)
 	{
 		return p + (target - p)*acc;
@@ -139,6 +145,8 @@ private:
 	int ReadTXT(const char* filename);
 
 private:
+
+	static const int maxLODLevel = 4;
 
 	int width, height, depth;
 	float unit;
@@ -160,11 +168,18 @@ private:
 	int LODDistance[3]{ 0, };
 
 	OctreeNode<MeshRenderer*>* currentLODNode;
-	std::unordered_map<int, int> lodGropups;
+
+	struct LODGroupData
+	{
+		short level=0;
+		short transitionBasis=0;
+	};
+	std::unordered_map<int, LODGroupData> lodGropups;
 
 
 	XMFLOAT3 lastBasePosition;
 	XMFLOAT3 customPos;
+	bool isLockedBasePosition;
 
 	int isoLevel = 0;
 	float strength=0.5f;

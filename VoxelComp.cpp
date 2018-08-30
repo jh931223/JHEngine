@@ -57,30 +57,33 @@ void VoxelComp::Initialize()
 	//useFrustum = true;
 
 	partitionSize = 32;
+	SetLODLevel(0, 10000);
 
-	SetLODLevel(0, 64);
-	SetLODLevel(1, 96);
-	SetLODLevel(2, 128);
-	SetLODLevel(3, 200);
-	lastBasePosition = XMFLOAT3(0, 0, 0);
-	//lastBasePosition = XMFLOAT3(3000,3000,3000);
-	customPos = lastBasePosition;
+
+	/*SetLODLevel(0, 200);
+	SetLODLevel(1, 400);
+	SetLODLevel(2, 600);
+	SetLODLevel(3, 800);*/
+	//lastBasePosition = XMFLOAT3(0, 30, 0);
+	lastBasePosition = XMFLOAT3(3000,3000,3000);
+	isLockedBasePosition = true;
+	//customPos = lastBasePosition;
 
 
 	//LoadCube(32, 32, 32);
-	LoadPerlin(256, 256, 256, 256, 0.1);
+	//LoadPerlin(1024, 256, 1024,32, 0.2);
 	//int h = ReadTXT("/data/height.txt");
-	//LoadHeightMapFromRaw(1025, 512, 1025, "data/heightmap.r16");// , 0, 0, 255, 255);
+	LoadHeightMapFromRaw(1024, 256, 1024,150, "data/4x4-mountains.raw");// , 0, 0, 255, 255);
 
 	std::function<MESH_RESULT(INPUT_BUFFER)> _task = ([&, this](INPUT_BUFFER buf)
 	{
-		float halfSize = this->GetPartitionSize()*0.5f;
+		//float halfSize = this->GetPartitionSize()*0.5f;
 		//XMFLOAT3 targetPos = XMFLOAT3(buf.x + halfSize, buf.y + halfSize, buf.z + halfSize);
 		return this->UpdatePartialMesh(XMFLOAT3(buf.x, buf.y, buf.z), buf.lodLevel,buf.transitionCellBasis);
 	});
 	threadPool_Main.SetTaskFunc(_task);
 	threadPool_Deform.SetTaskFunc(_task);
-	threadPool_Main.Initialize(16, false);
+	threadPool_Main.Initialize(8, false);
 	threadPool_Deform.Initialize(2, false);
 
 
@@ -138,8 +141,8 @@ void VoxelComp::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel)
 }
 void VoxelComp::Update()
 {
-	ProcessResultQueue();
 	ProcessLOD();
+	ProcessResultQueue();
 	if (Input()->GetKey(DIK_UP))
 	{
 		strength += 0.1f;
@@ -168,7 +171,13 @@ void VoxelComp::Update()
 	}
 	if (Input()->GetKeyDown(DIK_R))
 	{
-		customPos = camera->transform->GetWorldPosition();
+		isLockedBasePosition = true;
+		for (auto i : lodGropups)
+		{
+			if(i.second.level>2)
+				ReserveUpdate(GetPositionFromIndex(i.first), false, false);
+		}
+		//customPos = GetPartitionStartPos(camera->transform->GetWorldPosition());
 		//if (!useAsyncBuild)
 		//{
 		//	UpdateMesh(0);
@@ -176,6 +185,10 @@ void VoxelComp::Update()
 		//else UpdateMeshAsync(0);
 	}
 
+	if (Input()->GetKeyDown(DIK_L))
+	{
+		isLockedBasePosition = !isLockedBasePosition;
+	}
 	if (Input()->GetKeyDown(DIK_1))
 	{
 		if (!useAsyncBuild)
@@ -541,8 +554,6 @@ void VoxelComp::CreateCubeFace_Backward(float x, float y, float z, float _unit, 
 }
 void VoxelComp::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, XMFLOAT3 min, XMFLOAT3 max)
 {
-	float density[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
-	int caseCode = 0;
 	XMFLOAT3 newCorners[8]=
 	{
 		XMFLOAT3(min.x,min.y,min.z),
@@ -554,6 +565,12 @@ void VoxelComp::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer
 		XMFLOAT3(min.x,max.y,max.z),
 		XMFLOAT3(max.x,max.y,max.z)
 	};
+	return PolygonizeCell(pos, _unit, vertices, indices, newCorners);
+}
+void VoxelComp::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, XMFLOAT3 newCorners[])
+{
+	float density[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+	int caseCode = 0;
 	for (int i = 0; i < 8; i++)
 	{
 		density[i] = GetChunk(pos + regularCorners[i] * _unit).isoValue;
@@ -581,12 +598,8 @@ void VoxelComp::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer
 		p0 = newCorners[d0];
 		p1 = newCorners[d1];
 		float mu = (isoLevel - density[d0]) / (density[d1] - density[d0]);
-		if (abs(mu) > 1)
-		{
-			printf("%f %f\n ",p0.x, p1.x);
-		}
 		VertexBuffer newVertex;
-		newVertex.position= (lerpSelf(p0, p1, mu));
+		newVertex.position = (lerpSelf(p0, p1, mu));
 		newVertex.normal = XMFLOAT3(0, 1, 0);
 		vertices.push_back(newVertex);
 	}
@@ -595,8 +608,8 @@ void VoxelComp::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer
 	{
 		int triBegin = i * 3;
 		int index_0 = vertBegin + regularCell.Indices()[triBegin];
-		int index_1 = vertBegin + regularCell.Indices()[triBegin+1];
-		int index_2 = vertBegin + regularCell.Indices()[triBegin+2];
+		int index_1 = vertBegin + regularCell.Indices()[triBegin + 1];
+		int index_2 = vertBegin + regularCell.Indices()[triBegin + 2];
 		XMFLOAT3 n = CalcNormal(vertices[index_0].position, vertices[index_1].position, vertices[index_2].position);
 		vertices[index_0].normal = AverageNormal(n, vertices[index_0].normal);
 		vertices[index_1].normal = AverageNormal(n, vertices[index_1].normal);
@@ -606,34 +619,297 @@ void VoxelComp::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer
 		indices.push_back(index_2);
 	}
 }
+void VoxelComp::GetVertexInnerBox(short _basis,XMFLOAT3 offset,int _unit,XMFLOAT3 vertOut[])
+{
+	int max = partitionSize - _unit;
+	vertOut[0] = XMFLOAT3(0, 0, 0);
+	vertOut[1] = XMFLOAT3(1, 0, 0);
+	vertOut[2] = XMFLOAT3(0, 0, 1);
+	vertOut[3] = XMFLOAT3(1, 0, 1);
+	vertOut[4] = XMFLOAT3(0, 1, 0);
+	vertOut[5] = XMFLOAT3(1, 1, 0);
+	vertOut[6] = XMFLOAT3(0, 1, 1);
+	vertOut[7] = XMFLOAT3(1, 1, 1);
+
+
+	if (_basis & 1)
+	{
+		vertOut[0].z = 0.25f;//뒤
+		vertOut[1].z = 0.25f;//뒤
+		vertOut[4].z = 0.25f;//뒤
+		vertOut[5].z = 0.25f;//뒤
+		if (offset.x == 0)
+		{
+			vertOut[0].z = 0;
+			vertOut[4].z = 0;
+			if (offset.y == 0)
+				vertOut[1].z = 0;
+			else if (offset.y == max)
+				vertOut[5].z = 0;
+		}
+		else if (offset.x == max)
+		{
+			vertOut[1].z = 0;
+			vertOut[5].z = 0;
+			if (offset.y == 0)
+				vertOut[0].z = 0;
+			else if (offset.y == max)
+				vertOut[4].z = 0;
+		}
+		else
+		{
+			if (offset.y == 0)
+			{
+				vertOut[1].z = 0;
+				vertOut[0].z = 0;
+			}
+			else if (offset.y == max)
+			{
+				vertOut[4].z = 0;
+				vertOut[5].z = 0;
+			}
+		}
+	}
+	else if (_basis & 2)
+	{
+		vertOut[2].z = 0.75f;//앞
+		vertOut[3].z = 0.75f;//앞
+		vertOut[6].z = 0.75f;//앞
+		vertOut[7].z = 0.75f;//앞
+		if (offset.x == 0)
+		{
+			vertOut[2].z = 1;
+			vertOut[6].z = 1;
+			if (offset.y == 0)
+				vertOut[3].z = 1;
+			else if (offset.y == max)
+				vertOut[7].z = 1;
+		}
+		else if (offset.x == max)
+		{
+			vertOut[3].z = 1;
+			vertOut[7].z = 1;
+			if (offset.y == 0)
+				vertOut[2].z = 1;
+			else if (offset.y == max)
+				vertOut[6].z = 1;
+		}
+		else
+		{
+			if (offset.y == 0)
+			{
+				vertOut[2].z = 1;
+				vertOut[3].z = 1;
+			}
+			else if (offset.y == max)
+			{
+				vertOut[6].z = 1;
+				vertOut[7].z = 1;
+			}
+		}
+	}
+	if (_basis & 4)
+	{
+		vertOut[0].x = 0.25f;
+		vertOut[2].x = 0.25f;
+		vertOut[4].x = 0.25f;
+		vertOut[6].x = 0.25f;
+		if (offset.z == 0)
+		{
+			vertOut[0].x = 0;
+			vertOut[4].x = 0;
+			if (offset.y == 0)
+				vertOut[2].x = 0;
+			else if (offset.y == max)
+				vertOut[6].x = 0;
+		}
+		else if (offset.z == max)
+		{
+			vertOut[2].x = 0;
+			vertOut[6].x = 0;
+			if (offset.y == 0)
+				vertOut[0].x = 0;
+			else if (offset.y == max)
+				vertOut[4].x = 0;
+		}
+		else
+		{
+			if (offset.y == 0)
+			{
+				vertOut[2].x = 0;
+				vertOut[0].x = 0;
+			}
+			else if (offset.y == max)
+			{
+				vertOut[4].x = 0;
+				vertOut[6].x = 0;
+			}
+		}
+	}
+	else if (_basis & 8)
+	{
+		vertOut[1].x = 0.75f;
+		vertOut[3].x = 0.75f;
+		vertOut[5].x = 0.75f;
+		vertOut[7].x = 0.75f;
+		if (offset.z == 0)
+		{
+			vertOut[1].x = 1;
+			vertOut[5].x = 1;
+			if (offset.y == 0)
+				vertOut[3].x = 1;
+			else if (offset.y == max)
+				vertOut[7].x = 1;
+		}
+		else if (offset.z == max)
+		{
+			vertOut[3].x = 1;
+			vertOut[7].x = 1;
+			if (offset.y == 0)
+				vertOut[1].x = 1;
+			else if (offset.y == max)
+				vertOut[5].x = 1;
+		}
+		else
+		{
+			if (offset.y == 0)
+			{
+				vertOut[1].x = 1;
+				vertOut[3].x = 1;
+			}
+			else if (offset.y == max)
+			{
+				vertOut[7].x = 1;
+				vertOut[5].x = 1;
+			}
+		}
+	}
+	if (_basis & 16)
+	{
+		vertOut[0].y = 0.25f;
+		vertOut[1].y = 0.25f;
+		vertOut[2].y = 0.25f;
+		vertOut[3].y = 0.25f;
+		if (offset.z == 0)
+		{
+			vertOut[0].y = 0;
+			vertOut[1].y = 0;
+			if (offset.x == 0)
+				vertOut[2].y = 0;
+			else if (offset.x == max)
+				vertOut[3].y = 0;
+		}
+		else if (offset.z == max)
+		{
+			vertOut[2].y = 0;
+			vertOut[3].y = 0;
+			if (offset.x == 0)
+				vertOut[0].y = 0;
+			else if (offset.x == max)
+				vertOut[1].y = 0;
+		}
+		else
+		{
+			if (offset.x == 0)
+			{
+				vertOut[2].y = 0;
+				vertOut[0].y = 0;
+			}
+			else if (offset.x == max)
+			{
+				vertOut[1].y = 0;
+				vertOut[3].y = 0;
+			}
+		}
+	}
+	else if (_basis & 32)
+	{
+		vertOut[4].y = 0.75f;
+		vertOut[5].y = 0.75f;
+		vertOut[6].y = 0.75f;
+		vertOut[7].y = 0.75f;
+		if (offset.z == 0)
+		{
+			vertOut[4].y = 1;
+			vertOut[5].y = 1;
+			if (offset.x == 0)
+				vertOut[6].y = 1;
+			else if (offset.x == max)
+				vertOut[7].y = 1;
+		}
+		else if (offset.z == max)
+		{
+			vertOut[6].y = 1;
+			vertOut[7].y = 1;
+			if (offset.x == 0)
+				vertOut[4].y = 1;
+			else if (offset.x == max)
+				vertOut[5].y = 1;
+		}
+		else
+		{
+			if (offset.x == 0)
+			{
+				vertOut[4].y = 1;
+				vertOut[6].y = 1;
+			}
+			else if (offset.x == max)
+			{
+				vertOut[5].y = 1;
+				vertOut[7].y = 1;
+			}
+		}
+	}
+
+
+}
 void VoxelComp::PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
 	int caseCode = 0;
 	std::vector<XMFLOAT3> newCorners;
 	XMFLOAT3 innerBoxMin(0,0,0);
 	XMFLOAT3 innerBoxMax(1,1,1);
-
-	if (_basis & 1) { innerBoxMin.z = 0.25f; }
-	if (_basis & 2) { innerBoxMax.z = 0.75f; }
-	if (_basis & 4) { innerBoxMin.x = 0.25f; }
-	if (_basis & 8) { innerBoxMax.x = 0.75f; }
-	if (_basis & 16) { innerBoxMin.y = 0.25f; }
-	if (_basis & 32) { innerBoxMax.y = 0.75f; }
-	XMFLOAT3 _9abc[6][4] =
+	XMFLOAT3 startPos = GetPartitionStartPos(pos);
+	XMFLOAT3 offset=pos - startPos;
+	int max = partitionSize - 1;
+	//if (_basis & 1) 
+	//	innerBoxMin.z = 0.25f;//뒤
+	//if (_basis & 2) 
+	//	innerBoxMax.z = 0.75f; //앞
+	//if (_basis & 4) 
+	//	innerBoxMin.x = 0.25f; //왼
+	//if (_basis & 8)
+	//	innerBoxMax.x = 0.75f; //오
+	//if (_basis & 16) { innerBoxMin.y = 0.25f; }//아래
+	//if (_basis & 32) { innerBoxMax.y = 0.75f; }//위
+	//XMFLOAT3 _9abc[6][4] =
+	//{
+	//	{ XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMin.z) },
+	//	{ XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMax.z) },
+	//	{ XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMin.z) },
+	//	{ XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMax.z) },
+	//	{ XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMin.z) },
+	//	{ XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMax.z) }
+	//};
+	XMFLOAT3 vertOut[8];
+	GetVertexInnerBox(_basis, offset, _unit, vertOut);
+	XMFLOAT3 _9abc[6][4]=
 	{
-		{ XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMin.z) },
-		{ XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMax.z) },
-		{ XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMin.z) },
-		{ XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMax.z) },
-		{ XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMin.z) },
-		{ XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMax.z) }
-	};
-	PolygonizeCell(pos, _unit, vertices, indices, innerBoxMin, innerBoxMax);
+		{ vertOut[0],vertOut[1],vertOut[4],vertOut[5] },
+		{ vertOut[3],vertOut[2],vertOut[7],vertOut[4] },
+		{ vertOut[2],vertOut[0],vertOut[6],vertOut[4] },
+		{ vertOut[1],vertOut[3],vertOut[5],vertOut[7] },
+		{ vertOut[2],vertOut[3],vertOut[0],vertOut[1] },
+		{ vertOut[4],vertOut[5],vertOut[6],vertOut[7] },
+	}; 
+	PolygonizeCell(pos, _unit, vertices, indices, vertOut);
+	//PolygonizeCell(pos, _unit, vertices, indices, innerBoxMin, innerBoxMax);
 	int basis = _basis;
 	for(int b=0;b<6;b++)
 	{
 		if (basis & (1 << b))
 		{
+			newCorners.clear();
 			float density[13] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
 			for (int j=0;j<9;j++)
 			{
@@ -662,7 +938,7 @@ void VoxelComp::PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, 
 
 			unsigned char cellClass = transitionCellClass[caseCode] & 0x7F;
 			if (cellClass == 0)
-				return;
+				continue;
 			bool inverse = (transitionCellClass[caseCode] & 128) ? false : true;
 			TransitionCell cell = transitionCellData[cellClass];
 			int vertCount = cell.GetVertexCount();
@@ -686,10 +962,6 @@ void VoxelComp::PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, 
 				p0 = newCorners[d0];
 				p1 = newCorners[d1];
 				float mu = (isoLevel - density[d0]) / (density[d1] - density[d0]);
-				if (abs(mu) > 1)
-				{
-					printf("%d %f %f %b\n ", _basis, p0.x, p1.x, inverse);
-				}
 				VertexBuffer newVertex;
 				newVertex.position = (lerpSelf(p0, p1, mu));
 				newVertex.normal = XMFLOAT3(0, 1, 0);
@@ -702,10 +974,6 @@ void VoxelComp::PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, 
 				int index_0 = vertBegin + cell.Indices()[triBegin + ((inverse) ? 2 : 0)];
 				int index_1 = vertBegin + cell.Indices()[triBegin + 1];
 				int index_2 = vertBegin + cell.Indices()[triBegin + ((inverse) ? 0 : 2)];
-				if (GetDistance(vertices[index_0].position, vertices[index_1].position) > 10)
-				{
-					printf("Error\n");
-				}
 				XMFLOAT3 n = CalcNormal(vertices[index_0].position, vertices[index_1].position, vertices[index_2].position);
 				vertices[index_0].normal = AverageNormal(n, vertices[index_0].normal);
 				vertices[index_1].normal = AverageNormal(n, vertices[index_1].normal);
@@ -880,12 +1148,12 @@ void VoxelComp::CreateMarchingCubeFace(XMFLOAT3 pos, int _unit, std::vector<Vert
 }
 VoxelComp::MESH_RESULT VoxelComp::GeneratePartitionFaces(XMFLOAT3 pos, int lodLevel, short transitionCellBasis)
 {
-	ULONG time = GetTickCount();
+	//ULONG time = GetTickCount();
 	std::vector<VertexBuffer> vertices;
 	std::vector<unsigned long> indices;
 	pos = GetPartitionStartPos(pos);
 	float  _cellUnit=pow(2,lodLevel);
-	int max = partitionSize - 1;
+	int max = partitionSize - _cellUnit;
 	for (int i=0;i<partitionSize && (pos.x + i<width);i+= _cellUnit)
 	{
 		for (int j = 0; j < partitionSize && (pos.y + j<height); j += _cellUnit)
@@ -896,12 +1164,20 @@ VoxelComp::MESH_RESULT VoxelComp::GeneratePartitionFaces(XMFLOAT3 pos, int lodLe
 				{
 
 					short basis = 0;
+					if (transitionCellBasis & 8)
+					{
+						transitionCellBasis |= 8;
+					}
 					if (transitionCellBasis)
 					{
-						if ((transitionCellBasis & 1) && k == 0)basis |= 1;
-						if ((transitionCellBasis & 2) && k == max)basis |= 2;
-						if ((transitionCellBasis & 4) && i == 0)basis |= 4;
-						if ((transitionCellBasis & 8) && i == max)basis |= 8;
+						if ((transitionCellBasis & 1) && k == 0)
+							basis |= 1;
+						if ((transitionCellBasis & 2) && k == max)
+							basis |= 2;
+						if ((transitionCellBasis & 4) && i == 0)
+							basis |= 4;
+						if ((transitionCellBasis & 8) && i == max)
+							basis |= 8;
 						if ((transitionCellBasis & 16) && j == 0)basis |= 16;
 						if ((transitionCellBasis & 32) && j == max)basis |= 32;
 					}
@@ -912,16 +1188,11 @@ VoxelComp::MESH_RESULT VoxelComp::GeneratePartitionFaces(XMFLOAT3 pos, int lodLe
 					}
 					else
 						PolygonizeCell(pos + XMFLOAT3(i, j, k), _cellUnit,vertices, indices);
-					//CreateMarchingCubeFace(pos + XMFLOAT3(i, j, k), _cellUnit, vertices, indices);
-				}
-				else
-				{
-
 				}
 			}
 		}
 	}
-	printf("Marching Cube Create Buffer ( CPU ): %d ms x:%f y:%f z:%f\n", GetTickCount() - time,pos.x,pos.y,pos.z);
+	//printf("Marching Cube Create Buffer ( CPU ): %d ms x:%f y:%f z:%f\n", GetTickCount() - time,pos.x,pos.y,pos.z);
 	INPUT_BUFFER buffer;
 	buffer.x = pos.x;
 	buffer.y = pos.y;
@@ -1058,7 +1329,7 @@ XMFLOAT3 VoxelComp::CovertToChunkPos(XMFLOAT3 targetPos, bool returnNan)
 
 void VoxelComp::UpdateMesh(int lodLevel)
 {
-	ULONG tick = GetTickCount64();
+	//ULONG tick = GetTickCount64();
 	if (!useMarchingCube)
 	{
 		UpdateVoxelMesh();
@@ -1067,7 +1338,7 @@ void VoxelComp::UpdateMesh(int lodLevel)
 	{
 		UpdateMarchingCubeMesh(lodLevel);
 	}
-	printf("Update Mesh : %dms\n", GetTickCount64() - tick);
+	//printf("Update Mesh : %dms\n", GetTickCount64() - tick);
 }
 
 VoxelComp::MESH_RESULT VoxelComp::CreateNewMesh(INPUT_BUFFER input,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
@@ -1091,7 +1362,7 @@ VoxelComp::MESH_RESULT VoxelComp::CreateNewMesh(INPUT_BUFFER input,std::vector<V
 VoxelComp::MESH_RESULT VoxelComp::UpdatePartialMesh(XMFLOAT3 pos, int lodLevel, short transitionCellBasis)
 {
 	MESH_RESULT buffer;
-	ULONG tick = GetTickCount64();
+	//ULONG tick = GetTickCount64();
 	if (!useMarchingCube)
 	{
 		buffer=GenerateCubeFaces(pos);
@@ -1100,7 +1371,7 @@ VoxelComp::MESH_RESULT VoxelComp::UpdatePartialMesh(XMFLOAT3 pos, int lodLevel, 
 	{
 		buffer=GeneratePartitionFaces(pos, lodLevel,transitionCellBasis);
 	}
-	printf("Update Mesh : %dms\n", GetTickCount64() - tick);
+	//printf("Update Mesh : %dms\n", GetTickCount64() - tick);
 	return buffer;
 }
 
@@ -1133,73 +1404,82 @@ XMFLOAT3 VoxelComp::GetPositionFromIndex(int index)
 	int z = (int)index / (width* height);
 	return XMFLOAT3(x, y, z);
 }
-void VoxelComp::RefreshLODNodes(XMFLOAT3 centerPos)
+void VoxelComp::RefreshLODNodes(XMFLOAT3 basePos)
 {
-	std::unordered_map<int,int> newLODGroupsReserved;
-	std::unordered_map<int, int> newLODGroups;
-	int halfSize = partitionSize * 0.5f;
-	centerPos = GetPartitionCenter(centerPos);
-	int min = -LODDistance[2] - partitionSize;
-	int max = LODDistance[2] + partitionSize;
+	std::unordered_map<int, LODGroupData> newLODGroupsReserved[maxLODLevel+1];
+	std::unordered_map<int, LODGroupData> newLODGroups;
+	std::unordered_map<int, LODGroupData> oldLODGroups;
+	oldLODGroups.swap(lodGropups);
+	basePos = GetPartitionStartPos(basePos);
+	int lodDistance = LODDistance[maxLODLevel-1];
+	int min = -lodDistance - partitionSize;
+	int max = lodDistance + partitionSize;
+	LODGroupData lodGroupData;
 	for (int i = min; i <= max; i += partitionSize)
 	{
 		for (int j = min; j <= max; j += partitionSize)
 		{
 			for (int k = min; k <=  max; k += partitionSize)
 			{
-				//if(i==min)
-				XMFLOAT3 targetPos = centerPos + XMFLOAT3(i, j, k);
-				XMFLOAT3 targetStartPos = GetPartitionStartPos(targetPos);
-				if (targetStartPos.x < 0 || targetStartPos.y < 0 || targetStartPos.z < 0 || targetStartPos.x >= width || targetStartPos.y >= height || targetStartPos.z >= depth)
+				XMFLOAT3 targetPos = basePos + XMFLOAT3(i, j, k);
+				if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= width || targetPos.y >= height || targetPos.z >= depth)
 					continue;
-
-				int lodLevel = GetLODLevel(centerPos, targetPos);
-				if (lodLevel >= 0)
+				lodGroupData.level= GetLODLevel(basePos, targetPos);
+				if (lodGroupData.level >= 0)
 				{
-					int index = (int)targetStartPos.x + (int)targetStartPos.y*width + (int)targetStartPos.z*width*height;
-					auto iter = lodGropups.find(index);
-					if (iter == lodGropups.end())
+					lodGroupData.transitionBasis = GetTransitionBasis(lodGroupData.level, basePos, targetPos);
+					int index = (int)targetPos.x + (int)targetPos.y*width + (int)targetPos.z*width*height;
+					auto iter = oldLODGroups.find(index);
+					if (iter == oldLODGroups.end())
 					{
-						newLODGroupsReserved[index] = lodLevel;
+						newLODGroupsReserved[lodGroupData.level][index] = lodGroupData;
 					}
 					else
 					{
-						int lastLevel = (*iter).second;
-						lodGropups.erase(iter);
-						if (lodLevel != lastLevel)
-							newLODGroupsReserved[index] = lodLevel;
-						else newLODGroupsReserved[index] = lodLevel;
-
+						int lastLevel = (*iter).second.level;
+						int lastBasis = (*iter).second.transitionBasis;
+						oldLODGroups.erase(iter);
+						if (lodGroupData.level != lastLevel || lodGroupData.transitionBasis != lastBasis)
+						{
+							newLODGroupsReserved[lodGroupData.level][index] = lodGroupData;
+						}
+						else
+						{
+							newLODGroups[index] = lodGroupData;
+						}
 					}
 				}
-				else
-				{ }
 			}
 		}
 	}
-	for (auto i : lodGropups)
+	for (auto j : newLODGroupsReserved)
 	{
-		ReserveUpdate(GetPositionFromIndex(i.first), false, false);
-	}
-	lodGropups.clear();
-	for (auto i : newLODGroupsReserved)
-	{
-		ReserveUpdate(GetPositionFromIndex(i.first), false, false);
-		lodGropups[i.first] = i.second;
+		for (auto i : j)
+		{
+			ReserveUpdate(GetPositionFromIndex(i.first), i.second.transitionBasis, i.second.level, false, true);
+			lodGropups[i.first] = i.second;
+		}
 	}
 	for (auto i : newLODGroups)
 	{
 		lodGropups[i.first] = i.second;
 	}
+	for (auto i : oldLODGroups)
+	{
+		ReserveUpdate(GetPositionFromIndex(i.first), false, true);
+	}
+	oldLODGroups.clear();
 }
 
 void VoxelComp::ProcessLOD()
 {
-	XMFLOAT3 newPosition = customPos;//GetPartitionCenter(CameraComponent::mainCamera()->transform()->GetWorldPosition());
+	if (isLockedBasePosition)
+		return;
+	XMFLOAT3 newPosition = GetPartitionStartPos(CameraComponent::mainCamera()->transform()->GetWorldPosition());
 	if (newPosition!=lastBasePosition)
 	{
 		lastBasePosition = newPosition;
-		//RefreshLODNodes(newPosition);
+		RefreshLODNodes(newPosition);
 	}
 	return;
 }
@@ -1388,14 +1668,14 @@ void VoxelComp::UpdateMeshAsync(int lodLevel)
 	}
 }
 
-void VoxelComp::LoadHeightMapFromRaw(int _width, int _height,int _depth,const char* filename,int startX, int startZ, int endX, int endZ)
+void VoxelComp::LoadHeightMapFromRaw(int _width, int _height,int _depth, int _maxHeight, const char* filename,int startX, int startZ, int endX, int endZ)
 {
 	NewChunks(_width, _height, _depth);
 	unsigned short** data = nullptr;
 	int top=0,bottom=0;
 	ReadRawEX16(data, filename, width, depth,top,bottom);
 	printf("%d, %d\n", top,bottom);
-	float h = (float)height / 65534.0f;
+	float h = (float)_maxHeight / 65534.0f;
 	//int mX = (endX!=-1&&endX >= startX && endX < _width) ? endX+1 : _width;
 	//int mZ = (endZ!=-1&&endZ >= startZ && endZ < _depth) ? endZ+1 : _depth;
 	//int cX=0, cZ=0;
@@ -1423,7 +1703,7 @@ void VoxelComp::LoadHeightMapFromRaw(int _width, int _height,int _depth,const ch
 		for (int z = 0; z < depth; z++)
 		{
 			float convertY = (data[x][z] * h);
-			for (int y = 0; y < _height; y++)
+			for (int y = 0; y < _maxHeight; y++)
 			{
 				if (y <= convertY)
 				{
@@ -1483,7 +1763,7 @@ void VoxelComp::LoadPerlin(int _width,int _height, int _depth, int _maxHeight, f
 				VoxelData vox;
 				if (y <= noise)
 				{
-					vox.isoValue = (int)noise - y;
+					vox.isoValue = noise - y;
 					vox.material = 1;
 				}
 				else
@@ -1603,20 +1883,37 @@ XMFLOAT3 VoxelComp::GetPartitionStartPos(XMFLOAT3 basePos)
 
 int VoxelComp::GetLODLevel(const XMFLOAT3& basePos, const XMFLOAT3& targetPos)
 {
-	XMVECTOR v1, v2;
-	float dis;
-	/*if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= width+partitionSize || targetPos.y >= height + partitionSize || targetPos.z >= depth+partitionSize)
-		return -1;*/
-	XMFLOAT3 n = targetPos - basePos;
-	for (int i = 0; i < 4; i++)
+	if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= width || targetPos.y >= height || targetPos.z >= depth)
+		return maxLODLevel;
+
+	XMFLOAT3 basePos2 = GetPartitionCenter(basePos);
+	XMFLOAT3 targetPos2 = GetPartitionCenter(targetPos);
+	XMFLOAT3 n = targetPos2 - basePos2;
+	XMFLOAT3 max, min;
+	for (int i = 0; i < maxLODLevel+1; i++)
 	{
-		if (abs(n.x) <= LODDistance[i]&& abs(n.y) <= LODDistance[i]&& abs(n.z) <= LODDistance[i])
+		//max = basePos2 + XMFLOAT3(LODDistance[i], LODDistance[i], LODDistance[i]);
+		//min = basePos2 - XMFLOAT3(LODDistance[i], LODDistance[i], LODDistance[i]);
+		//if (targetPos2.x <= max.x&&targetPos2.y <= max.y&&targetPos2.z <= max.z)
+		//{
+		//	if (targetPos2.x >= min.x&&targetPos2.y >= min.y&&targetPos2.z >= min.z)
+		//	{
+		//		return i;
+		//	}
+		//}
+		if (abs(n.x) <= LODDistance[i] 
+			&& abs(n.y) <= LODDistance[i]
+			&& abs(n.z) <= LODDistance[i])
 		{
 			return i;
 		}
 	}
-	//v1 = XMVectorSet(basePos.x, basePos.y, basePos.z, 1);
-	//v2 = XMVectorSet(targetPos.x, targetPos.y, targetPos.z, 1);
+	//XMVECTOR v1, v2;
+	//float dis;
+	//XMFLOAT3 basePos2 = GetPartitionCenter(basePos);
+	//XMFLOAT3 targetPos2 = GetPartitionCenter(targetPos);
+	//v1 = XMVectorSet(basePos2.x, basePos2.y, basePos2.z, 1);
+	//v2 = XMVectorSet(targetPos2.x, targetPos2.y, targetPos2.z, 1);
 
 	//dis = XMVectorGetX(XMVector3Length(XMVectorSubtract(v2, v1)));
 	//for (int i = 0; i < 4; i++)
@@ -1624,13 +1921,14 @@ int VoxelComp::GetLODLevel(const XMFLOAT3& basePos, const XMFLOAT3& targetPos)
 	//	{
 	//		return i;
 	//	}
-	return 3;
+	return maxLODLevel;
 }
 
 void VoxelComp::SetLODLevel(int level, float distance)
 {
 	if (level < 0 || level >= 8)
 		return;
+	distance -= (int)distance % partitionSize;
 	LODDistance[level] = distance;
 }
 
@@ -1640,25 +1938,25 @@ void VoxelComp::ProcessUpdateQueue()
 	{
 		if (updateQueue_Main.size())
 		{
-			ULONG tick = GetTickCount64();
+			//ULONG tick = GetTickCount64();
 			for (auto i : updateQueue_Main)
 			{
 				MESH_RESULT result = UpdatePartialMesh(XMFLOAT3(i.x, i.y, i.z), i.lodLevel, i.transitionCellBasis);
 				UpdateMeshRenderer(result.newMesh, result.pos, result.lodLevel);
 			}
 			updateQueue_Main.clear();
-			printf("updateQueue_Main Generated %dms\n", GetTickCount64() - tick);
+			//printf("updateQueue_Main Generated %dms\n", GetTickCount64() - tick);
 		}
 		if (updateQueue_Deform.size())
 		{
-			ULONG tick = GetTickCount64();
+			//ULONG tick = GetTickCount64();
 			for (auto i : updateQueue_Deform)
 			{
 				MESH_RESULT result = UpdatePartialMesh(XMFLOAT3(i.x, i.y, i.z), i.lodLevel, i.transitionCellBasis);
 				UpdateMeshRenderer(result.newMesh, result.pos, result.lodLevel);
 			}
 			updateQueue_Deform.clear();
-			printf("updateQueue_Deform Generated %dms\n", GetTickCount64() - tick);
+			//printf("updateQueue_Deform Generated %dms\n", GetTickCount64() - tick);
 		}
 	}
 	else
@@ -1684,74 +1982,107 @@ void VoxelComp::ProcessResultQueue()
 	{
 		if (threadPool_Main.GetResultQueue()->size())
 		{
-			ULONG tick = GetTickCount64();
+			//ULONG tick = GetTickCount64();
 			for (auto i : *(threadPool_Main.GetResultQueue()))
 			{
 				UpdateMeshRenderer(i.newMesh, i.pos,i.lodLevel);
 			}
 			threadPool_Main.GetResultQueue()->clear();
-			printf("threadPool_Main Updated %dms\n", GetTickCount64() - tick);
+			//printf("threadPool_Main Updated %dms\n", GetTickCount64() - tick);
 		}
 	}
 	if (threadPool_Deform.isInit)
 	{
 		if (threadPool_Deform.GetResultQueue()->size())
 		{
-			ULONG tick = GetTickCount64();
+			//ULONG tick = GetTickCount64();
 			for (auto i : *(threadPool_Deform.GetResultQueue()))
 			{
 				UpdateMeshRenderer(i.newMesh, i.pos,i.lodLevel);
 			}
 			threadPool_Deform.GetResultQueue()->clear();
-			printf("threadPool_Deform Updated %dms\n", GetTickCount64() - tick);
+			//printf("threadPool_Deform Updated %dms\n", GetTickCount64() - tick);
 		}
 	}
 }
-
-short VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool checkDuplicated)
+short VoxelComp::GetTransitionBasis(int lodLevel, XMFLOAT3 basePos, XMFLOAT3 targetPos)
 {
-	short upperLODBasis = 0;
-	//mutex_UpdateQueue.lock();
-	if (pos.x >= width || pos.y >= height || pos.z >= depth)
-		return upperLODBasis;
-	if (pos.x < 0 || pos.y < 0 || pos.z < 0)
-		return upperLODBasis;
-	INPUT_BUFFER input;
-	XMFLOAT3 startPos = GetPartitionStartPos(pos);
-	input.x = (int)startPos.x;
-	input.y = (int)startPos.y;
-	input.z = (int)startPos.z;
-	//input.x = ((int)(pos.x / partitionSize))*partitionSize;
-	//input.y = ((int)(pos.y / partitionSize))*partitionSize;
-	//input.z = ((int)(pos.z / partitionSize))*partitionSize;
-	XMFLOAT3 targetPos = GetPartitionCenter(pos);
-	XMFLOAT3 basePos = GetLastBasePosition();
-	basePos = GetPartitionCenter(basePos);
-	input.lodLevel = GetLODLevel(basePos, targetPos);
-	input.transitionCellBasis = 0; 
+	if (lodLevel == 0)
+		return 0;
+	short transitionCellBasis = 0;
 	XMFLOAT3 r(partitionSize, 0, 0), u(0, partitionSize, 0), f(0, 0, partitionSize);
-	if (input.lodLevel > 0)
-	{
-		int l[6] = { GetLODLevel(basePos, targetPos - f),GetLODLevel(basePos, targetPos + f),GetLODLevel(basePos, targetPos - r),GetLODLevel(basePos, targetPos + r),GetLODLevel(basePos, targetPos - u),GetLODLevel(basePos, targetPos + u) };
-		for (int i = 0; i < 6; i++)
-			if (l[i] >= 0 && l[i] < input.lodLevel)
-				input.transitionCellBasis |= (1 << i);
-			else if (l[i] >= 0 && l[i] > input.lodLevel)
-				upperLODBasis |= (1 << i);
-	}
+	int l[6] = { GetLODLevel(basePos, targetPos - f),GetLODLevel(basePos, targetPos + f),GetLODLevel(basePos, targetPos - r),GetLODLevel(basePos, targetPos + r),GetLODLevel(basePos, targetPos - u),GetLODLevel(basePos, targetPos + u) };
+	for (int i = 0; i < 6; i++)
+		if (l[i] >= 0 && l[i] < lodLevel)
+			transitionCellBasis |= (1 << i);
+	return transitionCellBasis;
+}
+short VoxelComp::ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, bool isDeforming, bool checkDuplicated)
+{
+	if (pos.x >= width || pos.y >= height || pos.z >= depth)
+		return 0;
+	if (pos.x < 0 || pos.y < 0 || pos.z < 0)
+		return 0;
+	INPUT_BUFFER input;
+	XMFLOAT3 targetPos = GetPartitionStartPos(pos);
+	input.x = (int)targetPos.x;
+	input.y = (int)targetPos.y;
+	input.z = (int)targetPos.z;
+	input.lodLevel = _lodLevel;
+	input.transitionCellBasis = _basis;
 	if (checkDuplicated)
 	{
 		if (isDeforming)
 		{
 			for (auto i : updateQueue_Deform)
 				if (i == input)
-					return upperLODBasis;
+					return 0;
 		}
 		else
 		{
 			for (auto i : updateQueue_Main)
 				if (i == input)
-					return upperLODBasis;
+					return 0;
+		}
+	}
+	if (!isDeforming)
+		updateQueue_Main.push_back(input);
+	else
+		updateQueue_Deform.push_back(input);
+	return input.transitionCellBasis;
+}
+short VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool checkDuplicated)
+{
+	//mutex_UpdateQueue.lock();
+	if (pos.x >= width || pos.y >= height || pos.z >= depth)
+		return 0;
+	if (pos.x < 0 || pos.y < 0 || pos.z < 0)
+		return 0;
+	INPUT_BUFFER input;
+	XMFLOAT3 targetPos = GetPartitionStartPos(pos);
+	input.x = (int)targetPos.x;
+	input.y = (int)targetPos.y;
+	input.z = (int)targetPos.z;
+	//input.x = ((int)(pos.x / partitionSize))*partitionSize;
+	//input.y = ((int)(pos.y / partitionSize))*partitionSize;
+	//input.z = ((int)(pos.z / partitionSize))*partitionSize;
+	XMFLOAT3 basePos = GetLastBasePosition();
+	basePos = GetPartitionStartPos(basePos);
+	input.lodLevel = GetLODLevel(basePos, targetPos);
+	input.transitionCellBasis = GetTransitionBasis(input.lodLevel,basePos, targetPos);
+	if (checkDuplicated)
+	{
+		if (isDeforming)
+		{
+			for (auto i : updateQueue_Deform)
+				if (i == input)
+					return 0;
+		}
+		else
+		{
+			for (auto i : updateQueue_Main)
+				if (i == input)
+					return 0;
 		}
 	}
 	if (!isDeforming)
@@ -1759,7 +2090,7 @@ short VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool checkDuplicat
 	else
 		updateQueue_Deform.push_back(input);
 	//mutex_UpdateQueue.unlock();
-	return upperLODBasis;
+	return input.transitionCellBasis;
 }
 
 int VoxelComp::ReadTXT(const char * filename)
