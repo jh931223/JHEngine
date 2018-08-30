@@ -78,7 +78,7 @@ void HierarchyClass::Setup()
 	gobj = new GameObject("¶óÀÌÆ®");
 	LightComponent* m_Light = new LightComponent;
 	gobj->AddComponent(m_Light);
-	m_Light->SetAmbientColor(0.15f, 0.15f, 0.15f, 1.0f);
+	m_Light->SetAmbientColor(0.1f, 0.1f, 0.1f, 1.0f);
 	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
 	m_Light->SetLookAt(0.0f, 0.0f, 0.0f);
 	m_Light->transform()->SetPosition(XMFLOAT3(2.0f, 10.0f, -10.0f));

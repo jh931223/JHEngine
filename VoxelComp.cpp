@@ -6,6 +6,7 @@
 #include"SystemClass.h"
 #include"TextureClass.h"
 #include"CameraComponent.h"
+#include"LightComponent.h"
 #include"Octree.h"
 
 #include<vector>
@@ -57,23 +58,23 @@ void VoxelComp::Initialize()
 	//useFrustum = true;
 
 	partitionSize = 32;
-	SetLODLevel(0, 10000);
+	SetLODLevel(0, 100000);
 
 
-	/*SetLODLevel(0, 200);
-	SetLODLevel(1, 400);
-	SetLODLevel(2, 600);
-	SetLODLevel(3, 800);*/
+	//SetLODLevel(0, 200);
+	//SetLODLevel(1, 400);
+	//SetLODLevel(2, 600);
+	//SetLODLevel(3, 800);
 	//lastBasePosition = XMFLOAT3(0, 30, 0);
 	lastBasePosition = XMFLOAT3(3000,3000,3000);
 	isLockedBasePosition = true;
-	//customPos = lastBasePosition;
+	//customPos = lastBasePosition; 
 
 
 	//LoadCube(32, 32, 32);
-	//LoadPerlin(1024, 256, 1024,32, 0.2);
+	//LoadPerlin(128, 256, 128,128, 0.01);
 	//int h = ReadTXT("/data/height.txt");
-	LoadHeightMapFromRaw(1024, 256, 1024,150, "data/4x4-mountains.raw");// , 0, 0, 255, 255);
+	LoadHeightMapFromRaw(1024, 512, 1024,256, "data/terrain.raw");// , 0, 0, 255, 255);
 
 	std::function<MESH_RESULT(INPUT_BUFFER)> _task = ([&, this](INPUT_BUFFER buf)
 	{
@@ -168,6 +169,10 @@ void VoxelComp::Update()
 	else if (Input()->GetKeyDown(DIK_F2))
 	{
 		SystemClass::GetInstance()->GetD3D()->ChangeFillMode(false);
+	}
+	else if (Input()->GetKeyDown(DIK_F3))
+	{
+		LightComponent::mainLight()->transform()->SetRotation(CameraComponent::mainCamera()->transform()->GetWorldRotation());
 	}
 	if (Input()->GetKeyDown(DIK_R))
 	{
@@ -1675,7 +1680,7 @@ void VoxelComp::LoadHeightMapFromRaw(int _width, int _height,int _depth, int _ma
 	int top=0,bottom=0;
 	ReadRawEX16(data, filename, width, depth,top,bottom);
 	printf("%d, %d\n", top,bottom);
-	float h = (float)_maxHeight / 65534.0f;
+	float h = ((float)_maxHeight) / 65534.0f;
 	//int mX = (endX!=-1&&endX >= startX && endX < _width) ? endX+1 : _width;
 	//int mZ = (endZ!=-1&&endZ >= startZ && endZ < _depth) ? endZ+1 : _depth;
 	//int cX=0, cZ=0;
@@ -1702,16 +1707,16 @@ void VoxelComp::LoadHeightMapFromRaw(int _width, int _height,int _depth, int _ma
 	{
 		for (int z = 0; z < depth; z++)
 		{
-			float convertY = (data[x][z] * h);
+			float convertY = (((float)data[x][z]) * h);
 			for (int y = 0; y < _maxHeight; y++)
 			{
-				if (y <= convertY)
-				{
+				/*if (y <= convertY)
+				{*/
 					VoxelData v;
 					v.material = 1;
 					v.isoValue = convertY - y;
 					SetVoxel(x, y, z, v);
-				}
+				//}
 				if ((x%partitionSize == 0) && (y%partitionSize == 0) && (z%partitionSize == 0))
 					ReserveUpdate(XMFLOAT3(x, y, z), false, false);
 			}

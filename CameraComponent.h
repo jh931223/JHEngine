@@ -1,10 +1,13 @@
 #pragma once
+#include<list>
 
 class CameraComponent : public Component
 {
 public:
 	CameraComponent();
 	virtual ~CameraComponent();
+
+	void ChangeDepth(int _depth);
 
 	void Render();
 	void GetViewMatrix(XMMATRIX&);
@@ -15,6 +18,7 @@ public:
 private:
 	XMMATRIX m_viewMatrix;
 public:
+	static std::list<CameraComponent*> cameras;
 	float m_fieldOfView = 0;
 	float m_aspectRatio = 0;
 	float m_nearPlane = 0;

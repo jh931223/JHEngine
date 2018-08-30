@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "TriplanarShaderClass.h"
-
+#include"LightComponent.h"
+#include"CameraComponent.h"
 
 TriplanarShaderClass::TriplanarShaderClass()
 {
@@ -115,6 +116,32 @@ bool TriplanarShaderClass::InitializeShader(ID3D11Device * device, HWND hwnd, co
 		return false;
 	}
 
+	D3D11_BUFFER_DESC lightBufferDesc;
+	lightBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	lightBufferDesc.ByteWidth = sizeof(PSLightBufferType);
+	lightBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	lightBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	lightBufferDesc.MiscFlags = 0;
+	lightBufferDesc.StructureByteStride = 0;
+	result = device->CreateBuffer(&lightBufferDesc, NULL, &psLightBuffer);
+	if (FAILED(result))
+	{
+		return false;
+	}
+	D3D11_BUFFER_DESC lightBufferDesc2;
+	lightBufferDesc2.Usage = D3D11_USAGE_DYNAMIC;
+	lightBufferDesc2.ByteWidth = sizeof(VSLightBufferType);
+	lightBufferDesc2.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	lightBufferDesc2.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	lightBufferDesc2.MiscFlags = 0;
+	lightBufferDesc2.StructureByteStride = 0;
+	result = device->CreateBuffer(&lightBufferDesc, NULL, &vsLightBuffer);
+	if (FAILED(result))
+	{
+		return false;
+	}
+	
+
 	// 텍스처 샘플러 상태 구조체를 생성 및 설정합니다.
 	D3D11_SAMPLER_DESC samplerDesc;
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -142,6 +169,16 @@ bool TriplanarShaderClass::InitializeShader(ID3D11Device * device, HWND hwnd, co
 
 void TriplanarShaderClass::ShutdownShaderCustomBuffer()
 {
+	if (psLightBuffer)
+	{
+		psLightBuffer->Release();
+	}
+	psLightBuffer = 0;
+	if (vsLightBuffer)
+	{
+		vsLightBuffer->Release();
+	}
+	vsLightBuffer = 0;
 }
 
 bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM & params)
@@ -152,29 +189,40 @@ bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRI
 	{
 		return false;
 	}
-
-	// 상수 버퍼의 데이터에 대한 포인터를 가져옵니다.
 	MatrixBufferType* dataPtr = (MatrixBufferType*)mappedResource.pData;
-
-	// 행렬을 transpose하여 셰이더에서 사용할 수 있게 합니다
 	worldMatrix = XMMatrixTranspose(worldMatrix);
 	viewMatrix = XMMatrixTranspose(viewMatrix);
 	projectionMatrix = XMMatrixTranspose(projectionMatrix);
-
-
-	// 상수 버퍼에 행렬을 복사합니다.
 	dataPtr->world = worldMatrix;
 	dataPtr->view = viewMatrix;
 	dataPtr->projection = projectionMatrix;
-
-	// 상수 버퍼의 잠금을 풉니다.
 	deviceContext->Unmap(m_matrixBuffer, 0);
 
-	// 정점 셰이더에서의 상수 버퍼의 위치를 설정합니다.
-	unsigned int bufferNumber = 0;
+	if (FAILED(deviceContext->Map(psLightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	{
+		return false;
+	}
+	PSLightBufferType* dataPtr2 = (PSLightBufferType*)mappedResource.pData;
+	dataPtr2->ambientColor = LightComponent::mainLight()->GetAmbientColor();
+	dataPtr2->diffuseColor = LightComponent::mainLight()->GetDiffuseColor();
+	deviceContext->Unmap(psLightBuffer, 0);
+
+
+	if (FAILED(deviceContext->Map(vsLightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	{
+		return false;
+	}
+	VSLightBufferType* dataPtr3 = (VSLightBufferType*)mappedResource.pData;
+	dataPtr3->lightDir = LightComponent::mainLight()->transform()->forward();
+	XMFLOAT3 camPos = CameraComponent::mainCamera()->transform()->GetWorldPosition();
+	dataPtr3->cameraPos = XMFLOAT4(camPos.x,camPos.y,camPos.z,1);
+	deviceContext->Unmap(vsLightBuffer, 0);
+
 
 	// 마지막으로 정점 셰이더의 상수 버퍼를 바뀐 값으로 바꿉니다.
-	deviceContext->VSSetConstantBuffers(bufferNumber, 1, &m_matrixBuffer);
+	deviceContext->VSSetConstantBuffers(0, 1, &m_matrixBuffer);
+	deviceContext->VSSetConstantBuffers(1, 1, &vsLightBuffer);
+	deviceContext->PSSetConstantBuffers(0, 1, &psLightBuffer);
 
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
 	deviceContext->PSSetShaderResources(0, 1, params.GetTexture("Texture1")->GetResourceView());

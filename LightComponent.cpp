@@ -2,17 +2,28 @@
 #include "LightComponent.h"
 #include "SystemClass.h"
 #include "GraphicsClass.h"
+#include <list>
+
+
+std::list<LightComponent*> LightComponent::lights;
 
 LightComponent::LightComponent()
 {
-	SystemClass::GetInstance()->GetGraphics()->PushLights(this);
+	lights.push_back(this);
+	//SystemClass::GetInstance()->GetGraphics()->PushLights(this);
 }
 
 
 
 LightComponent::~LightComponent()
 {
-	SystemClass::GetInstance()->GetGraphics()->RemoveLights(this);
+	for(auto i=lights.begin();i!=lights.end();i++)
+		if (*i == this)
+		{
+			lights.erase(i);
+			break;
+		}
+	//SystemClass::GetInstance()->GetGraphics()->RemoveLights(this);
 }
 
 
@@ -87,7 +98,7 @@ void LightComponent::GetProjectionMatrix(XMMATRIX& projectionMatrix)
 
 LightComponent * LightComponent::mainLight()
 {
-	return NULL;
+	return lights.front();
 }
 
 void LightComponent::SetPosition(float x, float y, float z)

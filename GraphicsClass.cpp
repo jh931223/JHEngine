@@ -286,19 +286,8 @@ bool GraphicsClass::RenderToDepthTexture(CameraComponent * camera)
 bool GraphicsClass::Render()
 {
 
-	CameraComponent* m_Camera = GetMainCamera();
-	LightComponent* m_Light = 0;
-	if (lights.size() > 0)
-	{
-		for (const auto i : lights)
-		{
-			if (i->enabled)
-			{
-				m_Light = i;
-				break;
-			}
-		}
-	}
+	CameraComponent* m_Camera = CameraComponent::mainCamera();
+	LightComponent* m_Light = LightComponent::mainLight();
 
 	//if (!RenderToTexture(m_Camera))
 	//	return false;

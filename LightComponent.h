@@ -1,5 +1,5 @@
 #pragma once
-
+#include<list>
 class LightComponent : public Component
 {
 public:
@@ -21,7 +21,6 @@ public:
 	void GetViewMatrix(XMMATRIX&);
 	void GetProjectionMatrix(XMMATRIX&);
 	static LightComponent* mainLight();
-
 private:
 	XMFLOAT4 m_ambientColor = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	XMFLOAT4 m_diffuseColor = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -29,5 +28,6 @@ private:
 	XMFLOAT3 m_lookAt = XMFLOAT3(0.0f, 0.0f, 0.0f);
 	XMMATRIX m_viewMatrix;
 	XMMATRIX m_projectionMatrix;
-
+public:
+	static std::list<LightComponent*> lights;
 };
