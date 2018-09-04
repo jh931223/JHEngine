@@ -5,6 +5,7 @@
 #include <list>
 #include "ThreadPool.h"
 #include<unordered_map>
+#include<map>
 class MeshRenderer;
 class Material;
 template<typename T> class Octree;
@@ -51,10 +52,13 @@ public:
 	void OnStart() override;
 	void Initialize();
 
-	bool SetVoxel(int x, int y, int z, VoxelData);
-	VoxelData GetChunk(int x, int y, int z);
+	unsigned int GetCellIndex(int x, int y, int z);
 
-	VoxelComp::VoxelData GetChunk(XMFLOAT3 pos);
+	bool SetVoxel(int x, int y, int z, VoxelData, bool isInit=false);
+	bool EditVoxel(XMFLOAT3 pos, float _radius, float _strength);
+	VoxelData GetVoxel(int x, int y, int z);
+
+	VoxelComp::VoxelData GetVoxel(XMFLOAT3 pos);
 	int GetPartitionSize() { return partitionSize; }
 	XMFLOAT3 GetLastBasePosition() { return lastBasePosition; }
 
@@ -113,6 +117,7 @@ private:
 	void UpdateVoxelMesh();
 	void UpdateMarchingCubeMesh(int lodLevel = 0);
 	XMFLOAT3 GetPositionFromIndex(int index);
+	int GetIndexFromPosition(XMFLOAT3 pos);
 	void RefreshLODNodes(XMFLOAT3 centerPos);
 	bool FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius);
 	bool FrustumCheckSphere(float xCenter, float yCenter, float zCenter, float radius);
@@ -153,13 +158,15 @@ private:
 	float tUnit;
 	int tAmount;
 
-	bool useMarchingCube;
-	bool useAsyncBuild;
-	bool useFrustum;
+	bool useMarchingCube=true;
+	bool useAsyncBuild=true;
+	bool useFrustum=false;
+	bool useSpartialMatrix=false;
 
 	int currentOctreeDepth = 0;
 
 	VoxelData* chunks;
+	std::unordered_map<unsigned int, VoxelData> spartialMatrix;
 
 	Octree<MeshRenderer*>* gOctreeMeshRenderer;
 

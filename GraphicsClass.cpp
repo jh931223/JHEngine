@@ -46,7 +46,6 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	}
 
 
-
 	// ºä Æ÷ÀÎÆ® °´Ã¼¸¦ ¸¸µì´Ï´Ù.
 	m_ViewPoint = new ViewPointClass;
 	if(!m_ViewPoint)

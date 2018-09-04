@@ -69,16 +69,29 @@ namespace JHDev
 	{
 		return XMFLOAT3(one.x * num, one.y * num, one.z * num);
 	}
+	inline  XMFLOAT3 operator*(Scalar num, const XMFLOAT3& one)
+	{
+		return XMFLOAT3(one.x * num, one.y * num, one.z * num);
+	}
 
 	inline  XMFLOAT3 operator/(const XMFLOAT3& one,Scalar num)
 	{
 		return XMFLOAT3(one.x / num, one.y / num, one.z / num);
 	}
+	inline  XMFLOAT3 operator/(Scalar num, const XMFLOAT3& one)
+	{
+		return XMFLOAT3(one.x / num, one.y / num, one.z / num);
+	}
 	inline XMFLOAT3 Normalize3(const XMFLOAT3& one)
 	{
-		if (one.x == 0 && one.y == 0 && one.z == 0)
+		XMVECTOR vec = XMLoadFloat3(&one);
+		vec=XMVector3Normalize(vec);
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, vec);
+		return result;
+		/*if (one.x == 0 && one.y == 0 && one.z == 0)
 			return one;
-		return one / sqrt(one.x*one.x + one.y*one.y + one.z*one.z);
+		return one / sqrt(one.x*one.x + one.y*one.y + one.z*one.z);*/
 	}
 	inline void SetMatrix3X3(XMFLOAT3X3& matrix, XMFLOAT3 a, XMFLOAT3 b, XMFLOAT3 c)
 	{
@@ -127,6 +140,15 @@ namespace JHDev
 	inline int SIGN(float x)
 	{
 		return x >= 0 ? 1 : -1;
+	}
+	inline float Lerp(float x, float y, float a)
+	{
+		float d = y - x;
+		float f = x + d*a;
+		if (d >= 0)
+			return (f > x) ? x : f;
+		else
+			return (f < x) ? x : f;
 	}
 }
 

@@ -226,8 +226,11 @@ bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRI
 
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
 	deviceContext->PSSetShaderResources(0, 1, params.GetTexture("Texture1")->GetResourceView());
+	deviceContext->PSSetShaderResources(3, 1, params.GetTexture("Texture1Normal")->GetResourceView());
 	deviceContext->PSSetShaderResources(1, 1, params.GetTexture("Texture2")->GetResourceView());
+	deviceContext->PSSetShaderResources(4, 1, params.GetTexture("Texture2Normal")->GetResourceView());
 	deviceContext->PSSetShaderResources(2, 1, params.GetTexture("Texture3")->GetResourceView());
+	deviceContext->PSSetShaderResources(5, 1, params.GetTexture("Texture3Normal")->GetResourceView());
 	return true;
 }
 

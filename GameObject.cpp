@@ -6,13 +6,13 @@ GameObject::GameObject()
 {
 	name = "GameObject";
 	Initialize();
-	DebugMessage(name + "持失\n");
+	//DebugMessage(name + "持失\n");
 }
 
 GameObject::GameObject(const std::string& _name):name(_name)
 {
 	Initialize();
-	DebugMessage(name + "持失\n");
+	//DebugMessage(name + "持失\n");
 }
 
 

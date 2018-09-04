@@ -225,9 +225,6 @@
     <ClCompile Include="JHEngine.cpp">
       <Filter>EngineFrameworks</Filter>
     </ClCompile>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>EngineFrameworks</Filter>
-    </ClCompile>
     <ClCompile Include="CameraComponent.cpp">
       <Filter>EngineFrameworks\Source\Components</Filter>
     </ClCompile>
@@ -284,6 +281,9 @@
     </ClCompile>
     <ClCompile Include="VoxelComp.cpp">
       <Filter>Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>EngineFrameworks\Source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

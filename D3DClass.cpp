@@ -195,7 +195,6 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// 백버퍼 포인터를 해제합니다
 	backBufferPtr->Release();
 	backBufferPtr = 0;
-
 	// 깊이 버퍼 구조체를 초기화합니다
 	D3D11_TEXTURE2D_DESC depthBufferDesc;
 	ZeroMemory(&depthBufferDesc, sizeof(depthBufferDesc));
@@ -261,6 +260,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	depthStencilViewDesc.Texture2D.MipSlice = 0;
+	
 
 	// 깊이 스텐실 뷰를 생성합니다
 	if (FAILED(m_device->CreateDepthStencilView(m_depthStencilBuffer, &depthStencilViewDesc, &m_depthStencilView)))
@@ -292,8 +292,11 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 		return false;
 	}
 
+
 	// 이제 래스터 라이저 상태를 설정합니다
 	m_immDeviceContext->RSSetState(m_rasterState);
+
+
 
 	// 렌더링을 위해 뷰포트를 설정합니다
 	m_viewport.Width = (float)screenWidth;

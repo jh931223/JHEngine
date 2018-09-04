@@ -140,11 +140,19 @@ void ResourcesClass::InitializeMesh(HWND hwnd)
 
 void ResourcesClass::InitializeTexture(HWND hwnd)
 {
-	textureMap["stone"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/stone.dds");
-	textureMap["floor"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/seafloor.dds");
-	textureMap["tile"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/tile.dds");
-	textureMap["grass"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/grass.dds");
-	textureMap["soil"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/soil.dds");
+	textureMap["stone"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/stone.dds", false);
+	textureMap["floor"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/seafloor.dds", false);
+	textureMap["tile"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/tile.dds", false);
+	textureMap["grass"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/grass.dds", false);
+	textureMap["soil"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/soil.dds",false);
+	textureMap["cliff"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Cliff_1.png");
+	textureMap["cliffNormal"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Cliff_1_normal.png");
+	textureMap["rock"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Rock_1.png");
+	textureMap["rockNormal"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Rock_1_normal.png");
+	textureMap["rock2"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Rock_2.png");
+	textureMap["rock2Normal"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Rock_2_normal.png");
+	textureMap["snow"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Snow_1.png");
+	textureMap["snowNormal"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Snow_1_normal.png");
 }
 
 void ResourcesClass::InitializeMaterial(HWND hwnd)
@@ -183,9 +191,12 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 
 	result = new Material;
 	result->SetShader(FindShader("TriplanarShader"), hwnd);
-	result->GetParams()->SetTexture("Texture1", FindTexture("soil"));
-	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
-	result->GetParams()->SetTexture("Texture3", FindTexture("soil"));
+	result->GetParams()->SetTexture("Texture1", FindTexture("cliff"));
+	result->GetParams()->SetTexture("Texture1Normal", FindTexture("cliffNormal"));
+	result->GetParams()->SetTexture("Texture2", FindTexture("snow"));
+	result->GetParams()->SetTexture("Texture2Normal", FindTexture("snowNormal"));
+	result->GetParams()->SetTexture("Texture3", FindTexture("cliff"));
+	result->GetParams()->SetTexture("Texture3Normal", FindTexture("cliffNormal"));
 	materialMap["m_triplanar"] = result;
 }
 

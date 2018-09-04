@@ -11,9 +11,12 @@ TextureClass::TextureClass(const TextureClass& other)
 {
 }
 
-TextureClass::TextureClass(ID3D11Device* device, const WCHAR* filename)
+TextureClass::TextureClass(ID3D11Device* device, const WCHAR* filename, bool isWIC)
 {
-	Initialize(device, filename);
+	if(!isWIC)
+		Initialize(device, filename);
+	else
+		InitializeWIC(device, filename);
 }
 
 
@@ -27,6 +30,20 @@ bool TextureClass::Initialize(ID3D11Device* device, const WCHAR* filename)
 {
 	// 텍스처를 파일로부터 읽어온다
 	if(FAILED(CreateDDSTextureFromFile(device, filename, nullptr, &m_texture)))
+	{
+		return false;
+	}
+	//if (FAILED(CreateWICTextureFromFile(device, filename, nullptr, &m_texture)))
+	//{
+	//	return false;
+	//}
+	return true;
+}
+
+bool TextureClass::InitializeWIC(ID3D11Device* device, const WCHAR* filename)
+{
+	// 텍스처를 파일로부터 읽어온다
+	if (FAILED(CreateWICTextureFromFile(device, filename, nullptr, &m_texture)))
 	{
 		return false;
 	}
