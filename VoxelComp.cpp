@@ -8,6 +8,7 @@
 #include"CameraComponent.h"
 #include"LightComponent.h"
 #include"Octree.h"
+#include"ArrayedOctree.h"
 
 #include<vector>
 #include<map>
@@ -18,7 +19,7 @@
 #include<time.h>
 #include"PerlinNoise.h"
 #include<amp.h>
-#include<atomic>
+#include<amp_math.h>
 #include<amp_graphics.h>
 #include"SystemClass.h"
 #include"D3DClass.h"
@@ -34,6 +35,7 @@
 using namespace concurrency;
 using namespace concurrency::graphics;
 using namespace concurrency::direct3d;
+using namespace concurrency::fast_math;
 
 VoxelComp::VoxelComp()
 {
@@ -44,6 +46,9 @@ VoxelComp ::~VoxelComp()
 	if(chunks)
 		delete[] chunks;
 	chunks = 0;
+	if (aOctree)
+		delete aOctree;
+	aOctree = 0;
 	ReleaseOctree();
 }
 void VoxelComp::Initialize()
@@ -59,14 +64,14 @@ void VoxelComp::Initialize()
 	//useFrustum = true;
 
 	partitionSize = 32;
-	SetLODLevel(0, 100000);
+//	SetLODLevel(0, 100000);
 
 
-	/*SetLODLevel(0, 32);
+	SetLODLevel(0, 32);
 	SetLODLevel(1, 64);
 	SetLODLevel(2, 128);
 	SetLODLevel(3, 256);
-*/
+
 	//lastBasePosition = XMFLOAT3(0, 30, 0);
 	lastBasePosition = XMFLOAT3(3000,3000,3000);
 	isLockedBasePosition = true;
@@ -74,9 +79,10 @@ void VoxelComp::Initialize()
 
 
 	//LoadCube(32, 32, 32);
-	//LoadPerlin(1024, 256, 1024,1, 0.01f);
+	//LoadPerlin(256, 128, 256,128, 0.1f);
+	LoadPerlin(1024, 128, 1024, 1, 0.1f);
 	//int h = ReadTXT("/data/height.txt");
-	LoadHeightMapFromRaw(1024, 512, 1024,256, "data/terrain.raw");// , 0, 0, 255, 255);
+	//LoadHeightMapFromRaw(1024, 512, 1024,256, "data/terrain.raw");// , 0, 0, 255, 255);
 
 	std::function<MESH_RESULT(INPUT_BUFFER)> _task = ([&, this](INPUT_BUFFER buf)
 	{
@@ -182,12 +188,8 @@ void VoxelComp::Update()
 	if (Input()->GetKeyDown(DIK_R))
 	{
 		isLockedBasePosition = true;
-		for (auto i : lodGropups)
-		{
-			if(i.second.level>2)
-				ReserveUpdate(GetPositionFromIndex(i.first), false, false);
-		}
-		//customPos = GetPartitionStartPos(camera->transform->GetWorldPosition());
+		lastBasePosition = GetPartitionStartPos(camera->transform->GetWorldPosition());
+		RefreshLODNodes();
 		//if (!useAsyncBuild)
 		//{
 		//	UpdateMesh(0);
@@ -593,12 +595,6 @@ void VoxelComp::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer
 		int index_1 = vertBegin + regularCell.Indices()[triBegin + 1];
 		int index_2 = vertBegin + regularCell.Indices()[triBegin + 2];
 		XMFLOAT3 n = CalcNormal(vertices[index_0].position, vertices[index_1].position, vertices[index_2].position);
-		//vertNormalBuffer[index_0 - vertBegin].push_back(n);
-		//vertNormalBuffer[index_1 - vertBegin].push_back(n);
-		//vertNormalBuffer[index_2 - vertBegin].push_back(n);
-		//vertices[index_0].normal = AverageNormal(n, vertices[index_0].normal);
-		//vertices[index_1].normal = AverageNormal(n, vertices[index_1].normal);
-		//vertices[index_2].normal = AverageNormal(n, vertices[index_2].normal);
 		vertices[index_0].normal += n;
 		vertices[index_1].normal += n;
 		vertices[index_2].normal += n;
@@ -606,19 +602,11 @@ void VoxelComp::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer
 		indices.push_back(index_1);
 		indices.push_back(index_2);
 	}
-	/*for (int i = 0; i < vertCount; i++)
-	{
-		vertices[vertBegin + i].normal = Normalize3(vertices[vertBegin + i].normal);
-	}*/
-	//for (int i= 0;i<vertNormalBuffer.size();i++)
-	//{
-	//	XMFLOAT3 n=XMFLOAT3(0,0,0);
-	//	for (auto j : vertNormalBuffer[i])
-	//		n += j;
-	//	//n = n / vertNormalBuffer[i].size();
-	//	vertices[vertBegin + i].normal = n;//Normalize3(n);
-	//}
 }
+
+
+
+
 void VoxelComp::GetVertexInnerBox(short _basis,XMFLOAT3 offset,int _unit,XMFLOAT3 vertOut[])
 {
 	int max = partitionSize - _unit;
@@ -631,8 +619,8 @@ void VoxelComp::GetVertexInnerBox(short _basis,XMFLOAT3 offset,int _unit,XMFLOAT
 	vertOut[6] = XMFLOAT3(0, 1, 1);
 	vertOut[7] = XMFLOAT3(1, 1, 1);
 
-	float lowValue = 0.05f;
-	float highValue = 0.95f;
+	float lowValue = 0.3f;
+	float highValue = 0.7f;
 
 	if (_basis & 1)
 	{
@@ -867,38 +855,18 @@ void VoxelComp::GetVertexInnerBox(short _basis,XMFLOAT3 offset,int _unit,XMFLOAT
 }
 void VoxelComp::PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
+	if (pos.x + _unit >= width || pos.y + _unit >= height || pos.z + _unit >= depth)
+		return;
 	int caseCode = 0;
 	std::vector<XMFLOAT3> newCorners;
-	XMFLOAT3 innerBoxMin(0,0,0);
-	XMFLOAT3 innerBoxMax(1,1,1);
 	XMFLOAT3 startPos = GetPartitionStartPos(pos);
 	XMFLOAT3 offset=pos - startPos;
-	int max = partitionSize - 1;
-	//if (_basis & 1) 
-	//	innerBoxMin.z = 0.25f;//뒤
-	//if (_basis & 2) 
-	//	innerBoxMax.z = 0.75f; //앞
-	//if (_basis & 4) 
-	//	innerBoxMin.x = 0.25f; //왼
-	//if (_basis & 8)
-	//	innerBoxMax.x = 0.75f; //오
-	//if (_basis & 16) { innerBoxMin.y = 0.25f; }//아래
-	//if (_basis & 32) { innerBoxMax.y = 0.75f; }//위
-	//XMFLOAT3 _9abc[6][4] =
-	//{
-	//	{ XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMin.z) },
-	//	{ XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMax.z) },
-	//	{ XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMin.z) },
-	//	{ XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMax.z) },
-	//	{ XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMax.z), XMFLOAT3(innerBoxMin.x,innerBoxMin.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMin.y,innerBoxMin.z) },
-	//	{ XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMin.z), XMFLOAT3(innerBoxMin.x,innerBoxMax.y,innerBoxMax.z), XMFLOAT3(innerBoxMax.x,innerBoxMax.y,innerBoxMax.z) }
-	//};
 	XMFLOAT3 vertOut[8];
 	GetVertexInnerBox(_basis, offset, _unit, vertOut);
 	XMFLOAT3 _9abc[6][4]=
 	{
 		{ vertOut[0],vertOut[1],vertOut[4],vertOut[5] },
-		{ vertOut[3],vertOut[2],vertOut[7],vertOut[4] },
+		{ vertOut[3],vertOut[2],vertOut[7],vertOut[6] },
 		{ vertOut[2],vertOut[0],vertOut[6],vertOut[4] },
 		{ vertOut[1],vertOut[3],vertOut[5],vertOut[7] },
 		{ vertOut[2],vertOut[3],vertOut[0],vertOut[1] },
@@ -989,165 +957,7 @@ void VoxelComp::PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, 
 
 
 }
-void VoxelComp::CreateMarchingCubeFace(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices,bool isTransitionCell)
-{
-	float size = width;
-	float size2 = width * height;
-	XMFLOAT3 p3= pos;
-	XMFLOAT3 px3 = p3 + XMFLOAT3(1, 0, 0) * _unit;
-	XMFLOAT3 py3 = p3 + XMFLOAT3(0, 1, 0) * _unit;
-	XMFLOAT3 pxy3 = p3 + XMFLOAT3(1, 1, 0) * _unit;
-	XMFLOAT3 pz3 = p3 + XMFLOAT3(0, 0, 1) * _unit;
-	XMFLOAT3 pxz3 = p3 + XMFLOAT3(1, 0, 1) * _unit;
-	XMFLOAT3 pyz3 = p3 + XMFLOAT3(0, 1, 1) * _unit;
-	XMFLOAT3 pxyz3 = p3 + XMFLOAT3(1, 1, 1) * _unit;
-	float value0, value1, value2,  value3,  value4,  value5, value6, value7;
 
-
-	short material = 0;
-	VoxelData pData = GetVoxel(p3);
-	value0 = pData.isoValue;
-	value1 = GetVoxel(px3).isoValue;
-	value2 = GetVoxel(py3).isoValue;
-	value3 = GetVoxel(pxy3).isoValue;
-	value4 = GetVoxel(pz3).isoValue;
-	value5 = GetVoxel(pxz3).isoValue;
-	value6 = GetVoxel(pyz3).isoValue;
-	value7 = GetVoxel(pxyz3).isoValue;
-	material = pData.material;
-
-
-	int caseCode = 0;
-
-	if (value0 < isoLevel) caseCode |= 1;
-	if (value1 < isoLevel) caseCode |= 2;
-	if (value2 < isoLevel) caseCode |= 8;
-	if (value3 < isoLevel) caseCode |= 4;
-	if (value4 < isoLevel) caseCode |= 16;
-	if (value5 < isoLevel) caseCode |= 32;
-	if (value6 < isoLevel) caseCode |= 128;
-	if (value7 < isoLevel) caseCode |= 64;
-
-	XMFLOAT3 vert[12] = { XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0),XMFLOAT3(0,0,0) };
-	XMFLOAT2 uv = GetUV(material);
-	int bits=edgeTable[caseCode];
-	if (bits == 0)
-		return;
-	float mu = 0.5f;
-	if ((bits & 1) != 0)
-	{
-		mu = (isoLevel - value0) / (value1 - value0);
-		vert[0] = lerpSelf(p3, px3, mu);
-	}
-	if ((bits & 2) != 0)
-	{
-		mu = (isoLevel - value1) / (value3 - value1);
-		vert[1] = lerpSelf(px3, pxy3, mu);
-	}
-	if ((bits & 4) != 0)
-	{
-		mu = (isoLevel - value2) / (value3 - value2);
-		vert[2] = lerpSelf(py3, pxy3, mu);
-
-	}
-	if ((bits & 8) != 0)
-	{
-		mu = (isoLevel - value0) / (value2 - value0);
-		vert[3] = lerpSelf(p3, py3, mu);
-
-	}
-	// top of the cube
-	if ((bits & 16) != 0)
-	{
-		mu = (isoLevel - value4) / (value5 - value4);
-		vert[4] = lerpSelf(pz3, pxz3, mu);
-
-	}
-	if ((bits & 32) != 0)
-	{
-		mu = (isoLevel - value5) / (value7 - value5);
-		vert[5] = lerpSelf(pxz3, pxyz3, mu);
-
-	}
-	if ((bits & 64) != 0)
-	{
-		mu = (isoLevel - value6) / (value7 - value6);
-		vert[6] = lerpSelf(pyz3, pxyz3, mu);
-	}
-	if ((bits & 128) != 0)
-	{
-		mu = (isoLevel - value4) / (value6 - value4);
-		vert[7] = lerpSelf(pz3, pyz3, mu);
-
-	}
-	// vertical lines of the cube
-	if ((bits & 256) != 0)
-	{
-		mu = (isoLevel - value0) / (value4 - value0);
-		vert[8] = lerpSelf(p3, pz3, mu);
-
-	}
-	if ((bits & 512) != 0)
-	{
-		mu = (isoLevel - value1) / (value5 - value1);
-		vert[9] = lerpSelf(px3, pxz3, mu);
-
-	}
-	if ((bits & 1024) != 0)
-	{
-		mu = (isoLevel - value3) / (value7 - value3);
-		vert[10] = lerpSelf(pxy3, pxyz3, mu);
-	}
-
-	//print (bits & 2048);
-
-	if ((bits & 2048) != 0)
-	{
-		mu = (isoLevel - value2) / (value6 - value2);
-		vert[11] = lerpSelf(py3, pyz3, mu);
-	}
-	//cubeindex <<= 4;  // multiply by 16...
-	int i = 0;
-	int rr = 0;
-	while (triTable[caseCode][i] != -1)
-	{
-		int index1 = triTable[caseCode][i];
-		int index2 = triTable[caseCode][i+1];
-		int index3 = triTable[caseCode][i + 2];
-		VertexBuffer vert1;
-		vert1.position = vert[index1];
-		VertexBuffer vert2;
-		vert2.position = vert[index2];
-		VertexBuffer vert3;
-		vert3.position = vert[index3];
-		rr = 1 - rr; // temp variable.. every 2nd UV set is different order..
-
-		if (rr == 0)
-		{
-			vert1.uv = XMFLOAT2(0, 0);
-			vert2.uv = XMFLOAT2(0, 1*tUnit);
-			vert3.uv = XMFLOAT2(1 * tUnit, 1 * tUnit);
-		}
-		else
-		{
-			vert1.uv = XMFLOAT2(1 * tUnit, 0);
-			vert2.uv = XMFLOAT2(0,0);
-			vert3.uv = XMFLOAT2(1 * tUnit, 1 * tUnit);
-		}
-		XMFLOAT3 n = CalcNormal(vert1.position, vert2.position, vert3.position);
-		vert1.normal = n;
-		vert2.normal = n;
-		vert3.normal = n;
-		int vertexIndex = vertices.size();
-		vertices.push_back(vert1);
-		indices.push_back(vertexIndex);
-		vertices.push_back(vert2);
-		indices.push_back(vertexIndex + 1);
-		vertices.push_back(vert3);
-		indices.push_back(vertexIndex + 2);
-		i += 3;
-	}
-}
 VoxelComp::MESH_RESULT VoxelComp::GeneratePartitionFaces(XMFLOAT3 pos, int lodLevel, short transitionCellBasis)
 {
 	//ULONG time = GetTickCount();
@@ -1203,7 +1013,6 @@ VoxelComp::MESH_RESULT VoxelComp::GeneratePartitionFaces(XMFLOAT3 pos, int lodLe
 }
 
 
-
 VoxelComp::MESH_RESULT VoxelComp::GenerateCubeFaces(XMFLOAT3 pos)
 {
 	return VoxelComp::MESH_RESULT();
@@ -1252,12 +1061,6 @@ VoxelComp::MESH_RESULT VoxelComp::GenerateCubeFaces(XMFLOAT3 pos)
 
 	return CreatePartialMesh(pos, node, vertices, indices);*/
 }
-XMFLOAT3 VoxelComp::AverageNormal(XMFLOAT3 n1, XMFLOAT3 n2)
-{
-	XMFLOAT3 newN;
-	XMStoreFloat3(&newN,XMVector3Normalize(XMLoadFloat3(&(n1 + n2))));
-	return newN;
-}
 
 XMFLOAT3 VoxelComp::CalcNormal(const XMFLOAT3& v1, const XMFLOAT3& v2, const XMFLOAT3& v3)
 {
@@ -1276,7 +1079,6 @@ XMFLOAT3 VoxelComp::CalcNormal(const XMFLOAT3& v1, const XMFLOAT3& v2, const XMF
 	return n;
 }
 
-
 XMFLOAT2 VoxelComp::GetUV(BYTE type)
 {
 	if (type == -1)
@@ -1292,7 +1094,9 @@ VoxelComp::VoxelData VoxelComp::GetVoxel(int x, int y, int z)
 	if (x < 0 || y < 0 || z < 0)
 		return v;
 	int index = GetCellIndex(x, y, z);
-	if (!useSpartialMatrix)
+	if (useArrayedOctree)
+		v = aOctree->GetNode(XMFLOAT3(x, y, z), 0);
+	else if (!useSpartialMatrix)
 		v = chunks[index];
 	else
 	{
@@ -1321,7 +1125,9 @@ bool VoxelComp::SetVoxel(int x, int y, int z, VoxelData value,bool isInit)
 	XMFLOAT3 pos(x, y, z);
 	VoxelData vox = value;
 	int index = GetCellIndex(x, y, z);
-	if(!useSpartialMatrix)
+	if (useArrayedOctree)
+		aOctree->SetNode(pos,value);
+	else if(!useSpartialMatrix)
 		chunks[index] = value;
 	else
 	{
@@ -1497,76 +1303,165 @@ int VoxelComp::GetIndexFromPosition(XMFLOAT3 pos)
 		return -1;
 	return (int)pos.x + (int)pos.y*width + (int)pos.z*width*height;
 }
-void VoxelComp::RefreshLODNodes(XMFLOAT3 basePos)
+void VoxelComp::RefreshLODNodes()
 {
 
-
-
-
-
-	std::unordered_map<int, LODGroupData> newLODGroupsReserved[maxLODLevel+1];
+	XMFLOAT3 basePos = GetPartitionStartPos(lastBasePosition);
+	std::unordered_map<int, LODGroupData> newLODGroupsLoaded;
 	std::unordered_map<int, LODGroupData> newLODGroups;
 	std::unordered_map<int, LODGroupData> oldLODGroups;
 	oldLODGroups.swap(lodGropups);
-	basePos = GetPartitionStartPos(basePos);
-	int lodDistance = LODDistance[maxLODLevel-1];
+	int lodDistance = LODDistance[maxLODLevel - 1];
 	int min = -lodDistance - partitionSize;
 	int max = lodDistance + partitionSize;
-	LODGroupData lodGroupData;
-	for (int i = min; i <= max; i += partitionSize)
+
+	for (int i = min; i < max; i += partitionSize)
 	{
-		for (int j = min; j <= max; j += partitionSize)
+		for (int j = min; j < max; j += partitionSize)
 		{
-			for (int k = min; k <=  max; k += partitionSize)
+			for (int k = min; k < max; k += partitionSize)
 			{
 				XMFLOAT3 targetPos = basePos + XMFLOAT3(i, j, k);
 				if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= width || targetPos.y >= height || targetPos.z >= depth)
 					continue;
-				lodGroupData.level= GetLODLevel(basePos, targetPos);
-				if (lodGroupData.level >= 0)
+
+				LODGroupData lodGroupData;
+				lodGroupData.level = GetLODLevel(basePos, targetPos);
+
+				lodGroupData.transitionBasis = GetTransitionBasis(lodGroupData.level, basePos, targetPos);
+				int index = (int)targetPos.x + (int)targetPos.y*width + (int)targetPos.z*width*height;
+				auto iter = oldLODGroups.find(index);
+				if (iter == oldLODGroups.end())
 				{
-					lodGroupData.transitionBasis = GetTransitionBasis(lodGroupData.level, basePos, targetPos);
-					int index = (int)targetPos.x + (int)targetPos.y*width + (int)targetPos.z*width*height;
-					auto iter = oldLODGroups.find(index);
-					if (iter == oldLODGroups.end())
-					{
-						newLODGroupsReserved[lodGroupData.level][index] = lodGroupData;
-					}
+					newLODGroups[index] = lodGroupData;
+				}
+				else
+				{
+					if (lodGroupData.transitionBasis == iter->second.transitionBasis&&lodGroupData.level == iter->second.level)
+						newLODGroupsLoaded[index] = lodGroupData;
 					else
 					{
-						int lastLevel = (*iter).second.level;
-						int lastBasis = (*iter).second.transitionBasis;
 						oldLODGroups.erase(iter);
-						if (lodGroupData.level != lastLevel || lodGroupData.transitionBasis != lastBasis)
-						{
-							newLODGroupsReserved[lodGroupData.level][index] = lodGroupData;
-						}
-						else
-						{
-							newLODGroups[index] = lodGroupData;
-						}
+						newLODGroups[index] = lodGroupData;
 					}
 				}
 			}
 		}
 	}
-	for (auto j : newLODGroupsReserved)
+
+	for (auto i : newLODGroupsLoaded)
 	{
-		for (auto i : j)
-		{
-			ReserveUpdate(GetPositionFromIndex(i.first), i.second.transitionBasis, i.second.level, false, true);
-			lodGropups[i.first] = i.second;
-		}
+		lodGropups[i.first] = i.second;
 	}
 	for (auto i : newLODGroups)
 	{
+		ReserveUpdate(GetPositionFromIndex(i.first), i.second.transitionBasis, i.second.level, false, false);
 		lodGropups[i.first] = i.second;
 	}
 	for (auto i : oldLODGroups)
 	{
-		ReserveUpdate(GetPositionFromIndex(i.first), false, true);
+		ReserveUpdate(GetPositionFromIndex(i.first), false, false);
 	}
 	oldLODGroups.clear();
+
+
+	//for (auto i : lodGropups)
+	//{
+	//	ReserveUpdate(GetPositionFromIndex(i.first), false, true);
+	//}
+	//lodGropups.clear();
+	//std::unordered_map<int, LODGroupData> newLODGroups;
+	//XMFLOAT3 basePos = GetPartitionStartPos(lastBasePosition);
+	//int lodDistance = LODDistance[maxLODLevel - 1];
+	//int min = -lodDistance - partitionSize;
+	//int max = lodDistance + partitionSize;
+	//for (int i = min; i < max; i += partitionSize)
+	//	for (int j = min; j < max; j += partitionSize)
+	//		for (int k = min; k < max; k += partitionSize)
+	//		{
+	//			XMFLOAT3 targetPos = XMFLOAT3(i, j, k) + basePos;
+	//			int level = GetLODLevel(basePos, targetPos);//ReserveUpdate(targetPos, false, false);
+	//			if (level >= 0)
+	//			{
+	//				int index = GetIndexFromPosition(targetPos);
+	//				LODGroupData data;
+	//				data.level = level;
+	//				data.transitionBasis = GetTransitionBasis(level, basePos, targetPos);
+	//				auto iter = lodGropups.find(index);
+	//				if (iter != lodGropups.end())
+	//				{
+	//					if (iter->second.level == data.level&&iter->second.transitionBasis == data.transitionBasis)
+	//					{
+
+	//					}
+	//				}
+	//				newLODGroups[GetIndexFromPosition(targetPos)] = data;
+	//			}
+	//		}
+	//newLODGroups.swap(lodGropups);
+}
+void VoxelComp::RefreshLODNodes(XMFLOAT3 basePos)
+{
+
+
+	basePos = GetPartitionStartPos(basePos);
+	std::unordered_map<int, LODGroupData> newLODGroupsLoaded;
+	std::unordered_map<int, LODGroupData> newLODGroups;
+	std::unordered_map<int, LODGroupData> oldLODGroups;
+	oldLODGroups.swap(lodGropups);
+	int lodDistance = LODDistance[maxLODLevel - 1];
+	int min = -lodDistance-partitionSize;
+	int max = lodDistance+partitionSize;
+
+	for (int i = min; i < max; i+=partitionSize)
+	{
+		for (int j= min; j < max; j+=partitionSize)
+		{
+			for (int k = min; k < max; k+=partitionSize)
+			{
+				XMFLOAT3 targetPos = basePos + XMFLOAT3(i, j, k);
+				if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= width || targetPos.y >= height || targetPos.z >= depth)
+					continue;
+
+				LODGroupData lodGroupData;
+				lodGroupData.level = GetLODLevel(basePos, targetPos);
+
+				lodGroupData.transitionBasis = GetTransitionBasis(lodGroupData.level, basePos, targetPos);
+				int index = (int)targetPos.x + (int)targetPos.y*width + (int)targetPos.z*width*height;
+				auto iter = oldLODGroups.find(index);
+				if (iter == oldLODGroups.end())
+				{
+					newLODGroups[index] = lodGroupData;
+				}
+				else
+				{
+					if (lodGroupData.transitionBasis == iter->second.transitionBasis&&lodGroupData.level == iter->second.level)
+						newLODGroupsLoaded[index] = lodGroupData;
+					else
+					{
+						oldLODGroups.erase(iter);
+						newLODGroups[index] = lodGroupData;
+					}
+				}
+			}
+		}
+	}
+
+	for (auto i : newLODGroupsLoaded)
+	{
+		lodGropups[i.first] = i.second;
+	}
+	for (auto i : newLODGroups)
+	{
+		ReserveUpdate(GetPositionFromIndex(i.first),i.second.transitionBasis,i.second.level, false, false);
+		lodGropups[i.first] = i.second;
+	}
+	for (auto i : oldLODGroups)
+	{
+		ReserveUpdate(GetPositionFromIndex(i.first), false, false);
+	}
+	oldLODGroups.clear();
+
 }
 
 void VoxelComp::ProcessLOD()
@@ -1801,7 +1696,7 @@ void VoxelComp::LoadHeightMapFromRaw(int _width, int _height,int _depth, int _ma
 		for (int z = 0; z < depth; z++)
 		{
 			float convertY = (((float)data[x][z]) * h);
-			for (int y = 0; y < _maxHeight; y++)
+			for (int y = 0; y <= _maxHeight; y++)
 			{
 				VoxelData v;
 				if (y <= convertY)
@@ -1882,20 +1777,21 @@ void VoxelComp::NewChunks(int _w, int _h, int _d)
 	width = _w;
 	height = _h;
 	depth = _d;
-	if(!useSpartialMatrix)
+	if (useArrayedOctree)
+	{
+		aOctree = new ArrayedOctree<VoxelData>(_w);
+	}
+	else if (!useSpartialMatrix)
+	{
 		chunks = new VoxelData[_w*_h*_d];
+	}
 	NewOctree(_w);
 }
 void VoxelComp::NewOctree(int _size)
 {
 	//if (_size % 2 > 0)
 	//	_size--;
-	int lastSize = 1;
-	while (lastSize < _size)
-	{
-		lastSize *= 2;
-	}
-	gOctreeMeshRenderer = new Octree<MeshRenderer*>(lastSize,partitionSize);
+	gOctreeMeshRenderer = new Octree<MeshRenderer*>(_size,partitionSize);
 	//if (aOctree)
 	//{
 	//	delete aOctree;
@@ -1989,7 +1885,7 @@ int VoxelComp::GetLODLevel(const XMFLOAT3& basePos, const XMFLOAT3& targetPos)
 	XMFLOAT3 targetPos2 = GetPartitionCenter(targetPos);
 	XMFLOAT3 n = targetPos2 - basePos2;
 	XMFLOAT3 max, min;
-	for (int i = 0; i < maxLODLevel+1; i++)
+	for (int i = 0; i <= maxLODLevel; i++)
 	{
 		//max = basePos2 + XMFLOAT3(LODDistance[i], LODDistance[i], LODDistance[i]);
 		//min = basePos2 - XMFLOAT3(LODDistance[i], LODDistance[i], LODDistance[i]);
@@ -2000,9 +1896,9 @@ int VoxelComp::GetLODLevel(const XMFLOAT3& basePos, const XMFLOAT3& targetPos)
 		//		return i;
 		//	}
 		//}
-		if (abs(n.x) <= LODDistance[i] 
-			&& abs(n.y) <= LODDistance[i]
-			&& abs(n.z) <= LODDistance[i])
+		if (abs(n.x) < LODDistance[i] 
+			&& abs(n.y) < LODDistance[i]
+			&& abs(n.z) < LODDistance[i])
 		{
 			return i;
 		}
@@ -2119,9 +2015,9 @@ short VoxelComp::GetTransitionBasis(int lodLevel, XMFLOAT3 basePos, XMFLOAT3 tar
 short VoxelComp::ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, bool isDeforming, bool checkDuplicated)
 {
 	if (pos.x >= width || pos.y >= height || pos.z >= depth)
-		return 0;
+		return -1;
 	if (pos.x < 0 || pos.y < 0 || pos.z < 0)
-		return 0;
+		return -1;
 	INPUT_BUFFER input;
 	XMFLOAT3 targetPos = GetPartitionStartPos(pos);
 	input.x = (int)targetPos.x;
@@ -2135,29 +2031,29 @@ short VoxelComp::ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, bool
 		{
 			for (auto i : updateQueue_Deform)
 				if (i == input)
-					return 0;
+					return -1;
 		}
 		else
 		{
 			for (auto i : updateQueue_Main)
 				if (i == input)
-					return 0;
+					return -1;
 		}
 	}
 	if (!isDeforming)
 		updateQueue_Main.push_back(input);
 	else
 		updateQueue_Deform.push_back(input);
-	return input.transitionCellBasis;
+	return input.lodLevel;
 }
 
 short VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool checkDuplicated)
 {
 	//mutex_UpdateQueue.lock();
 	if (pos.x >= width || pos.y >= height || pos.z >= depth)
-		return 0;
+		return -1;
 	if (pos.x < 0 || pos.y < 0 || pos.z < 0)
-		return 0;
+		return  - 1;
 	INPUT_BUFFER input;
 	XMFLOAT3 targetPos = GetPartitionStartPos(pos);
 	input.x = (int)targetPos.x;
@@ -2173,13 +2069,13 @@ short VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool checkDuplicat
 		{
 			for (auto i : updateQueue_Deform)
 				if (i == input)
-					return 0;
+					return  - 1;
 		}
 		else
 		{
 			for (auto i : updateQueue_Main)
 				if (i == input)
-					return 0;
+					return  - 1;
 		}
 	}
 	if (!isDeforming)
@@ -2187,7 +2083,7 @@ short VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool checkDuplicat
 	else
 		updateQueue_Deform.push_back(input);
 	//mutex_UpdateQueue.unlock();
-	return input.transitionCellBasis;
+	return input.lodLevel;
 }
 
 int VoxelComp::ReadTXT(const char * filename)

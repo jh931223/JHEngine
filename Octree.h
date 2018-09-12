@@ -139,8 +139,13 @@ public:
 	RWLock rwLock;
 	Octree(float _size)
 	{
-		int depth=0;
-		int s = _size;
+		int lastSize = 1;
+		while (lastSize < _size)
+		{
+			lastSize *= 2;
+		}
+		int depth = 0;
+		int s = lastSize;
 		while ((s = s >> 1))
 		{
 			depth++;
@@ -149,13 +154,18 @@ public:
 	}
 	Octree(float _size,float unitSize)
 	{
+		int lastSize = 1;
+		while (lastSize < _size)
+		{
+			lastSize *= 2;
+		}
 		int depth = 0;
-		int s = _size/unitSize;
+		int s = lastSize /unitSize;
 		while ((s = s >> 1))
 		{
 			depth++;
 		}
-		root = new OctreeNode<T>(XMFLOAT3(0, 0, 0), _size, depth, NULL);
+		root = new OctreeNode<T>(XMFLOAT3(0, 0, 0), lastSize, depth, NULL);
 	}
 	~Octree()
 	{

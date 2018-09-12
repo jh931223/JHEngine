@@ -33,9 +33,8 @@ struct v2f
 	float3 worldNormal : NORMAL;
 	float2 uv : TEXCOORD0;
 	float4 worldPos : TEXCOORD1;
-	float diffuse : TEXCOORD2;
-	float3 viewDir : TEXCOORD3;
-	float3 reflection : TEXCOORD4;
+	float3 viewDir : TEXCOORD2;
+	float3 lightDir : TEXCOORD3;
 };
 
 Texture2D shaderTexture1 : register(t0);
@@ -68,53 +67,65 @@ v2f vs(vInput input)
 	output.worldNormal = worldNormal;
 
 	float3 lDir = normalize(lightDir);
-	output.diffuse = dot(worldNormal, -lDir);
-	output.reflection = reflect(lDir, worldNormal);
+	output.lightDir = lDir;
 	return output;
-}
-
-float3x3 cotangent_frame(float3 N, float3 p, float2 uv)
-{
-	// get edge vectors of the pixel triangle
-	float3 dp1 = ddx(p);
-	float3 dp2 = ddy(p);
-	float2 duv1 = ddx(uv);
-	float2 duv2 = ddy(uv);
-
-	// solve the linear system
-	float3 dp2perp = cross(dp2, N);
-	float3 dp1perp = cross(N, dp1);
-	float3 T = dp2perp * duv1.x + dp1perp * duv2.x;
-	float3 B = dp2perp * duv1.y + dp1perp * duv2.y;
-
-	// Negate because of left-handedness
-	//T *= -1;
-	//B *= -1;
-
-	// construct a scale-invariant frame 
-	float invmax = rsqrt(max(dot(T, T), dot(B, B)));
-	return float3x3(T * invmax, B * invmax, N);
-}
-
-/** Magic TBN-Calculation function */
-float3 perturb_normal(float3 N, float3 V, float2 texcoord, Texture2D tex, float normalmapDepth = 1.0f)
-{
-	// assume N, the interpolated vertex normal and 
-	// V, the view vector (vertex to eye)
-	float3 nrmmap = tex.Sample(SampleType, texcoord).xyz * 2 - 1;
-	nrmmap.xy *= -1.0f;
-	nrmmap.xy *= normalmapDepth;
-	nrmmap = normalize(nrmmap);
-
-	float3x3 TBN = cotangent_frame(N, -V, texcoord);
-	return normalize(mul(transpose(TBN), nrmmap));
 }
 
 float4 ps(v2f input) : SV_TARGET
 {
-//	float4 tex = float4(input.normal,1);
-	float diffuse = saturate(input.diffuse);
-	float3 reflection = normalize(input.reflection);
+	// Determine the blend weights for the 3 planar projections.
+	// N_orig is the vertex-interpolated normal vector.
+	float3 blend_weights = abs(input.worldNormal.xyz);   // Tighten up the blending zone:
+	float tex_sharpness = 2.0f;
+	blend_weights = (blend_weights - 0.2) * tex_sharpness;
+	blend_weights = max(blend_weights, 0);      // Force weights to sum to 1.0 (very important!)
+	blend_weights /= (blend_weights.x + blend_weights.y + blend_weights.z).xxx;
+	// Now determine a color value and bump vector for each of the 3
+	// projections, blend them, and store blended results in these two
+	// vectors:
+	float4 blended_color; // .w hold spec value
+	float3 blended_bump_vec;
+	{
+		// Compute the UV coords for each of the 3 planar projections.
+		// tex_scale (default ~ 1.0) determines how big the textures appear.
+		float tex_scale = 0.1f;
+		float2 coord1 = input.worldPos.yz * tex_scale;
+		float2 coord2 = input.worldPos.zx * tex_scale;
+		float2 coord3 = input.worldPos.xy * tex_scale;
+		// This is where you would apply conditional displacement mapping.
+		//if (blend_weights.x > 0) coord1 = . . .
+		//if (blend_weights.y > 0) coord2 = . . .
+		//if (blend_weights.z > 0) coord3 = . . .
+		// Sample color maps for each projection, at those UV coords.
+		float4 col1 = shaderTexture1.Sample(SampleType,coord1);
+		float4 col2 = shaderTexture2.Sample(SampleType, coord2);
+		float4 col3 = shaderTexture3.Sample(SampleType, coord3);
+		// Sample bump maps too, and generate bump vectors.
+		// (Note: this uses an oversimplified tangent basis.)
+		float2 bumpFetch1 = stn1.Sample(SampleType, coord1).xy - 0.5;
+		float2 bumpFetch2 = stn2.Sample(SampleType, coord2).xy - 0.5;
+		float2 bumpFetch3 = stn3.Sample(SampleType, coord3).xy - 0.5;
+		float3 bump1 = float3(0, bumpFetch1.x, bumpFetch1.y);
+		float3 bump2 = float3(bumpFetch2.y, 0, bumpFetch2.x);
+		float3 bump3 = float3(bumpFetch3.x, bumpFetch3.y, 0);
+		// Finally, blend the results of the 3 planar projections.
+		blended_color = col1.xyzw * blend_weights.xxxx +
+			col2.xyzw * blend_weights.yyyy +
+			col3.xyzw * blend_weights.zzzz;
+		blended_bump_vec = bump1.xyz * blend_weights.xxx +
+			bump2.xyz * blend_weights.yyy +
+			bump3.xyz * blend_weights.zzz;
+	}
+	// Apply bump vector to vertex-interpolated normal vector.
+	float3 N_for_lighting = normalize(input.worldNormal + blended_bump_vec);
+
+	
+	float diffuse = dot(N_for_lighting, -input.lightDir);
+	float3 reflection = reflect(input.lightDir, N_for_lighting);
+
+	diffuse = saturate(diffuse);
+	reflection = normalize(reflection);
+
 	float3 viewDir = normalize(input.viewDir);
 	float3 specular = 0;
 
@@ -124,45 +135,9 @@ float4 ps(v2f input) : SV_TARGET
 		specular = pow(specular, 1.3f);
 	}
 
-	float scale =10.0f;
-	float sharpness = 1.3f;
 
 
-	float4 coords = input.worldPos;
-
-	float2 xUV = coords.zy / scale;
-	float2 yUV = coords.xz / scale;
-	float2 zUV = coords.xy / scale;
-
-
-
-	float3 blending = pow(abs(input.worldNormal), sharpness);
-	blending = blending / (blending.x + blending.y + blending.z);
-
-
-	float4 xaxis = shaderTexture1.Sample(SampleType, xUV);
-	float4 yaxis = shaderTexture2.Sample(SampleType, yUV);
-	float4 zaxis = shaderTexture3.Sample(SampleType, zUV);
-
-	/*float4 xaxisN = stn1.Sample(SampleType, coords.yz / scale);
-	float4 yaxisN = stn2.Sample(SampleType, coords.xz / scale);
-	float4 zaxisN = stn3.Sample(SampleType, coords.xy / scale);*/
-
-	float3 n1 = perturb_normal(input.worldNormal, input.worldPos, xUV, stn1,3);
-	float3 n2 = perturb_normal(input.worldNormal, input.worldPos, yUV, stn2,3);
-	float3 n3 = perturb_normal(input.worldNormal, input.worldPos, zUV, stn3,3);
-
-
-	float3 normal = n1 * blending.x + n2 * blending.y + n3 * blending.z;
-
-
-	float3 blending2 = pow(abs(normal), sharpness);
-	blending2 = blending2 / (blending2.x + blending2.y + blending2.z);
-
-	float3 albedo = xaxis * blending2.x + yaxis * blending2.y + zaxis * blending2.z;
-
-
-	float3 d = albedo * diffuse*diffuseColor;
+	float3 d = blended_color * diffuse*diffuseColor;
 	float specularPower = 0.2f;
 	return float4(d+ambientColor+specular* specularPower,1);
 }

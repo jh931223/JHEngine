@@ -1,4 +1,13 @@
 #pragma once
+#include<amp.h>
+#include<amp_graphics.h>
+
+
+
+using namespace concurrency;
+using namespace concurrency::graphics;
+using namespace concurrency::direct3d;
+
 struct RegularCell
 {
 	unsigned char	geometryCounts;		// High nibble is vertex count, low nibble is triangle count.
@@ -18,7 +27,6 @@ struct RegularCell
 		return vertexIndex;
 	}
 };
-
 
 // The TransitionCellData structure holds information about the triangulation
 // used for a single equivalence class in the Transvoxel Algorithm transition cell,
@@ -107,7 +115,6 @@ const RegularCell regularCellData[16] =
 	{ 0x75,{ 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6 } },
 	{ 0x95,{ 0, 4, 5, 0, 3, 4, 0, 1, 3, 1, 2, 3, 6, 7, 8 } }
 };
-
 
 // The regularVertexData table gives the vertex locations for every one of the 256 possible
 // cases in the modified Marching Cubes algorithm. Each 16-bit value also provides information
@@ -374,14 +381,14 @@ const unsigned short regularVertexData[256][12] =
 { 0x6201, 0x3304, 0x5102 },
 {}
 };
-
-
 // The transitionCellClass table maps a 9-bit transition cell case index to an equivalence
 // class index. Even though there are 73 equivalence classes in the Transvoxel Algorithm,
 // several of them use the same exact triangulations, just with different vertex locations.
 // We combined those classes for this table so that the class index ranges from 0 to 55.
 // The high bit is set in the cases for which the inverse state of the voxel data maps to
 // the equivalence class, meaning that the winding order of each triangle should be reversed.
+
+
 
 const unsigned char transitionCellClass[512] =
 {
