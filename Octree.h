@@ -56,7 +56,7 @@ public:
 	{
 		return cellPosition+XMFLOAT3(1,1,1)*GetCellSize()*0.5f;
 	}
-	T GetValue()
+	T& GetValue()
 	{
 		return value;
 	}
@@ -173,10 +173,11 @@ public:
 			delete root;
 		root = 0;
 	}
-	void Insert(XMFLOAT3 targetPos, T value, int targetDepth)
+	OctreeNode<T>* Insert(XMFLOAT3 targetPos, T value, int targetDepth)
 	{
 		OctreeNode<T>* node = Subdivide(root,targetPos, targetDepth,true);
-		node->SetValue(_value);
+		node->SetValue(value);
+		return node;
 	}
 	OctreeNode<T>* GetNodeAtPosition(XMFLOAT3 targetPos,int targetDepth, OctreeNode<T>* _startNode=NULL)
 	{
@@ -216,7 +217,7 @@ public:
 	OctreeNode<T>* Subdivide(OctreeNode<T>* node, XMFLOAT3 targetPos, int _targetDepth, bool makeChild = false)
 	{
 		//rwLock.EnterReadLock();
-		if (_targetDepth == node->depth || node->depth == 0)
+		if (node==NULL||_targetDepth == node->depth || node->depth == 0)
 		{
 			//rwLock.LeaveReadLock();
 			return node;
@@ -241,9 +242,8 @@ public:
 				if (i & 1)newPos.z += newSize;
 				node->childNodes[i] = new OctreeNode<T>(newPos, newSize, node->depth - 1, node);
 			}
-			//rwLock.LeaveWriteLock();
 		}
-		//else rwLock.LeaveReadLock();
+		//rwLock.LeaveReadLock();
 		return Subdivide(node->childNodes[idx], targetPos, _targetDepth, makeChild);
 	}
 

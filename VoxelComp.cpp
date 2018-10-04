@@ -16,7 +16,14 @@
 #include<list>
 #include<unordered_map>
 #include<unordered_set>
+#include<process.h>
+#include<mutex>
+#include<io.h>
+#include<direct.h>
+#include <stdio.h>
+
 #include<time.h>
+
 #include"PerlinNoise.h"
 #include<amp.h>
 #include<amp_math.h>
@@ -29,8 +36,6 @@
 #include"InputClass.h"
 #include"HierachyClass.h"
 #include"ComputeShader.h"
-#include<process.h>
-#include<mutex>
 #include"VoxelTable.h"
 using namespace concurrency;
 using namespace concurrency::graphics;
@@ -43,13 +48,7 @@ VoxelComp::VoxelComp()
 
 VoxelComp ::~VoxelComp()
 {
-	if(chunks)
-		delete[] chunks;
-	chunks = 0;
-	if (aOctree)
-		delete aOctree;
-	aOctree = 0;
-	ReleaseOctree();
+	ReleaseChunks();
 }
 void VoxelComp::Initialize()
 {
@@ -63,7 +62,7 @@ void VoxelComp::Initialize()
 
 	//useFrustum = true;
 
-	partitionSize = 32;
+	info.partitionSize = 32;
 //	SetLODLevel(0, 100000);
 
 
@@ -80,11 +79,12 @@ void VoxelComp::Initialize()
 
 	//LoadCube(32, 32, 32);
 	//LoadPerlin(256, 128, 256,128, 0.1f);
-	LoadPerlin(1024, 128, 1024, 1, 0.1f);
-	//int h = ReadTXT("/data/height.txt");
-	//LoadHeightMapFromRaw(1024, 512, 1024,256, "data/terrain.raw");// , 0, 0, 255, 255);
+	//LoadPerlin(128, 128, 128, 128, 0.2f);
+	LoadMapData("Sample2");
+	//int h = ReadTXT("/data/info.height.txt");
+	//LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
 
-	std::function<MESH_RESULT(INPUT_BUFFER)> _task = ([&, this](INPUT_BUFFER buf)
+	std::function<RESULT_BUFFER(COMMAND_BUFFER)> _task = ([&, this](COMMAND_BUFFER buf)
 	{
 		//float halfSize = this->GetPartitionSize()*0.5f;
 		//XMFLOAT3 targetPos = XMFLOAT3(buf.x + halfSize, buf.y + halfSize, buf.z + halfSize);
@@ -196,7 +196,10 @@ void VoxelComp::Update()
 		//}
 		//else UpdateMeshAsync(0);
 	}
-
+	if (Input()->GetKeyDown(DIK_O))
+	{
+		SaveMapData("Sample2");
+	}
 	if (Input()->GetKeyDown(DIK_L))
 	{
 		isLockedBasePosition = !isLockedBasePosition;
@@ -289,7 +292,7 @@ void VoxelComp::Update()
 		EditVoxel(pos, brushRadius, strength);
 		
 	}
-	ProcessUpdateQueue();
+	ProcessCommandQueue();
 	threadPool_Main.ThreadPoolUpdate();
 	threadPool_Deform.ThreadPoolUpdate();
 }
@@ -310,8 +313,21 @@ template<> OctreeNode<MeshRenderer*>::~OctreeNode()
 
 
 
-void VoxelComp::ReleaseOctree()
+void VoxelComp::ReleaseChunks()
 {
+
+	if (chunks)
+		delete[] chunks;
+	chunks = 0;
+	if (aOctree)
+		delete aOctree;
+	aOctree = 0;
+	if (gOctree)
+		delete gOctree;
+	gOctree = 0;
+	if (tempChunks)
+		delete tempChunks;
+	tempChunks = 0;
 	if (gOctreeMeshRenderer)
 		delete gOctreeMeshRenderer;
 	gOctreeMeshRenderer = 0;
@@ -548,7 +564,7 @@ void VoxelComp::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer
 }
 void VoxelComp::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, XMFLOAT3 newCorners[])
 {
-	if (pos.x + _unit >= width || pos.y + _unit >= height || pos.z + _unit >= depth)
+	if (pos.x + _unit >= info.width || pos.y + _unit >= info.height || pos.z + _unit >= info.depth)
 		return;
 	float density[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
 	int caseCode = 0;
@@ -609,7 +625,7 @@ void VoxelComp::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer
 
 void VoxelComp::GetVertexInnerBox(short _basis,XMFLOAT3 offset,int _unit,XMFLOAT3 vertOut[])
 {
-	int max = partitionSize - _unit;
+	int max = info.partitionSize - _unit;
 	vertOut[0] = XMFLOAT3(0, 0, 0);
 	vertOut[1] = XMFLOAT3(1, 0, 0);
 	vertOut[2] = XMFLOAT3(0, 0, 1);
@@ -855,7 +871,7 @@ void VoxelComp::GetVertexInnerBox(short _basis,XMFLOAT3 offset,int _unit,XMFLOAT
 }
 void VoxelComp::PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
-	if (pos.x + _unit >= width || pos.y + _unit >= height || pos.z + _unit >= depth)
+	if (pos.x + _unit >= info.width || pos.y + _unit >= info.height || pos.z + _unit >= info.depth)
 		return;
 	int caseCode = 0;
 	std::vector<XMFLOAT3> newCorners;
@@ -958,19 +974,19 @@ void VoxelComp::PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, 
 
 }
 
-VoxelComp::MESH_RESULT VoxelComp::GeneratePartitionFaces(XMFLOAT3 pos, int lodLevel, short transitionCellBasis)
+VoxelComp::RESULT_BUFFER VoxelComp::GeneratePartitionFaces(XMFLOAT3 pos, int lodLevel, short transitionCellBasis)
 {
 	//ULONG time = GetTickCount();
 	std::vector<VertexBuffer> vertices;
 	std::vector<unsigned long> indices;
 	pos = GetPartitionStartPos(pos);
 	float  _cellUnit=pow(2,lodLevel);
-	int max = partitionSize - _cellUnit;
-	for (int i=0;i<partitionSize && (pos.x + i<width);i+= _cellUnit)
+	int max = info.partitionSize - _cellUnit;
+	for (int i=0;i<info.partitionSize && (pos.x + i<info.width);i+= _cellUnit)
 	{
-		for (int j = 0; j < partitionSize && (pos.y + j<height); j += _cellUnit)
+		for (int j = 0; j < info.partitionSize && (pos.y + j<info.height); j += _cellUnit)
 		{
-			for (int k = 0; k < partitionSize&&(pos.z + k<depth); k += _cellUnit)
+			for (int k = 0; k < info.partitionSize&&(pos.z + k<info.depth); k += _cellUnit)
 			{
 				if (useMarchingCube)
 				{
@@ -1005,7 +1021,7 @@ VoxelComp::MESH_RESULT VoxelComp::GeneratePartitionFaces(XMFLOAT3 pos, int lodLe
 		}
 	}
 	//printf("Marching Cube Create Buffer ( CPU ): %d ms x:%f y:%f z:%f\n", GetTickCount() - time,pos.x,pos.y,pos.z);
-	INPUT_BUFFER buffer;
+	COMMAND_BUFFER buffer;
 	buffer.x = pos.x;
 	buffer.y = pos.y;
 	buffer.z = pos.z;
@@ -1013,9 +1029,9 @@ VoxelComp::MESH_RESULT VoxelComp::GeneratePartitionFaces(XMFLOAT3 pos, int lodLe
 }
 
 
-VoxelComp::MESH_RESULT VoxelComp::GenerateCubeFaces(XMFLOAT3 pos)
+VoxelComp::RESULT_BUFFER VoxelComp::GenerateCubeFaces(XMFLOAT3 pos)
 {
-	return VoxelComp::MESH_RESULT();
+	return VoxelComp::RESULT_BUFFER();
 	/*int faceCount = 0;
 	short myBlock=0;
 	int size = 0;
@@ -1023,7 +1039,7 @@ VoxelComp::MESH_RESULT VoxelComp::GenerateCubeFaces(XMFLOAT3 pos)
 
 	std::vector<VertexBuffer> vertices;
 	std::vector<unsigned long> indices;
-	OctreeNode<VoxelData>* node = gOctree->GetNodeBySize(pos,partitionSize);
+	OctreeNode<VoxelData>* node = gOctree->GetNodeBySize(pos,info.partitionSize);
 	node->GetLeafs(leafs);
 	for (auto i : leafs)
 	{
@@ -1089,13 +1105,29 @@ XMFLOAT2 VoxelComp::GetUV(BYTE type)
 VoxelComp::VoxelData VoxelComp::GetVoxel(int x, int y, int z)
 {
 	VoxelData v;
-	if (x >= width || y >= height || z >= depth)
+	if (x >= info.width || y >= info.height || z >= info.depth)
 		return v;
 	if (x < 0 || y < 0 || z < 0)
 		return v;
+	rwLock.EnterReadLock();
 	int index = GetCellIndex(x, y, z);
+	XMFLOAT3 pos = XMFLOAT3(x, y, z);
 	if (useArrayedOctree)
-		v = aOctree->GetNode(XMFLOAT3(x, y, z), 0);
+		v = aOctree->GetNode(pos, 0);
+	else if (useGeneralOctree)
+		v = gOctree->GetNodeAtPosition(pos, 0)->GetValue();
+	else if (useGeneralChunkOctree)
+	{
+		auto node = tempChunks->GetNodeAtPosition(pos, 0);
+		if (node->GetDepth() == 0&&node->GetValue().size())
+		{
+			//node=tempChunks->Insert(pos, new std::vector<VoxelData>(info.partitionSize*info.partitionSize*info.partitionSize), 0);
+			x = x - (int)node->GetPosition().x;
+			y = y - (int)node->GetPosition().y;
+			z = z - (int)node->GetPosition().z;
+			v = node->GetValue()[x+y*info.partitionSize+z*info.partitionSize*info.partitionSize];
+		}
+	}
 	else if (!useSpartialMatrix)
 		v = chunks[index];
 	else
@@ -1104,6 +1136,7 @@ VoxelComp::VoxelData VoxelComp::GetVoxel(int x, int y, int z)
 		if (iter != spartialMatrix.end())
 			v = iter->second;
 	}
+	rwLock.LeaveReadLock();
 	return v;
 }
 
@@ -1114,28 +1147,44 @@ VoxelComp::VoxelData VoxelComp::GetVoxel(XMFLOAT3 pos)
 
 unsigned int VoxelComp::GetCellIndex(int x, int y, int z)
 {
-	return x + y * width + z * width*height;
+	return x + y * info.width + z * info.width*info.height;
 }
 bool VoxelComp::SetVoxel(int x, int y, int z, VoxelData value,bool isInit)
 {
-	if (x >= width || y >= height || z >= depth)
+	if (x >= info.width || y >= info.height || z >= info.depth)
 		return false;
 	if (x < 0 || y < 0 || z < 0)
 		return false;
+	rwLock.EnterWriteLock();
 	XMFLOAT3 pos(x, y, z);
 	VoxelData vox = value;
 	int index = GetCellIndex(x, y, z);
 	if (useArrayedOctree)
 		aOctree->SetNode(pos,value);
-	else if(!useSpartialMatrix)
-		chunks[index] = value;
-	else
+	else if (useGeneralOctree)
+		gOctree->Insert(pos, value,0);
+	else if (useGeneralChunkOctree)
+	{
+		auto node = tempChunks->GetNodeAtPosition(pos, 0);
+		if (node->GetDepth() != 0||!node->GetValue().size())
+			node = tempChunks->Insert(pos, std::vector<VoxelData>(info.partitionSize*info.partitionSize*info.partitionSize), 0);
+		x = x - (int)node->GetPosition().x;
+		y = y - (int)node->GetPosition().y;
+		z = z - (int)node->GetPosition().z;
+		int idx = x + y*info.partitionSize + z*info.partitionSize*info.partitionSize;
+		(node->GetValue())[idx]=value;
+		node->GetValue()[idx] = node->GetValue()[idx];
+	}
+	else if(useSpartialMatrix)
 	{
 		if (!isInit)
 			spartialMatrix[index] = value;
 		else
 			spartialMatrix.insert_or_assign(index, value);
 	}
+	else
+		chunks[index] = value;
+	rwLock.LeaveWriteLock();
 	return true;
 }
 
@@ -1205,8 +1254,8 @@ bool VoxelComp::EditVoxel(XMFLOAT3 pos, float _radius, float _strength)
 XMFLOAT3 VoxelComp::CovertToChunkPos(XMFLOAT3 targetPos, bool returnNan)
 {
 	XMFLOAT3 newpos = transform()->GetWorldPosition();
-	XMFLOAT3 startPos = newpos;// - XMFLOAT3(width*0.5f, width*0.5f, width*0.5f);
-	XMFLOAT3 endPos = newpos + XMFLOAT3(width, height, depth);
+	XMFLOAT3 startPos = newpos;// - XMFLOAT3(info.width*0.5f, info.width*0.5f, info.width*0.5f);
+	XMFLOAT3 endPos = newpos + XMFLOAT3(info.width, info.height, info.depth);
 	if (returnNan)
 	{
 		if (targetPos.x<startPos.x || targetPos.y<startPos.y || targetPos.z<startPos.z || targetPos.x>endPos.x || targetPos.y>endPos.y || targetPos.z>endPos.z)
@@ -1232,9 +1281,9 @@ void VoxelComp::UpdateMesh(int lodLevel)
 	//printf("Update Mesh : %dms\n", GetTickCount64() - tick);
 }
 
-VoxelComp::MESH_RESULT VoxelComp::CreateNewMesh(INPUT_BUFFER input,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
+VoxelComp::RESULT_BUFFER VoxelComp::CreateNewMesh(COMMAND_BUFFER input,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
-	MESH_RESULT buffer;
+	RESULT_BUFFER buffer;
 	buffer.newMesh = 0;
 	buffer.pos = XMFLOAT3(input.x,input.y,input.z);
 	if (vertices.size())
@@ -1250,9 +1299,9 @@ VoxelComp::MESH_RESULT VoxelComp::CreateNewMesh(INPUT_BUFFER input,std::vector<V
 }
 
 
-VoxelComp::MESH_RESULT VoxelComp::UpdatePartialMesh(XMFLOAT3 pos, int lodLevel, short transitionCellBasis)
+VoxelComp::RESULT_BUFFER VoxelComp::UpdatePartialMesh(XMFLOAT3 pos, int lodLevel, short transitionCellBasis)
 {
-	MESH_RESULT buffer;
+	RESULT_BUFFER buffer;
 	//ULONG tick = GetTickCount64();
 	if (!useMarchingCube)
 	{
@@ -1268,82 +1317,86 @@ VoxelComp::MESH_RESULT VoxelComp::UpdatePartialMesh(XMFLOAT3 pos, int lodLevel, 
 
 void VoxelComp::UpdateVoxelMesh()
 {
-	for(int i=0;i<width;i+=partitionSize)
-		for (int j = 0; j<height; j += partitionSize)
-			for (int k = 0; k<depth; k += partitionSize)
+	for(int i=0;i<info.width;i+=info.partitionSize)
+		for (int j = 0; j<info.height; j += info.partitionSize)
+			for (int k = 0; k<info.depth; k += info.partitionSize)
 				GenerateCubeFaces(XMFLOAT3(i,j,k));
 }
 
 void VoxelComp::UpdateMarchingCubeMesh(int lodLevel)
 {
-	ProcessUpdateQueue();
+	ProcessCommandQueue();
 	/*if (useMarchingCube)
 	{
-		for (int i = 0; i<width; i += partitionSize)
-			for (int j = 0; j<height; j += partitionSize)
-				for (int k = 0; k < depth; k += partitionSize)
+		for (int i = 0; i<info.width; i += info.partitionSize)
+			for (int j = 0; j<info.height; j += info.partitionSize)
+				for (int k = 0; k < info.depth; k += info.partitionSize)
 				{
-					MESH_RESULT buffer = GeneratePartitionFaces(XMFLOAT3(i, j, k), lodLevel);
+					RESULT_BUFFER buffer = GeneratePartitionFaces(XMFLOAT3(i, j, k), lodLevel);
 					UpdateMeshRenderer(buffer.newMesh, buffer.pos,buffer.lodLevel);
 				}
 	}*/
 }
 XMFLOAT3 VoxelComp::GetPositionFromIndex(int index)
 {
-	int x = (int)index % width;
-	int y = ((int)index / width) % height;
-	int z = (int)index / (width* height);
+	int x = index % info.width;
+	int y = (index / info.width) % info.height;
+	int z = index / (info.width* info.height);
 	return XMFLOAT3(x, y, z);
 }
-int VoxelComp::GetIndexFromPosition(XMFLOAT3 pos)
+unsigned int VoxelComp::GetIndexFromPosition(XMFLOAT3 pos)
 {
 	if (pos.x < 0 || pos.y < 0 || pos.z < 0)
 		return -1;
-	if (pos.x >= width || pos.y >= height || pos.z >= depth)
+	if (pos.x >= info.width || pos.y >= info.height || pos.z >= info.depth)
 		return -1;
-	return (int)pos.x + (int)pos.y*width + (int)pos.z*width*height;
+	return (int)pos.x + (int)pos.y*info.width + (int)pos.z*info.width*info.height;
 }
 void VoxelComp::RefreshLODNodes()
 {
-
+	/*
 	XMFLOAT3 basePos = GetPartitionStartPos(lastBasePosition);
 	std::unordered_map<int, LODGroupData> newLODGroupsLoaded;
 	std::unordered_map<int, LODGroupData> newLODGroups;
 	std::unordered_map<int, LODGroupData> oldLODGroups;
 	oldLODGroups.swap(lodGropups);
 	int lodDistance = LODDistance[maxLODLevel - 1];
-	int min = -lodDistance - partitionSize;
-	int max = lodDistance + partitionSize;
+	int min = -lodDistance - info.partitionSize;
+	int max = lodDistance;
 
-	for (int i = min; i < max; i += partitionSize)
+	for (int i = min; i <= max; i += info.partitionSize)
 	{
-		for (int j = min; j < max; j += partitionSize)
+		for (int j = min; j <= max; j += info.partitionSize)
 		{
-			for (int k = min; k < max; k += partitionSize)
+			for (int k = min; k <= max; k += info.partitionSize)
 			{
 				XMFLOAT3 targetPos = basePos + XMFLOAT3(i, j, k);
-				if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= width || targetPos.y >= height || targetPos.z >= depth)
+				if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= info.width || targetPos.y >= info.height || targetPos.z >= info.depth)
 					continue;
 
 				LODGroupData lodGroupData;
 				lodGroupData.level = GetLODLevel(basePos, targetPos);
 
 				lodGroupData.transitionBasis = GetTransitionBasis(lodGroupData.level, basePos, targetPos);
-				int index = (int)targetPos.x + (int)targetPos.y*width + (int)targetPos.z*width*height;
+				int index = (int)targetPos.x + (int)targetPos.y*info.width + (int)targetPos.z*info.width*info.height;
 				auto iter = oldLODGroups.find(index);
 				if (iter == oldLODGroups.end())
 				{
+					//if ((i == min && j == min && k == min)
+					//	|| (i == max && j == min && k == min)
+					//	|| (i == min && j == max && k == min)
+					//	|| (i == min && j == min && k == max)
+					//	|| (i == max && j == max && k == min)
+					//	|| (i == max && j == min && k == max)
+					//	|| (i == min && j == max && k == max)
+					//	|| (i == max && j == max && k == max))
+					//	continue;
 					newLODGroups[index] = lodGroupData;
 				}
 				else
 				{
-					if (lodGroupData.transitionBasis == iter->second.transitionBasis&&lodGroupData.level == iter->second.level)
-						newLODGroupsLoaded[index] = lodGroupData;
-					else
-					{
-						oldLODGroups.erase(iter);
-						newLODGroups[index] = lodGroupData;
-					}
+					newLODGroups[index] = lodGroupData;
+					oldLODGroups.erase(iter);
 				}
 			}
 		}
@@ -1358,47 +1411,52 @@ void VoxelComp::RefreshLODNodes()
 		ReserveUpdate(GetPositionFromIndex(i.first), i.second.transitionBasis, i.second.level, false, false);
 		lodGropups[i.first] = i.second;
 	}
+
 	for (auto i : oldLODGroups)
 	{
-		ReserveUpdate(GetPositionFromIndex(i.first), false, false);
+		if (ReserveUpdate(GetPositionFromIndex(i.first), false, false) == maxLODLevel)
+		{
+			int x = i.second.level;
+			int y = i.second.transitionBasis;
+		}
 	}
 	oldLODGroups.clear();
+	*/
+	for (auto i : lodGropups)
+	{
+		ReserveUpdate(GetPositionFromIndex(i.first), false, true);
+	}
+	lodGropups.clear();
+	std::unordered_map<int, LODGroupData> newLODGroups;
+	XMFLOAT3 basePos = GetPartitionStartPos(lastBasePosition);
+	int lodDistance = LODDistance[maxLODLevel - 1];
+	int min = -lodDistance - info.partitionSize;
+	int max = lodDistance;
+	for (int i = min; i <= max; i += info.partitionSize)
+		for (int j = min; j <= max; j += info.partitionSize)
+			for (int k = min; k <= max; k += info.partitionSize)
+			{
+				XMFLOAT3 targetPos = XMFLOAT3(i, j, k) + basePos;
+				int level = GetLODLevel(basePos, targetPos);//ReserveUpdate(targetPos, false, false);
+				if (level >= 0)
+				{
+					unsigned int index = GetIndexFromPosition(targetPos);
+					LODGroupData data;
+					data.level = level;
+					data.transitionBasis = GetTransitionBasis(level, basePos, targetPos);
+					auto iter = lodGropups.find(index);
+					if (iter != lodGropups.end())
+					{
+						if (iter->second.level == data.level&&iter->second.transitionBasis == data.transitionBasis)
+						{
 
-
-	//for (auto i : lodGropups)
-	//{
-	//	ReserveUpdate(GetPositionFromIndex(i.first), false, true);
-	//}
-	//lodGropups.clear();
-	//std::unordered_map<int, LODGroupData> newLODGroups;
-	//XMFLOAT3 basePos = GetPartitionStartPos(lastBasePosition);
-	//int lodDistance = LODDistance[maxLODLevel - 1];
-	//int min = -lodDistance - partitionSize;
-	//int max = lodDistance + partitionSize;
-	//for (int i = min; i < max; i += partitionSize)
-	//	for (int j = min; j < max; j += partitionSize)
-	//		for (int k = min; k < max; k += partitionSize)
-	//		{
-	//			XMFLOAT3 targetPos = XMFLOAT3(i, j, k) + basePos;
-	//			int level = GetLODLevel(basePos, targetPos);//ReserveUpdate(targetPos, false, false);
-	//			if (level >= 0)
-	//			{
-	//				int index = GetIndexFromPosition(targetPos);
-	//				LODGroupData data;
-	//				data.level = level;
-	//				data.transitionBasis = GetTransitionBasis(level, basePos, targetPos);
-	//				auto iter = lodGropups.find(index);
-	//				if (iter != lodGropups.end())
-	//				{
-	//					if (iter->second.level == data.level&&iter->second.transitionBasis == data.transitionBasis)
-	//					{
-
-	//					}
-	//				}
-	//				newLODGroups[GetIndexFromPosition(targetPos)] = data;
-	//			}
-	//		}
-	//newLODGroups.swap(lodGropups);
+						}
+					}
+					newLODGroups[GetIndexFromPosition(targetPos)] = data;
+					ReserveUpdate(targetPos, data.transitionBasis, data.level, false, true);
+				}
+			}
+	newLODGroups.swap(lodGropups);
 }
 void VoxelComp::RefreshLODNodes(XMFLOAT3 basePos)
 {
@@ -1410,24 +1468,24 @@ void VoxelComp::RefreshLODNodes(XMFLOAT3 basePos)
 	std::unordered_map<int, LODGroupData> oldLODGroups;
 	oldLODGroups.swap(lodGropups);
 	int lodDistance = LODDistance[maxLODLevel - 1];
-	int min = -lodDistance-partitionSize;
-	int max = lodDistance+partitionSize;
+	int min = -lodDistance-info.partitionSize;
+	int max = lodDistance+info.partitionSize;
 
-	for (int i = min; i < max; i+=partitionSize)
+	for (int i = min; i < max; i+=info.partitionSize)
 	{
-		for (int j= min; j < max; j+=partitionSize)
+		for (int j= min; j < max; j+=info.partitionSize)
 		{
-			for (int k = min; k < max; k+=partitionSize)
+			for (int k = min; k < max; k+=info.partitionSize)
 			{
 				XMFLOAT3 targetPos = basePos + XMFLOAT3(i, j, k);
-				if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= width || targetPos.y >= height || targetPos.z >= depth)
+				if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= info.width || targetPos.y >= info.height || targetPos.z >= info.depth)
 					continue;
 
 				LODGroupData lodGroupData;
 				lodGroupData.level = GetLODLevel(basePos, targetPos);
 
 				lodGroupData.transitionBasis = GetTransitionBasis(lodGroupData.level, basePos, targetPos);
-				int index = (int)targetPos.x + (int)targetPos.y*width + (int)targetPos.z*width*height;
+				int index = (int)targetPos.x + (int)targetPos.y*info.width + (int)targetPos.z*info.width*info.height;
 				auto iter = oldLODGroups.find(index);
 				if (iter == oldLODGroups.end())
 				{
@@ -1608,7 +1666,7 @@ void VoxelComp::ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, X
 
 void VoxelComp::BuildVertexBufferFrustumCulling(int targetDepth)
 {
-	//int length = width;
+	//int length = info.width;
 	//std::vector<VertexBuffer> vertices;
 	//float _unit = unit;
 	//if (useOctree)
@@ -1649,11 +1707,11 @@ void VoxelComp::BuildVertexBufferFrustumCulling(int targetDepth)
 
 void VoxelComp::UpdateMeshAsync(int lodLevel)
 {
-	for (int i = 0; i < width; i+=partitionSize)
+	for (int i = 0; i < info.width; i+=info.partitionSize)
 	{
-		for (int j = 0; j < height; j += partitionSize)
+		for (int j = 0; j < info.height; j += info.partitionSize)
 		{
-			for (int k = 0; k < depth; k += partitionSize)
+			for (int k = 0; k < info.depth; k += info.partitionSize)
 			{
 				ReserveUpdate(XMFLOAT3(i,j,k), false,false);
 			}
@@ -1666,7 +1724,7 @@ void VoxelComp::LoadHeightMapFromRaw(int _width, int _height,int _depth, int _ma
 	NewChunks(_width, _height, _depth);
 	unsigned short** data = nullptr;
 	int top=0,bottom=0;
-	ReadRawEX16(data, filename, width, depth,top,bottom);
+	ReadRawEX16(data, filename, info.width, info.depth,top,bottom);
 	printf("%d, %d\n", top,bottom);
 	float h = ((float)_maxHeight) / 65534.0f;
 	//int mX = (endX!=-1&&endX >= startX && endX < _width) ? endX+1 : _width;
@@ -1684,16 +1742,16 @@ void VoxelComp::LoadHeightMapFromRaw(int _width, int _height,int _depth, int _ma
 	//			v.material = 1;
 	//			v.isoValue = convertY - y;
 	//			SetVoxel(cX, y, cZ,v);
-	//			if (cX%partitionSize == 0 && y%partitionSize == 0 && cZ%partitionSize == 0)
+	//			if (cX%info.partitionSize == 0 && y%info.partitionSize == 0 && cZ%info.partitionSize == 0)
 	//				ReserveUpdate(XMFLOAT3(cX, y, cZ), true, false);
 	//		}
 	//		cZ++;
 	//	}
 	//	cX++;
 	//}
-	for (int x = 0; x < width; x++)
+	for (int x = 0; x < info.width; x++)
 	{
-		for (int z = 0; z < depth; z++)
+		for (int z = 0; z < info.depth; z++)
 		{
 			float convertY = (((float)data[x][z]) * h);
 			for (int y = 0; y <= _maxHeight; y++)
@@ -1705,32 +1763,160 @@ void VoxelComp::LoadHeightMapFromRaw(int _width, int _height,int _depth, int _ma
 				}
 				v.isoValue = convertY - y;
 				SetVoxel(x, y, z, v, true);
-				if ((x%partitionSize == 0) && (y%partitionSize == 0) && (z%partitionSize == 0))
+				if ((x%info.partitionSize == 0) && (y%info.partitionSize == 0) && (z%info.partitionSize == 0))
 					ReserveUpdate(XMFLOAT3(x, y, z), false, false);
 			}
 		}
 	}
 
-	for (int i = 0; i < width; i++)
+	for (int i = 0; i < info.width; i++)
 		delete[] data[i];
 	delete[] data;
-	printf("%d BYTE chunk data 积己 肯丰\n", width*depth*height);
+	printf("%d BYTE chunk data 积己 肯丰\n", info.width*info.depth*info.height);
 }
+void VoxelComp::GetFileNamesInDirectory(const char* path, std::vector<std::string>& vstr)
+{
+	_finddata_t fd;
+	long handle = _findfirst(path, &fd);
+
+	if (handle == -1) return;
+
+	do {
+		vstr.push_back(fd.name);
+	} while (_findnext(handle, &fd) != -1);
+
+	_findclose(handle);
+}
+
+void VoxelComp::LoadMapData(const char* _path)
+{
+	InitDataDirectory(_path);
+	LoadMapInfo();
+	NewChunks(info.width, info.height, info.depth);
+	char totalPath[256];
+	sprintf(totalPath,"%s\\chunks", dataPath);
+	for (int x=0;x<info.width;x+=info.partitionSize)
+	{
+		for (int y = 0; y < info.height; y += info.partitionSize)
+		{
+			for (int z = 0; z < info.depth; z += info.partitionSize)
+			{
+				ReadVoxelData(XMFLOAT3(x, y, z), dataPath);
+				//ReserveUpdate(XMFLOAT3(x, y, z), false, false);
+			}
+		}
+	}
+}
+void VoxelComp::SaveMapData(const char* _path)
+{
+	InitDataDirectory(_path);
+	SaveMapInfo();
+	std::vector < OctreeNode<std::vector<VoxelData>>*> vec;
+	tempChunks->root->GetLeafs(vec);
+	char totalPath[256];
+	if (vec.size())
+	{
+		for (auto i : vec)
+		{
+			if (i->GetValue().size())
+			{
+				WriteVoxelData(i->GetPosition());
+			}
+		}
+	}
+}
+void VoxelComp::LoadMapInfo()
+{
+	FILE* pInput = NULL;
+	char totalPath[256];
+	sprintf(totalPath, "%s\\mapInfo.JHCI", dataPath);
+	fopen_s(&pInput, totalPath, "rb");
+	if (pInput == NULL)
+		return;
+	fread(&info, sizeof(MapInfo), 1, pInput);
+	fclose(pInput);
+}
+void VoxelComp::InitDataDirectory(const char* _path)
+{
+	_mkdir(pathRoot);
+	sprintf(dataPath, "%s\\%s",pathRoot, _path);
+	_mkdir(dataPath);
+	char path[256];
+	sprintf(path, "%s\\chunks", dataPath);
+	_mkdir(path);
+}
+void VoxelComp::SaveMapInfo()
+{
+	FILE* pInput = NULL;
+	char totalPath[256];
+	sprintf(totalPath, "%s/mapInfo.JHCI", dataPath);
+	fopen_s(&pInput, totalPath, "wb");
+	if (pInput == NULL)
+		return;
+	fwrite(&info, sizeof(MapInfo), 1, pInput);
+	fclose(pInput);
+}
+
+
+void VoxelComp::ReadVoxelData(XMFLOAT3 pos, const char* _path)
+{
+	pos = GetPartitionStartPos(pos);
+	auto node = tempChunks->GetNodeAtPosition(pos, 0);
+	FILE* pInput = NULL;
+	char totalPath[256];
+	float ps = 1.0f / info.partitionSize;
+	int x = (float)pos.x*ps;
+	int y = (float)pos.y*ps;
+	int z = (float)pos.z*ps;
+	sprintf(totalPath, "%s\\chunks\\%d_%d_%d.JHCD", _path, x, y, z);
+	fopen_s(&pInput, totalPath, "rb");
+	if (pInput == NULL)
+		return;
+	int aNums = info.partitionSize * info.partitionSize*info.partitionSize;
+	int elementSize = sizeof(VoxelData);
+	std::vector<VoxelData> temp(aNums);
+	fread(&temp[0], elementSize,aNums, pInput);
+	tempChunks->Insert(pos, temp, 0);
+	ReserveUpdate(pos, false, false);
+	fclose(pInput);
+}
+void VoxelComp::WriteVoxelData(XMFLOAT3 pos)
+{
+	pos = GetPartitionStartPos(pos);
+	auto node = tempChunks->GetNodeAtPosition(pos, 0);
+	if (node->GetDepth() != 0)
+		return;
+	FILE* pInput = NULL;
+	char totalPath[256];
+	float ps = 1.0f / info.partitionSize;
+	int x = (float)pos.x*ps;
+	int y = (float)pos.y*ps;
+	int z = (float)pos.z*ps;
+	sprintf(totalPath, "%s\\chunks\\%d_%d_%d.JHCD", dataPath, x,y,z);
+	fopen_s(&pInput, totalPath, "wb");
+	if (pInput == NULL)
+		return;
+	int aNums = info.partitionSize * info.partitionSize*info.partitionSize;
+	int elementSize = sizeof(VoxelData);
+	fwrite(&node->GetValue()[0], elementSize, aNums, pInput);
+	fclose(pInput);
+}
+
 
 void VoxelComp::LoadCube(int _width, int _height, int _depth)
 {
 	NewChunks(_width, _height, _depth);
-	for (int x = 1; x < width; x++)
+	for (int x = 1; x < info.width; x++)
 	{
-		for (int z = 1; z < depth; z++)
+		for (int z = 1; z < info.depth; z++)
 		{
-			for (int y = 1; y < height; y++)
+			for (int y = 1; y < info.height; y++)
 			{
 				VoxelData v;
 				v.material = 1;
-				v.isoValue = height-y-1;
+				v.isoValue = info.height-y-1;
 				SetVoxel(x, y, z, v);
-				if(x%partitionSize==0&&y%partitionSize==0&&z%partitionSize==0)
+				if(x%info.partitionSize==0&&y%info.partitionSize==0&&z%info.partitionSize==0)
 					ReserveUpdate(XMFLOAT3(x, y, z), false, false);
 			}
 		}
@@ -1745,9 +1931,9 @@ void VoxelComp::LoadPerlin(int _width,int _height, int _depth, int _maxHeight, f
 	if (_maxHeight > _height)
 		_maxHeight = _height *0.5f;
 	NewChunks(_width,_height,_depth);
-	for (int x = 0; x < width; x++)
+	for (int x = 0; x < info.width; x++)
 	{
-		for (int z = 0; z < depth; z++)
+		for (int z = 0; z < info.depth; z++)
 		{
 			float noise = perlin.noise((float)x*refinement, (float)z*refinement, 0);
 			noise *= (float)_maxHeight;
@@ -1763,7 +1949,7 @@ void VoxelComp::LoadPerlin(int _width,int _height, int _depth, int _maxHeight, f
 				}
 				vox.isoValue = noise - y;
 				SetVoxel(x, y, z, vox,true);
-				if ((x%partitionSize == 0) && (y%partitionSize == 0) && (z%partitionSize == 0))
+				if ((x%info.partitionSize == 0) && (y%info.partitionSize == 0) && (z%info.partitionSize == 0))
 					ReserveUpdate(XMFLOAT3(x, y, z), false,false);
 			}
 		}
@@ -1774,46 +1960,33 @@ void VoxelComp::LoadPerlin(int _width,int _height, int _depth, int _maxHeight, f
 
 void VoxelComp::NewChunks(int _w, int _h, int _d)
 {
-	width = _w;
-	height = _h;
-	depth = _d;
+	info.width = _w;
+	info.height = _h;
+	info.depth = _d;
 	if (useArrayedOctree)
 	{
 		aOctree = new ArrayedOctree<VoxelData>(_w);
+	}
+	else if (useGeneralOctree)
+	{
+		gOctree = new Octree<VoxelData>(_w);
+	}
+	else if (useGeneralChunkOctree)
+	{
+		tempChunks = new Octree<std::vector<VoxelData>>(_w,info.partitionSize);
 	}
 	else if (!useSpartialMatrix)
 	{
 		chunks = new VoxelData[_w*_h*_d];
 	}
-	NewOctree(_w);
-}
-void VoxelComp::NewOctree(int _size)
-{
-	//if (_size % 2 > 0)
-	//	_size--;
-	gOctreeMeshRenderer = new Octree<MeshRenderer*>(_size,partitionSize);
-	//if (aOctree)
-	//{
-	//	delete aOctree;
-	//}
-	//aOctree = new ArrayedOctree<VoxelData>(_size);
-	//for (int i = 0; i < aOctree->depth+1; i++)
-	//{
-	//	VoxelData vox;
-	//	vox.isoValue = -1 * aOctree->GetUnitSize(i);
-	//	for (int j = 0; j < aOctree->GetLength(i); j++)
-	//	{
-	//		aOctree->SetValue(j, vox, i);
-	//	}
-	//}
+	gOctreeMeshRenderer = new Octree<MeshRenderer*>(_w,info.partitionSize);
+
 }
 
 void VoxelComp::SetOctreeDepth(int _targetDepth)
 {
 	currentOctreeDepth = _targetDepth;
 }
-
-
 void VoxelComp::ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height)
 {
 	unsigned char** srcBuf = new unsigned char*[_width];
@@ -1863,22 +2036,22 @@ void VoxelComp::ReadRawEX16(unsigned short** &data, const char* filename, int _w
 
 XMFLOAT3 VoxelComp::GetPartitionCenter(XMFLOAT3 basePos)
 {
-	float hSize = partitionSize * 0.5f;
+	float hSize = info.partitionSize * 0.5f;
 	return GetPartitionStartPos(basePos) + XMFLOAT3(hSize, hSize, hSize);
 }
 XMFLOAT3 VoxelComp::GetPartitionStartPos(XMFLOAT3 basePos)
 {
 	float x, y, z;
-	float size = 1 / (float)partitionSize;
+	float size = 1 / (float)info.partitionSize;
 	x = floor((basePos.x *size));
 	y = floor((basePos.y *size));
 	z = floor((basePos.z *size));
-	return XMFLOAT3(x, y, z)*partitionSize;
+	return XMFLOAT3(x, y, z)*info.partitionSize;
 }
 
 int VoxelComp::GetLODLevel(const XMFLOAT3& basePos, const XMFLOAT3& targetPos)
 {
-	if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= width || targetPos.y >= height || targetPos.z >= depth)
+	if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= info.width || targetPos.y >= info.height || targetPos.z >= info.depth)
 		return maxLODLevel;
 
 	XMFLOAT3 basePos2 = GetPartitionCenter(basePos);
@@ -1923,49 +2096,59 @@ void VoxelComp::SetLODLevel(int level, float distance)
 {
 	if (level < 0 || level >= 8)
 		return;
-	distance -= (int)distance % partitionSize;
+	distance -= (int)distance % info.partitionSize;
 	LODDistance[level] = distance;
 }
 
-void VoxelComp::ProcessUpdateQueue()
+void VoxelComp::ProcessCommandQueue()
 {
 	if (!useAsyncBuild)
 	{
-		if (updateQueue_Main.size())
+		if (commandQueue_Main.size())
 		{
 			//ULONG tick = GetTickCount64();
-			for (auto i : updateQueue_Main)
+			for (auto i : commandQueue_Main)
 			{
-				MESH_RESULT result = UpdatePartialMesh(XMFLOAT3(i.x, i.y, i.z), i.lodLevel, i.transitionCellBasis);
+				RESULT_BUFFER result = UpdatePartialMesh(XMFLOAT3(i.x, i.y, i.z), i.lodLevel, i.transitionCellBasis);
 				UpdateMeshRenderer(result.newMesh, result.pos, result.lodLevel);
 			}
-			updateQueue_Main.clear();
+			commandQueue_Main.clear();
 			//printf("updateQueue_Main Generated %dms\n", GetTickCount64() - tick);
 		}
-		if (updateQueue_Deform.size())
+		if (commandQueue_Deform.size())
 		{
 			//ULONG tick = GetTickCount64();
-			for (auto i : updateQueue_Deform)
+			for (auto i : commandQueue_Deform)
 			{
-				MESH_RESULT result = UpdatePartialMesh(XMFLOAT3(i.x, i.y, i.z), i.lodLevel, i.transitionCellBasis);
+				RESULT_BUFFER result = UpdatePartialMesh(XMFLOAT3(i.x, i.y, i.z), i.lodLevel, i.transitionCellBasis);
 				UpdateMeshRenderer(result.newMesh, result.pos, result.lodLevel);
 			}
-			updateQueue_Deform.clear();
+			commandQueue_Deform.clear();
 			//printf("updateQueue_Deform Generated %dms\n", GetTickCount64() - tick);
 		}
 	}
 	else
 	{
-		while (updateQueue_Main.size())
+		while (commandQueue_Main.size())
 		{
-			INPUT_BUFFER _node = updateQueue_Main.front();
-			updateQueue_Main.pop_front();
+			COMMAND_BUFFER _node = commandQueue_Main.front();
+			commandQueue_Main.pop_front();
 			threadPool_Main.AddTask(_node);
 		}
-		while (updateQueue_Deform.size())
+
+		//if (updateQueue_Deform.size())
+		//{
+		//	for (auto i : updateQueue_Deform)
+		//	{
+		//		RESULT_BUFFER result = UpdatePartialMesh(XMFLOAT3(i.x, i.y, i.z), i.lodLevel, i.transitionCellBasis);
+		//		UpdateMeshRenderer(result.newMesh, result.pos, result.lodLevel);
+		//	}
+		//	updateQueue_Deform.clear();
+		//}
+		while (commandQueue_Deform.size())
 		{
-			INPUT_BUFFER _node = updateQueue_Deform.front();
-			updateQueue_Deform.pop_front();
+			COMMAND_BUFFER _node = commandQueue_Deform.front();
+			commandQueue_Deform.pop_front();
 			threadPool_Deform.AddTask(_node);
 		}
 	}
@@ -2005,85 +2188,74 @@ short VoxelComp::GetTransitionBasis(int lodLevel, XMFLOAT3 basePos, XMFLOAT3 tar
 	if (lodLevel == 0)
 		return 0;
 	short transitionCellBasis = 0;
-	XMFLOAT3 r(partitionSize, 0, 0), u(0, partitionSize, 0), f(0, 0, partitionSize);
+	XMFLOAT3 r(info.partitionSize, 0, 0), u(0, info.partitionSize, 0), f(0, 0, info.partitionSize);
 	int l[6] = { GetLODLevel(basePos, targetPos - f),GetLODLevel(basePos, targetPos + f),GetLODLevel(basePos, targetPos - r),GetLODLevel(basePos, targetPos + r),GetLODLevel(basePos, targetPos - u),GetLODLevel(basePos, targetPos + u) };
 	for (int i = 0; i < 6; i++)
 		if (l[i] >= 0 && l[i] < lodLevel)
 			transitionCellBasis |= (1 << i);
 	return transitionCellBasis;
 }
-short VoxelComp::ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, bool isDeforming, bool checkDuplicated)
+short VoxelComp::ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, bool isDeforming, bool isEnableOverWrite)
 {
-	if (pos.x >= width || pos.y >= height || pos.z >= depth)
+	if (pos.x >= info.width || pos.y >= info.height || pos.z >= info.depth)
 		return -1;
 	if (pos.x < 0 || pos.y < 0 || pos.z < 0)
 		return -1;
-	INPUT_BUFFER input;
+	COMMAND_BUFFER input;
 	XMFLOAT3 targetPos = GetPartitionStartPos(pos);
 	input.x = (int)targetPos.x;
 	input.y = (int)targetPos.y;
 	input.z = (int)targetPos.z;
 	input.lodLevel = _lodLevel;
 	input.transitionCellBasis = _basis;
-	if (checkDuplicated)
+	if (isEnableOverWrite)
 	{
 		if (isDeforming)
 		{
-			for (auto i : updateQueue_Deform)
+			auto iter=std::find(commandQueue_Deform.begin(), commandQueue_Deform.end(), input);
+			if (iter != commandQueue_Deform.end())
+			{
+				iter->lodLevel = input.lodLevel;
+				iter->transitionCellBasis = input.transitionCellBasis;
+				return input.lodLevel;
+			}
+			/*for (auto i : updateQueue_Deform)
 				if (i == input)
-					return -1;
+				{
+					i = input;
+					return input.lodLevel;
+				}*/
 		}
 		else
 		{
-			for (auto i : updateQueue_Main)
-				if (i == input)
-					return -1;
+			auto iter = std::find(commandQueue_Main.begin(), commandQueue_Main.end(), input);
+			if (iter != commandQueue_Main.end())
+			{
+				iter->lodLevel = input.lodLevel;
+				iter->transitionCellBasis = input.transitionCellBasis;
+				return input.lodLevel;
+			}
+			//for (auto i : updateQueue_Main)
+			//	if (i == input)
+			//	{
+			//		i = input;
+			//		return input.lodLevel;
+			//	}
 		}
 	}
 	if (!isDeforming)
-		updateQueue_Main.push_back(input);
+		commandQueue_Main.push_back(input);
 	else
-		updateQueue_Deform.push_back(input);
+		commandQueue_Deform.push_back(input);
 	return input.lodLevel;
 }
 
-short VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool checkDuplicated)
+short VoxelComp::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool isEnableOverWrite)
 {
-	//mutex_UpdateQueue.lock();
-	if (pos.x >= width || pos.y >= height || pos.z >= depth)
-		return -1;
-	if (pos.x < 0 || pos.y < 0 || pos.z < 0)
-		return  - 1;
-	INPUT_BUFFER input;
-	XMFLOAT3 targetPos = GetPartitionStartPos(pos);
-	input.x = (int)targetPos.x;
-	input.y = (int)targetPos.y;
-	input.z = (int)targetPos.z;
 	XMFLOAT3 basePos = GetLastBasePosition();
-	basePos = GetPartitionStartPos(basePos);
-	input.lodLevel = GetLODLevel(basePos, targetPos);
-	input.transitionCellBasis = GetTransitionBasis(input.lodLevel,basePos, targetPos);
-	if (checkDuplicated)
-	{
-		if (isDeforming)
-		{
-			for (auto i : updateQueue_Deform)
-				if (i == input)
-					return  - 1;
-		}
-		else
-		{
-			for (auto i : updateQueue_Main)
-				if (i == input)
-					return  - 1;
-		}
-	}
-	if (!isDeforming)
-		updateQueue_Main.push_back(input);
-	else
-		updateQueue_Deform.push_back(input);
-	//mutex_UpdateQueue.unlock();
-	return input.lodLevel;
+	float lodLevel = GetLODLevel(basePos, pos);
+	short transitionCellBasis = GetTransitionBasis(lodLevel, basePos, pos);
+	return ReserveUpdate(pos, transitionCellBasis, lodLevel, isDeforming, isEnableOverWrite);
 }
 
 int VoxelComp::ReadTXT(const char * filename)

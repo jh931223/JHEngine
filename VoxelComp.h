@@ -6,7 +6,7 @@
 #include "ThreadPool.h"
 #include<unordered_map>
 #include<map>
-
+#include"RWLock.h"
 
 //#include"VoxelTable.h"
 class MeshRenderer;
@@ -20,21 +20,21 @@ template<typename T> class ArrayedOctree;
 class VoxelComp : public Component
 {
 public:
-
+	//#pragma pack(push, 1)
 	struct VoxelData
 	{
 		int material = 0;
 		float isoValue = -1;
 	};
-
-	struct MESH_RESULT
+//#pragma pack(pop) 
+	struct RESULT_BUFFER
 	{
 		Mesh* newMesh;
 		XMFLOAT3 pos;
 		int lodLevel;
 	};
 
-	struct INPUT_BUFFER
+	struct COMMAND_BUFFER
 	{
 		int x, y, z;
 		int lodLevel;
@@ -46,9 +46,9 @@ public:
 			y = pos.y*s;
 			z = pos.z*s;
 		}
-		friend bool operator==(const INPUT_BUFFER& data1, const INPUT_BUFFER& data2)
+		bool operator==(const COMMAND_BUFFER& data1)
 		{
-			return  ((data1.x == data2.x) && (data1.y == data2.y) && (data1.z == data2.z)&& (data1.lodLevel==data2.lodLevel));
+			return  ((data1.x == x) && (data1.y == y) && (data1.z == z));
 		}
 	};
 
@@ -66,7 +66,7 @@ public:
 	VoxelData GetVoxel(int x, int y, int z);
 
 	VoxelComp::VoxelData GetVoxel(XMFLOAT3 pos);
-	int GetPartitionSize() { return partitionSize; }
+	int GetPartitionSize() { return info.partitionSize; }
 	XMFLOAT3 GetLastBasePosition() { return lastBasePosition; }
 private:
 	XMFLOAT3 CalcNormal(const XMFLOAT3& v1, const XMFLOAT3& v2, const XMFLOAT3& v3);
@@ -87,21 +87,32 @@ private:
 
 	void PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
 
-	MESH_RESULT GenerateCubeFaces(XMFLOAT3 pos);
+	RESULT_BUFFER GenerateCubeFaces(XMFLOAT3 pos);
 
-	MESH_RESULT GeneratePartitionFaces(XMFLOAT3 pos,int lodLevel=0, short transitionCellBasis=0);
+	RESULT_BUFFER GeneratePartitionFaces(XMFLOAT3 pos,int lodLevel=0, short transitionCellBasis=0);
 
 	void LoadHeightMapFromRaw(int,int,int,int,const char*,int startX = -1, int startZ = -1, int endX = -1, int endZ = -1);
+
+	void GetFileNamesInDirectory(const char* path,std::vector<std::string>& vstr);
+
+	void LoadMapData(const char * _path);
+	void SaveMapData(const char* _path);
+	void LoadMapInfo();
+	void InitDataDirectory(const char * _path);
+	void SaveMapInfo();
+	void ReadVoxelData(XMFLOAT3 pos,const char* _path=0);
+	void WriteVoxelData(XMFLOAT3 pos);
+
 	void LoadCube(int,int,int);
 	void LoadPerlin(int _width,int _height, int _depth, int _maxHeight,float refinement);
 
 
 	void NewChunks(int _w, int _h, int _d);
 
-	void NewOctree(int _length);
-	void ReleaseOctree();
+	void ReleaseChunks();
 
 	void SetOctreeDepth(int _targetDepth);
+
 
 
 	XMFLOAT2 GetUV(BYTE);
@@ -110,14 +121,14 @@ private:
 
 
 
-	MESH_RESULT CreateNewMesh(INPUT_BUFFER input,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
-	MESH_RESULT UpdatePartialMesh(XMFLOAT3 pos, int lodLevel = 0, short transitionCellBasis=0);
+	RESULT_BUFFER CreateNewMesh(COMMAND_BUFFER input,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
+	RESULT_BUFFER UpdatePartialMesh(XMFLOAT3 pos, int lodLevel = 0, short transitionCellBasis=0);
 
 	void UpdateMesh(int lodLevel=0);
 	void UpdateVoxelMesh();
 	void UpdateMarchingCubeMesh(int lodLevel = 0);
 	XMFLOAT3 GetPositionFromIndex(int index);
-	int GetIndexFromPosition(XMFLOAT3 pos);
+	unsigned int GetIndexFromPosition(XMFLOAT3 pos);
 	void RefreshLODNodes();
 	void RefreshLODNodes(XMFLOAT3 centerPos);
 	bool FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius);
@@ -127,8 +138,8 @@ private:
 	void BuildVertexBufferFrustumCulling(int targetDepth);
 
 	void UpdateMeshAsync(int lodLevel);
-	short ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, bool isDeforming, bool checkDuplicated);
-	short ReserveUpdate(XMFLOAT3 pos, bool isDeforming = false, bool checkDuplicated = true);
+	short ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, bool isDeforming=false , bool isEnableOverWrite=true);
+	short ReserveUpdate(XMFLOAT3 pos, bool isDeforming = false, bool isEnableOverWrite = true);
 
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
 	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height, int&, int&);
@@ -138,7 +149,7 @@ private:
 	void SetLODLevel(int level, float distance);
 
 	void ProcessLOD();
-	void ProcessUpdateQueue();
+	void ProcessCommandQueue();
 	void ProcessResultQueue();
 
 	short GetTransitionBasis(int lodLevel, XMFLOAT3 basePos, XMFLOAT3 targetPos);
@@ -152,31 +163,47 @@ private:
 
 private:
 
-	static const int maxLODLevel = 3;
+	static const int maxLODLevel = 0;
 
-	int width, height, depth;
+	RWLock rwLock;
+	
+	//#pragma pack(push, 1)
+	struct MapInfo
+	{
+		int width, height, depth;
+		int partitionSize = 32;
+	};
+//#pragma pack(pop) 
+	MapInfo info;
 	float unit;
 	float tUnit;
 	int tAmount;
-
 	bool useMarchingCube=true;
 	bool useAsyncBuild=true;
+
 	bool useFrustum=false;
 	bool useSpartialMatrix=false;
+	bool useGeneralChunkOctree = true;
 	bool useArrayedOctree = false;
+	bool useGeneralOctree = false;
 	bool useGPGPU = false;
 
 	int currentOctreeDepth = 0;
 
+
+	char dataPath[256];
+	const char* pathRoot = "MapData";
+	Octree< std::vector<VoxelData> >* tempChunks;
+
 	VoxelData* chunks;
 	std::unordered_map<unsigned int, VoxelData> spartialMatrix;
 	ArrayedOctree<VoxelData>* aOctree;
-
+	Octree<VoxelData>* gOctree;
 	Octree<MeshRenderer*>* gOctreeMeshRenderer;
 
 	
 
-	int LODDistance[3]{ 0, };
+	int LODDistance[maxLODLevel+1]{ 0, };
 
 	OctreeNode<MeshRenderer*>* currentLODNode;
 
@@ -196,17 +223,18 @@ private:
 	float strength=0.5f;
 	float brushRadius = 3.0f;
 
-	int partitionSize=32;
 
 
-	ThreadPool<INPUT_BUFFER,MESH_RESULT> threadPool_Main;
-	ThreadPool<INPUT_BUFFER,MESH_RESULT> threadPool_Deform;
 
 
-	std::list<INPUT_BUFFER> updateQueue_Main;
-	std::list<INPUT_BUFFER> updateQueue_Deform;
+	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool_Main;
+	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool_Deform;
 
-	std::vector<MESH_RESULT> meshBuildResult;
+
+	std::list<COMMAND_BUFFER> commandQueue_Main;
+	std::list<COMMAND_BUFFER> commandQueue_Deform;
+
+	std::vector<RESULT_BUFFER> meshBuildResult;
 	GameObject* camera;
 
 
