@@ -65,7 +65,7 @@ void VoxelComponent::Initialize()
 //	SetLODLevel(0, 100000);
 
 
-	SetLODLevel(0, 50000);
+	SetLODLevel(0, 32);
 	SetLODLevel(1, 128);
 	SetLODLevel(2, 256);
 	SetLODLevel(3, 512);
@@ -78,8 +78,8 @@ void VoxelComponent::Initialize()
 
 	//LoadCube(32, 32, 32);
 	//LoadPerlin(128, 128, 128,128, 0.1f);
-	LoadPerlin(256, 128, 256, 128, 0.2f);
-	//LoadMapData("Terrain1");
+	//LoadPerlin(256, 128, 256, 128, 0.2f);
+	LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
 	//LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
 
@@ -91,8 +91,8 @@ void VoxelComponent::Initialize()
 	});
 	threadPool_Main.SetTaskFunc(_task);
 	threadPool_Deform.SetTaskFunc(_task);
-	threadPool_Main.Initialize(8, false);
-	threadPool_Deform.Initialize(8, false);
+	//threadPool_Main.Initialize(8, false);
+	//threadPool_Deform.Initialize(8, false);
 
 
 
@@ -176,7 +176,7 @@ void VoxelComponent::Update()
 	{
 		SystemClass::GetInstance()->GetD3D()->ChangeFillMode(false);
 	}
-	else if (Input()->GetKeyDown(DIK_F3))
+	else if (Input()->GetKey(DIK_F3))
 	{
 		LightComponent::mainLight()->transform()->SetRotation(CameraComponent::mainCamera()->transform()->GetWorldRotation());
 	}

@@ -181,7 +181,7 @@ private:
 
 private:
 
-	static const int maxLODLevel = 2;
+	static const int maxLODLevel = 0;
 
 	
 	//#pragma pack(push, 1)

@@ -73,6 +73,6 @@ private:
 	static std::vector<ITaskParallel*> scheduleList;
 	static std::vector<std::thread> workers;
 public:
-	const static int threadNums = 16;
+	const static int threadNums = 8;
 };
 
