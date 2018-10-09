@@ -5,14 +5,14 @@
 #include "MaterialClass.h"
 #include "LightComponent.h"
 #include "textureclass.h"
-#include "viewpointclass.h"
 #include "graphicsclass.h"
 #include "MeshRenderer.h"
 #include "BitmapClass.h"
 #include "ResourcesClass.h"
 #include "RenderTextureClass.h"
 #include"Transform.h"
-#include "HierachyClass.h"
+#include "SceneClass.h"
+#include <algorithm>
 GraphicsClass::GraphicsClass()
 {
 }
@@ -47,11 +47,11 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 
 
 	// 뷰 포인트 객체를 만듭니다.
-	m_ViewPoint = new ViewPointClass;
-	if(!m_ViewPoint)
-	{
-		return false;
-	}
+	//m_ViewPoint = new ViewPointClass;
+	//if(!m_ViewPoint)
+	//{
+	//	return false;
+	//}
 
 	// 비트맵 객체 생성
 	m_Bitmap = new BitmapClass;
@@ -68,11 +68,11 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 		return false;
 	}
 	// 뷰 포인트 객체를 초기화합니다.
-	m_ViewPoint->SetPosition(2.0f, 5.0f, -2.0f);
-	m_ViewPoint->SetLookAt(0.0f, 0.0f, 0.0f);
-	m_ViewPoint->SetProjectionParameters((float)(XM_PI / 2.0f), 1.0f, 0.1f, 100.0f);
-	m_ViewPoint->GenerateViewMatrix();
-	m_ViewPoint->GenerateProjectionMatrix();
+	//m_ViewPoint->SetPosition(2.0f, 5.0f, -2.0f);
+	//m_ViewPoint->SetLookAt(0.0f, 0.0f, 0.0f);
+	//m_ViewPoint->SetProjectionParameters((float)(XM_PI / 2.0f), 1.0f, 0.1f, 100.0f);
+	//m_ViewPoint->GenerateViewMatrix();
+	//m_ViewPoint->GenerateProjectionMatrix();
 
 
 	meshRenderers.clear();
@@ -85,11 +85,11 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 void GraphicsClass::Shutdown()
 {
 	// 뷰 포인트 객체를 해제합니다.
-	if(m_ViewPoint)
-	{
-		delete m_ViewPoint;
-		m_ViewPoint = 0;
-	}
+	//if(m_ViewPoint)
+	//{
+	//	delete m_ViewPoint;
+	//	m_ViewPoint = 0;
+	//}
 	// m_Bitmap 객체 반환
 	if (m_Bitmap)
 	{
@@ -134,42 +134,50 @@ void GraphicsClass::PushLights(LightComponent * light)
 void GraphicsClass::PushCameras(CameraComponent * cam)
 {
 	cameras.push_back(cam);
+	SortCameras();
+}
+void GraphicsClass::SortCameras()
+{
+	std::sort(cameras.begin(), cameras.end(), [](CameraComponent* lhs, CameraComponent* rhs) {return lhs->depth<rhs->depth; });
 }
 void GraphicsClass::RemoveRenderer(MeshRenderer * renderer)
 {
 	for(int i=0;i<meshRenderers.size();i++)
-		if(meshRenderers[i]==renderer)
-			meshRenderers.erase(meshRenderers.begin()+i);
+		if (meshRenderers[i] == renderer)
+		{
+			meshRenderers.erase(meshRenderers.begin() + i);
+			break;
+		}
 }
 void GraphicsClass::RemoveLights(LightComponent * light)
 {
 	for (int i = 0; i<lights.size(); i++)
 		if (lights[i] == light)
+		{
 			lights.erase(lights.begin() + i);
+			break;
+		}
 }
 void GraphicsClass::RemoveCameras(CameraComponent * cam)
 {
 	for (int i = 0; i<cameras.size(); i++)
 		if (cameras[i] == cam)
+		{
 			cameras.erase(cameras.begin() + i);
+			break;
+		}
 }
 CameraComponent * GraphicsClass::GetMainCamera()
 {
 	CameraComponent* top=NULL;
-	for (auto i : cameras)
-	{
-		if (top == NULL || i->depth > top->depth)
-		{
-			top = i;
-		}
-	}
+	if (cameras.size())
+		top = cameras[0];
 	return top;
 }
 bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMaterial = nullptr)
 {
 	if (m_Camera != 0)
 		m_Camera->Render();
-
 	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, orthoMatrix;
 	m_Direct3D->GetWorldMatrix(worldMatrix);
 	m_Camera->GetViewMatrix(viewMatrix);
@@ -189,22 +197,6 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 			//  yaw, pitch, roll 값을 통해 회전 행렬을 만듭니다.
 			i->Render(m_Direct3D->GetImmDeviceContext(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix);
 		}
-		//i->GetMesh()->Render(m_Direct3D->GetDeviceContext());
-		//if (lights.size() == 0)
-		//{
-		//	return false;
-		//}
-		//if (customMaterial != nullptr)
-		//{
-		//	if (!customMaterial->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(),gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix))
-		//	{
-		//		return false;
-		//	}
-		//}
-		//else if (!i->GetMaterial()->Render(m_Direct3D->GetDeviceContext(), i->GetMesh()->GetIndexCount(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix))
-		//{
-		//	return false;
-		//}
 	}
 	return true;
 }
@@ -241,7 +233,7 @@ bool GraphicsClass::RenderCanvas(CameraComponent* m_Camera)
 bool GraphicsClass::RenderToTexture(CameraComponent * camera)
 {
 	// 렌더링 대상을 렌더링에 맞게 설정합니다.
-	RenderTextureClass* m_RenderTexture = ResourcesClass::GetInstance()->FindRenderTexture("rt_Shadow");
+	RenderTextureClass* m_RenderTexture = camera->GetRenderTexture();
 
 	m_RenderTexture->SetRenderTarget(m_Direct3D->GetImmDeviceContext());
 
@@ -249,7 +241,7 @@ bool GraphicsClass::RenderToTexture(CameraComponent * camera)
 	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetImmDeviceContext(), 0.0f, 0.0f, 1.0f,1.0f);
 
 	// 이제 장면을 렌더링하면 백 버퍼 대신 텍스처로 렌더링됩니다.
-	if (!RenderScene(camera,ResourcesClass::GetInstance()->FindMaterial("depthMap")))
+	if (!RenderScene(camera))
 	{
 		return false;
 	}
@@ -259,29 +251,7 @@ bool GraphicsClass::RenderToTexture(CameraComponent * camera)
 
 	return true;
 }
-bool GraphicsClass::RenderToDepthTexture(CameraComponent * camera)
-{
-	// 렌더링 대상을 렌더링에 맞게 설정합니다.
-	RenderTextureClass* m_RenderTexture = ResourcesClass::GetInstance()->FindRenderTexture("rt_Shadow");
 
-	m_RenderTexture->SetRenderTarget(m_Direct3D->GetImmDeviceContext());
-
-	// 렌더링을 텍스처에 지웁니다.
-	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetImmDeviceContext(), 0.0f, 0.3f, 0.5f, 1.0f);
-
-	// 이제 장면을 렌더링하면 백 버퍼 대신 텍스처로 렌더링됩니다.
-	if (!RenderScene(camera, ResourcesClass::GetInstance()->FindMaterial("depthMap")))
-	{
-		return false;
-	}
-
-	// 렌더링 대상을 원래의 백 버퍼로 다시 설정하고 렌더링에 대한 렌더링을 더 이상 다시 설정하지 않습니다.
-	m_Direct3D->SetBackBufferRenderTarget();
-	// 뷰포트를 원본으로 다시 설정합니다.
-	m_Direct3D->ResetViewport();
-
-	return true;
-}
 bool GraphicsClass::Render()
 {
 
@@ -294,10 +264,15 @@ bool GraphicsClass::Render()
 	// 씬을 그리기 위해 버퍼를 지웁니다
 	m_Direct3D->BeginScene(0.2f, 0.3f, 0.8f, 1.0f);
 	// 카메라의 위치에 따라 뷰 행렬을 생성합니다
-
-
-	if (!RenderScene(m_Camera))
-		return false;
+	//if (!RenderScene(m_Camera))
+	//	return false;
+	for (auto i : cameras)
+	{
+		if (i->GetRenderTexture())
+			RenderToTexture(i);
+		else
+			RenderScene(i);
+	}
 
 	//if (!RenderCanvas(m_Camera))
 	//	return false;

@@ -61,13 +61,29 @@ public:
 	{
 		return &resultQueue;
 	}
+	bool IsAllTaskFinished()
+	{
+		if (!IsInitialized())
+			return false;
+		return !runningQueue.size()&&!taskBuffers.size();
+	}
+	int GetRunningQueueSize()
+	{
+		return runningQueue.size();
+	}
 	void SetTaskFunc(std::function<ResultBuffer(TaskBuffer)> func)
 	{
 		taskFunc = func;
 	}
+	bool IsInitialized()
+	{
+		return isInit;
+	}
 protected :
 	virtual void WaitQueueUpdate()
 	{
+
+
 		while (waitQueue.size())
 		{
 			if (!taskBuffers.size())
@@ -131,7 +147,15 @@ protected :
 			endQueue.pop_front();
 		}
 	}
-	virtual void WorkerFunc(int id)
+	virtual TaskBuffer GetTaskBuffer()
+	{
+		taskMutex.lock();
+		TaskBuffer task = taskBuffers.front();
+		taskBuffers.pop_front();
+		taskMutex.unlock();
+		return task;
+	}
+	virtual TaskBuffer WorkerFunc(int id)
 	{
 		while (true)
 		{
@@ -144,8 +168,8 @@ protected :
 		}
 	}
 public:
-	bool isInit = false;
 protected:
+	bool isInit = false;
 	int maxThreads;
 	bool keepOrder;
 	std::vector<std::thread> workers;
@@ -165,5 +189,7 @@ protected:
 
 	std::vector<std::mutex*> workerLocks;
 	std::vector<std::condition_variable*> workerConditions;
+
+	std::mutex taskMutex;
 };
 

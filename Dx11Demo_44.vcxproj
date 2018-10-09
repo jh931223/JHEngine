@@ -112,7 +112,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -171,19 +171,22 @@
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DepthShaderClass.h" />
     <ClInclude Include="DxDefine.h" />
+    <ClInclude Include="JobSystem.h" />
+    <ClInclude Include="MainScene.h" />
     <ClInclude Include="MarchingCubeCompute.h" />
     <ClInclude Include="RWLock.h" />
     <ClInclude Include="ShaderParameterCollections.h" />
     <ClInclude Include="ThreadPool.h" />
+    <ClInclude Include="ThreadPool2.h" />
     <ClInclude Include="TriplanarShaderClass.h" />
-    <ClInclude Include="VoxelComp.h" />
+    <ClInclude Include="VoxelComponent.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GraphicsClass.h" />
     <ClInclude Include="InputClass.h" />
     <ClInclude Include="InputComponent.h" />
     <ClInclude Include="JHVector.h" />
     <ClInclude Include="LightComponent.h" />
-    <ClInclude Include="HierachyClass.h" />
+    <ClInclude Include="SceneClass.h" />
     <ClInclude Include="MarchingCubeShaderClass.h" />
     <ClInclude Include="MaterialClass.h" />
     <ClInclude Include="MeshRenderer.h" />
@@ -203,7 +206,6 @@
     <ClInclude Include="TextureClass.h" />
     <ClInclude Include="TextureShaderClass.h" />
     <ClInclude Include="Transform.h" />
-    <ClInclude Include="ViewPointClass.h" />
     <ClInclude Include="VoxelTable.h" />
     <ClInclude Include="WICTextureLoader.h" />
   </ItemGroup>
@@ -216,19 +218,22 @@
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="DepthShaderClass.cpp" />
+    <ClCompile Include="JobSystem.cpp" />
+    <ClCompile Include="MainScene.cpp" />
     <ClCompile Include="MarchingCubeCompute.cpp" />
     <ClCompile Include="RWLock.cpp" />
     <ClCompile Include="ShaderParameterCollections.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
+    <ClCompile Include="ThreadPool2.cpp" />
     <ClCompile Include="TriplanarShaderClass.cpp" />
-    <ClCompile Include="VoxelComp.cpp" />
+    <ClCompile Include="VoxelComponent.cpp" />
     <ClCompile Include="InputComponent.cpp" />
     <ClCompile Include="JHEngine.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GraphicsClass.cpp" />
     <ClCompile Include="InputClass.cpp" />
     <ClCompile Include="LightComponent.cpp" />
-    <ClCompile Include="HierachyClass.cpp" />
+    <ClCompile Include="SceneClass.cpp" />
     <ClCompile Include="MarchingCubeShaderClass.cpp" />
     <ClCompile Include="MaterialClass.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />
@@ -250,7 +255,6 @@
     <ClCompile Include="TextureClass.cpp" />
     <ClCompile Include="TextureShaderClass.cpp" />
     <ClCompile Include="Transform.cpp" />
-    <ClCompile Include="ViewPointClass.cpp" />
     <ClCompile Include="WICTextureLoader.cpp" />
   </ItemGroup>
   <ItemGroup>

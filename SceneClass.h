@@ -1,16 +1,19 @@
 #pragma once
 #include <vector>
 #include<string>
-#include"Singleton.h"
+#include "SystemClass.h"
+#include "GraphicsClass.h"
+#include "ResourcesClass.h"
+
 class GameObject;
-class HierarchyClass : public Singleton<HierarchyClass>
+class SceneClass
 {
 	std::vector<GameObject*> gameObjects;
 	std::vector<GameObject*> newGameObjects;
 
 public:
-	HierarchyClass();
-	virtual ~HierarchyClass();
+	SceneClass();
+	virtual ~SceneClass()=0;
 	void AddGameObject(GameObject* _gameObject);
 	void DestroyGameObject(GameObject* _gameObject);
 	template<class T> GameObject* FindGameObjectWithComponent()
@@ -26,14 +29,27 @@ public:
 	{
 		for (auto i : gameObjects)
 		{
-			if (i->name== _name)
+			if (i->name == _name)
 				return i;
 		}
 		return NULL;
 	}
+	static GameObject* FindGameObjectWithNameInAllScene(std::string _name)
+	{
+		std::vector<SceneClass*> *sList = SystemClass::GetInstance()->GetSceneList();
+		for (int s = 0; s < SystemClass::GetInstance()->GetSceneList()->size(); s++)
+		{
+			for (auto i : *sList)
+			{
+				auto result = i->FindGameObjectWithName(_name);
+				if (result)
+					return result;
+			}
+		}
+		return NULL;
+	}
 	void Update();
-	void Setup();
+	virtual void Setup()=0;
 	void Start();
 };
 
-inline HierarchyClass* Hierarchy() { return HierarchyClass::GetInstance(); }

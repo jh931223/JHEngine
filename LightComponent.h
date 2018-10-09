@@ -4,7 +4,7 @@ class LightComponent : public Component
 {
 public:
 	LightComponent();
-	virtual ~LightComponent();
+	~LightComponent();
 
 	void SetAmbientColor(float, float, float, float);
 	void SetDiffuseColor(float, float, float, float);

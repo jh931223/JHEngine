@@ -1,11 +1,13 @@
 #pragma once
 #include<list>
 
+class RenderTextureClass;
+
 class CameraComponent : public Component
 {
 public:
 	CameraComponent();
-	virtual ~CameraComponent();
+	~CameraComponent();
 
 	void ChangeDepth(int _depth);
 
@@ -14,9 +16,12 @@ public:
 	void GetProjectionMatrix(XMMATRIX&);
 	static void GetDefaultViewMtrix(XMMATRIX & viewMatrix);
 	void SetProjectionParameters(float FOV, float aspectRatio, float nearPlane, float farPlane);
+	RenderTextureClass* GetRenderTexture();
+	void SetRenderTexture(RenderTextureClass* _bitmap);
 	static CameraComponent* mainCamera();
 private:
 	XMMATRIX m_viewMatrix;
+	RenderTextureClass* renderTexture;
 public:
 	static std::list<CameraComponent*> cameras;
 	float m_fieldOfView = 0;

@@ -47,7 +47,7 @@ Texture2D stn3 : register(t5);
 SamplerState SampleType;
 
 
-v2f vs(vInput input)
+v2f main(vInput input)
 {
 	v2f output;
 

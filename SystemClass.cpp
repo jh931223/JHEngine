@@ -2,11 +2,14 @@
 #include "inputclass.h"
 #include "graphicsclass.h"
 #include "systemclass.h"
-#include "HierachyClass.h"
+#include "SceneClass.h"
 #include"resourcesclass.h"
 #include "D3DClass.h"
 #include<time.h>
 
+//씬
+#include "MainScene.h"
+//
 SystemClass::SystemClass()
 {
 }
@@ -54,17 +57,25 @@ bool SystemClass::Initialize()
 	m_Resources->Initialize(m_hwnd);
 
 
-	m_Hierachy = HierarchyClass::GetInstance();
-	if (!m_Hierachy)
-		return false;
-	m_Hierachy->Setup();
-	m_Hierachy->Start();
+	sceneList.push_back(new MainScene());
+	for (auto i : sceneList)
+		i->Setup();
+	for (auto i : sceneList)
+		i->Start();
+
 	return true;
 }
 
 
 void SystemClass::Shutdown()
 {
+
+	if (sceneList.size())
+	{
+		for (auto i : sceneList)
+			delete i;
+		sceneList.clear();
+	}
 	// m_Graphics 객체 반환
 	if (m_Graphics)
 	{
@@ -80,6 +91,8 @@ void SystemClass::Shutdown()
 		delete m_Input;
 		m_Input = 0;
 	}
+
+	
 
 	// Window 종료 처리
 	ShutdownWindows();
@@ -121,7 +134,8 @@ void SystemClass::Run()
 
 bool SystemClass::Frame()
 {
-	m_Hierachy->Update();
+	for(auto i:sceneList)
+		i->Update();
 	// 그래픽 객체의 Frame을 처리합니다
 	m_Input->Frame();
 	return m_Graphics->Frame();
@@ -270,6 +284,18 @@ ID3D11Device * SystemClass::GetDevice()
 		return m_Graphics->GetD3D()->GetDevice();
 	}
 	return nullptr;
+}
+
+std::vector<SceneClass*> * SystemClass::GetSceneList()
+{
+	return &sceneList;
+}
+
+SceneClass * SystemClass::GetMainScene()
+{
+	if (mainScene == NULL)
+		mainScene = sceneList[0];
+	return mainScene;
 }
 
 

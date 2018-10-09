@@ -10,7 +10,7 @@ private:
 	Material* material;
 public:
 	MeshRenderer();
-	virtual ~MeshRenderer();
+	~MeshRenderer();
 
 	Mesh* GetMesh();
 	void ReleaseMesh();

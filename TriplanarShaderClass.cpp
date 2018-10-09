@@ -24,7 +24,7 @@ bool TriplanarShaderClass::InitializeShader(ID3D11Device * device, HWND hwnd, co
 
 	// 버텍스 쉐이더 코드를 컴파일한다.
 	ID3D10Blob* vertexShaderBuffer = nullptr;
-	result = D3DCompileFromFile(vsFilename, NULL, NULL, "vs", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS,
+	result = D3DCompileFromFile(vsFilename, NULL, NULL, "main", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS,
 		0, &vertexShaderBuffer, &errorMessage);
 	if (FAILED(result))
 	{

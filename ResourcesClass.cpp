@@ -193,7 +193,7 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	result->SetShader(FindShader("TriplanarShader"), hwnd);
 	result->GetParams()->SetTexture("Texture1", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture1Normal", FindTexture("cliffNormal"));
-	result->GetParams()->SetTexture("Texture2", FindTexture("rock"));
+	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
 	result->GetParams()->SetTexture("Texture2Normal", FindTexture("rockNormal"));
 	result->GetParams()->SetTexture("Texture3", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture3Normal", FindTexture("cliffNormal"));

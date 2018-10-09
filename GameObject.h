@@ -2,6 +2,7 @@
 #include<vector>
 #include"Transform.h"
 class Component;
+class SceneClass;
 class GameObject
 {
 public:
@@ -10,11 +11,12 @@ public:
 	std::string name;
 	CTransform* transform;
 private:
+	SceneClass * scene;
 public:
 	GameObject();
-	GameObject(const std::string& _name);
+	GameObject(const std::string& _name,SceneClass* _scene=NULL);
 	~GameObject();
-	void Initialize();
+	void Initialize(SceneClass* _scene=NULL);
 	bool AddChild(GameObject* _childObject,int _index =-1);
 	virtual void OnStart();
 	GameObject* GetChild(int _index);

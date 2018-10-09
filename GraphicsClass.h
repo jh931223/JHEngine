@@ -15,12 +15,8 @@ const int SHADOWMAP_HEIGHT = 1024;
 class D3DClass;
 class CameraComponent;
 class LightComponent;
-class ProjectionShaderClass;
-class TextureClass;
-class ViewPointClass;
 class MeshRenderer;
 class BitmapClass;
-class TextureShaderClass;
 class Material;
 class GraphicsClass
 {
@@ -37,6 +33,7 @@ public:
 	void PushRenderer(MeshRenderer* renderer);
 	void PushLights(LightComponent* renderer);
 	void PushCameras(CameraComponent* renderer);
+	void SortCameras();
 	void RemoveRenderer(MeshRenderer* renderer);
 	void RemoveLights(LightComponent* renderer);
 	void RemoveCameras(CameraComponent* renderer);
@@ -46,12 +43,10 @@ private:
 	bool RenderScene(CameraComponent* camera,Material* customMaterial);
 	bool RenderCanvas(CameraComponent* camera);
 	bool RenderToTexture(CameraComponent* camera);
-	bool RenderToDepthTexture(CameraComponent* camera);
 
 private:
 	std::mutex renderMutex;
 	D3DClass* m_Direct3D = nullptr;
-	ViewPointClass* m_ViewPoint = nullptr;
 	BitmapClass* m_Bitmap = nullptr;
 	std::vector<MeshRenderer*> meshRenderers;
 	std::vector<LightComponent*> lights;

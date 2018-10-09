@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "GameObject.h"
-#include "HierachyClass.h"
+#include "SceneClass.h"
+#include "SystemClass.h"
 
 GameObject::GameObject()
 {
@@ -9,9 +10,9 @@ GameObject::GameObject()
 	//DebugMessage(name + "持失\n");
 }
 
-GameObject::GameObject(const std::string& _name):name(_name)
+GameObject::GameObject(const std::string& _name,SceneClass* _scene):name(_name)
 {
-	Initialize();
+	Initialize(_scene);
 	//DebugMessage(name + "持失\n");
 }
 
@@ -28,7 +29,7 @@ GameObject::~GameObject()
 	transform = 0;
 }
 
-void GameObject::Initialize()
+void GameObject::Initialize(SceneClass* _scene)
 {
 	transform = new CTransform(this);
 
@@ -38,7 +39,10 @@ void GameObject::Initialize()
 	for (auto i : childObjects)
 		delete i;
 	childObjects.clear();
-	HierarchyClass::GetInstance()->AddGameObject(this);
+	if (_scene == NULL)
+		_scene = SystemClass::GetInstance()->GetMainScene();
+	scene = _scene;
+	scene->AddGameObject(this);
 }
 
 bool GameObject::AddChild(GameObject* _childObject, int _index)
@@ -87,7 +91,7 @@ bool GameObject::AddComponent(Component* _newComponent)
 
 void GameObject::Destroy(GameObject * _gameObject)
 {
-	HierarchyClass::GetInstance()->DestroyGameObject(_gameObject);
+	_gameObject->scene->DestroyGameObject(_gameObject);
 }
 
 void GameObject::Update()

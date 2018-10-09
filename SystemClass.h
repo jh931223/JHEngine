@@ -1,8 +1,9 @@
 #pragma once
 #include"Singleton.h"
+#include<vector>
 class InputClass;
 class GraphicsClass;
-class HierarchyClass;
+class SceneClass;
 class ResourcesClass;
 class D3DClass;
 class SystemClass : public Singleton<SystemClass>
@@ -23,7 +24,8 @@ public:
 	D3DClass* GetD3D();
 	ResourcesClass* GetResources();
 	ID3D11Device* GetDevice();
-
+	std::vector<SceneClass*>* GetSceneList();
+	SceneClass* GetMainScene();
 private:
 	bool Frame();
 	void InitializeWindows(int&, int&);
@@ -35,7 +37,8 @@ private:
 
 	InputClass* m_Input = nullptr;
 	GraphicsClass* m_Graphics = nullptr;
-	HierarchyClass* m_Hierachy = nullptr;
+	std::vector<SceneClass*> sceneList;
+	SceneClass* mainScene;
 	ResourcesClass* m_Resources = nullptr;
 	int screenWidth = 0;
 	int screenHeight = 0;
