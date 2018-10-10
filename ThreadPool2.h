@@ -87,16 +87,16 @@ public:
 	void WaitForAllThread()
 	{
 		Run();
-		finishEvent= CreateEvent(NULL, TRUE, FALSE, NULL);
-		WaitForSingleObject(finishEvent, INFINITE);
-		//while (true)
-		//{
-		//	{
-		//		std::unique_lock<std::mutex> lock(poolMutex);
-		//		if (!workingThreads.size())
-		//			return;
-		//	}
-		//}
+		//finishEvent= CreateEvent(NULL, TRUE, FALSE, NULL);
+		//WaitForSingleObject(finishEvent, INFINITE);
+		while (true)
+		{
+			{
+				std::unique_lock<std::mutex> lock(poolMutex);
+				if (!workingThreads.size())
+					return;
+			}
+		}
 	}
 private:
 	void Excute(int id)
@@ -118,8 +118,10 @@ private:
 			//{
 			//	taskFunc(task);
 			//}
-			std::unique_lock<std::mutex> lock2(poolMutex);
-			ChangeState(id, false);
+			{
+				std::unique_lock<std::mutex> lock2(poolMutex);
+				ChangeState(id, false);
+			}
 		}
 	}
 	void ChangeState(int id,bool isWaiting=true)
