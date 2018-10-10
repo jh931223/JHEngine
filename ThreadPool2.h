@@ -36,8 +36,10 @@ public:
 		for (int i = 0; i < maxThreadNums; i++)
 		{
 			workerMutex.push_back(new std::mutex());
+			workerFlags.push_back(false);
 			threadConditions.push_back(new std::condition_variable());
-			workerThreads.push_back(std::thread([&]() { Excute(i); }));
+			int num = i;
+			workerThreads.push_back(std::thread([&]() { this->Excute(num); }));
 			waitingThreads.push_back(i);
 		}
 	}
@@ -87,8 +89,8 @@ private:
 		{
 			printf("id : %d wait\n", id);
 			{
-				std::unique_lock<std::mutex> lock(*workerMutex[id]);
-				threadConditions[id]->wait(lock);
+				std::unique_lock<std::mutex> lock(poolMutex);
+				threadConditions[id]->wait(lock, [&]()->bool{return this->workerFlags[id]; });
 			}
 			Task task;
 			printf("id : %d start\n", id);
@@ -114,6 +116,7 @@ private:
 					waitingThreads.erase(i);
 					break;
 				}
+			workerFlags[id] = true;
 			workingThreads.push_back(id);
 		}
 		else
@@ -124,6 +127,7 @@ private:
 					workingThreads.erase(i);
 					break;
 				}
+			workerFlags[id] = false;
 			waitingThreads.push_back(id);
 		}
 	}
