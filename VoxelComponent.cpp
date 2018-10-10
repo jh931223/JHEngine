@@ -2137,7 +2137,7 @@ void VoxelComponent::ProcessCommandQueue()
 			UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
 		delete job2;
 		delete job;
-		printf("%d ms", clock() - time);		
+		printf("%d ms\n", clock() - time);		
 		//while (commandQueue_Main.size())
 		//{
 		//	COMMAND_BUFFER _node = commandQueue_Main.front();
