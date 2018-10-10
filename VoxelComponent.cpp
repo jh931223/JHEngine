@@ -78,8 +78,8 @@ void VoxelComponent::Initialize()
 
 	//LoadCube(32, 32, 32);
 	//LoadPerlin(128, 128, 128,128, 0.1f);
-	//LoadPerlin(256, 128, 256, 128, 0.2f);
-	LoadMapData("Terrain1");
+	LoadPerlin(256, 128, 256, 128, 0.2f);
+	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
 	//LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
 
@@ -2105,7 +2105,6 @@ void VoxelComponent::ProcessCommandQueue()
 		{ 
 			return;
 		}
-		clock_t time = clock();
 		PolygonizeTask* job = new PolygonizeTask();
 		job->component = this;
 		PolygonizeTask* job2 = new PolygonizeTask();
@@ -2137,7 +2136,6 @@ void VoxelComponent::ProcessCommandQueue()
 			UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
 		delete job2;
 		delete job;
-		printf("%d ms\n", clock() - time);
 		//while (commandQueue_Main.size())
 		//{
 		//	COMMAND_BUFFER _node = commandQueue_Main.front();

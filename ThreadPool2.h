@@ -73,7 +73,7 @@ public:
 				return;
 		}
 		/*for (int i = 0; i < maxThreadNums;)
-		{
+		{51
 			if (!(workerMutex[i]->try_lock()))
 				continue;
 			workerMutex[i]->unlock();
@@ -85,18 +85,23 @@ private:
 	{
 		while (true)
 		{
-			std::unique_lock<std::mutex> lock(*workerMutex[id]);
-			threadConditions[id]->wait(lock);
+			printf("id : %d wait\n", id);
+			{
+				std::unique_lock<std::mutex> lock(*workerMutex[id]);
+				threadConditions[id]->wait(lock);
+			}
 			Task task;
-			//std::unique_lock<std::mutex> lock(taskMutex);
+			printf("id : %d start\n", id);
 			while (GetWork(task))
 			{
 				taskFunc(task);
 			}
-			
+			printf("id : %d finished\n", id);
+			{
 				std::unique_lock<std::mutex> lock2(poolMutex);
 				ChangeState(id, false);
-			
+			}
+			printf("id : %d change state\n", id);
 		}
 	}
 	void ChangeState(int id,bool isWaiting=true)
@@ -124,11 +129,13 @@ private:
 	}
 	bool GetWork(Task& _task)
 	{
-		std::unique_lock<std::mutex> lock(taskMutex);
-		if (!tasks.size())
-			return false;
-		_task = tasks.front();
-		tasks.pop_front();
+		{
+			std::unique_lock<std::mutex> lock(taskMutex);
+			if (!tasks.size())
+				return false;
+			_task = tasks.front();
+			tasks.pop_front();
+		}
 		return true;
 	}
 	std::vector<std::thread> workerThreads;
