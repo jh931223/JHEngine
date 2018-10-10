@@ -2105,6 +2105,7 @@ void VoxelComponent::ProcessCommandQueue()
 		{ 
 			return;
 		}
+		clock_t time = clock();
 		PolygonizeTask* job = new PolygonizeTask();
 		job->component = this;
 		PolygonizeTask* job2 = new PolygonizeTask();
@@ -2130,12 +2131,13 @@ void VoxelComponent::ProcessCommandQueue()
 		job2->resultBuffers.resize(job2->commandBuffers.size());
 		job2->Schedule(length, batch, handle1);
 		job2->Dispatch();
-		for(auto i:job->resultBuffers)
+		for (auto i : job->resultBuffers)
 			UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
 		for (auto i : job2->resultBuffers)
 			UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
 		delete job2;
 		delete job;
+		printf("%d ms", clock() - time);		
 		//while (commandQueue_Main.size())
 		//{
 		//	COMMAND_BUFFER _node = commandQueue_Main.front();
