@@ -39,7 +39,9 @@ public:
 			workerMutexs.push_back(new std::mutex);
 			workerConditions.push_back(new std::condition_variable);
 			workerTasks.push_back(new std::list<Task>);
-			workerThreads.push_back(std::thread([&]() { Excute(i); }));
+			workerFlags.push_back(false);
+			int num = i;
+			workerThreads.push_back(std::thread([=]() { this->Excute(num); }));
 			waitingThreads.push_back(i);
 		}
 	}
@@ -87,16 +89,16 @@ public:
 	void WaitForAllThread()
 	{
 		Run();
-		//finishEvent= CreateEvent(NULL, TRUE, FALSE, NULL);
-		//WaitForSingleObject(finishEvent, INFINITE);
-		while (true)
+		finishEvent= CreateEvent(NULL, TRUE, FALSE, NULL);
+		WaitForSingleObject(finishEvent, INFINITE);
+		/*while (true)
 		{
 			{
 				std::unique_lock<std::mutex> lock(poolMutex);
 				if (!workingThreads.size())
 					return;
 			}
-		}
+		}*/
 	}
 private:
 	void Excute(int id)
@@ -104,8 +106,8 @@ private:
 		while (true)
 		{
 			{
-				std::unique_lock<std::mutex> lock(*workerMutexs[id]);
-				workerConditions[id]->wait(lock);
+				std::unique_lock<std::mutex> lock(poolMutex);
+				workerConditions[id]->wait(lock, [&]()->bool {return this->workerFlags[id]; });
 			}
 			Task task;
 			while (workerTasks[id]->size())
@@ -134,6 +136,7 @@ private:
 					waitingThreads.erase(i);
 					break;
 				}
+			workerFlags[id] = true;
 			workingThreads.push_back(id);
 		}
 		else
@@ -144,6 +147,7 @@ private:
 					workingThreads.erase(i);
 					break;
 				}
+			workerFlags[id] = false;
 			waitingThreads.push_back(id);
 			if (!workingThreads.size())
 				SetEvent(finishEvent);
@@ -161,6 +165,8 @@ private:
 	std::vector<std::thread> workerThreads;
 	std::list<Task> tasks;
 	std::mutex taskMutex;
+
+	std::vector<bool> workerFlags;
 
 	std::vector<std::mutex*> workerMutexs;
 	std::vector<std::condition_variable*> workerConditions;

@@ -25,7 +25,7 @@
 #include<io.h>
 #include<direct.h>
 #include <stdio.h>
-
+#include<string>
 #include<time.h>
 
 #include"PerlinNoise.h"
@@ -1751,19 +1751,47 @@ void VoxelComponent::LoadMapData(const char* _path)
 	LoadMapInfo();
 	NewChunks(info.width, info.height, info.depth);
 	char totalPath[256];
-	sprintf(totalPath,"%s\\chunks", dataPath);
+	sprintf(totalPath,"%s\\chunks\\*.*", dataPath);
+	struct _finddata_t fd;
 
-	for (int x=0;x<info.width;x+=info.partitionSize)
+	intptr_t handle;
+	std::vector<XMFLOAT3> cList;
+	if ((handle = _findfirst(totalPath, &fd)) == -1L)
+		printf("NO FIle\n");
+	do
 	{
-		for (int y = 0; y < info.height; y += info.partitionSize)
+		char* token = NULL;
+		char str[] = "_";
+		token = strtok(fd.name, str);
+		int p[3] = { 0,0,0 };
+		int i = 0;
+		while (token != NULL)
 		{
-			for (int z = 0; z < info.depth; z += info.partitionSize)
-			{
-				if(ReadVoxelData(XMFLOAT3(x, y, z), dataPath))
-					ReserveUpdate(XMFLOAT3(x, y, z), false, false);
-			}
+			p[i++] = std::atoi(token);
+			token = strtok(NULL, str);
 		}
-	}
+		cList.push_back(XMFLOAT3(p[0] * info.partitionSize, p[1] * info.partitionSize, p[2] * info.partitionSize));
+	} while (_findnext(handle, &fd) == 0);
+
+	_findclose(handle);
+
+	for(auto i:cList)
+		if(ReadVoxelData(i, dataPath))
+			ReserveUpdate(i, false, false);
+
+
+
+	//for (int x=0;x<info.width;x+=info.partitionSize)
+	//{
+	//	for (int y = 0; y < info.height; y += info.partitionSize)
+	//	{
+	//		for (int z = 0; z < info.depth; z += info.partitionSize)
+	//		{
+	//			if(ReadVoxelData(XMFLOAT3(x, y, z), dataPath))
+	//				ReserveUpdate(XMFLOAT3(x, y, z), false, false);
+	//		}
+	//	}
+	//}
 }
 void VoxelComponent::SaveMapData(const char* _path)
 {
