@@ -21,8 +21,9 @@ public:
 		for (int i = 0; i < maxThreadNums; i++)
 		{
 			workerThreads[i].join();
-			delete workerMutex[i];
-			delete threadConditions[i];
+			delete workerMutexs[i];
+			delete workerConditions[i];
+			delete workerTasks[i];
 		}
 	}
 	bool IsInitialized()
@@ -35,12 +36,14 @@ public:
 		maxThreadNums = threadNums;
 		for (int i = 0; i < maxThreadNums; i++)
 		{
-			workerMutex.push_back(new std::mutex());
+
+			workerMutexs.push_back(new std::mutex);
+			workerConditions.push_back(new std::condition_variable);
+			workerTasks.push_back(new std::list<Task>);
 			workerFlags.push_back(false);
-			threadConditions.push_back(new std::condition_variable());
 			int num = i;
-			workerThreads.push_back(std::thread([&]() { this->Excute(num); }));
 			waitingThreads.push_back(i);
+			workerThreads.push_back(std::thread([=]() { this->Excute(num); }));
 		}
 	}
 	void SetTaskFunction(std::function<void(Task)> _taskFunc)
@@ -49,37 +52,53 @@ public:
 	}
 	void AddTask(Task _task)
 	{
-		taskMutex.lock();
+
+//		taskMutex.lock();
 		tasks.push_back(_task);
-		taskMutex.unlock();
-		{
-			std::unique_lock<std::mutex> lock(poolMutex);
-			if (waitingThreads.size())
-			{
-				int id = waitingThreads.front();
-				ChangeState(id);
-				threadConditions[id]->notify_one();
-			}
-		}
+		//taskMutex.unlock();
+		//{
+		//	std::unique_lock<std::mutex> lock(poolMutex);
+		//	if (waitingThreads.size())
+		//	{
+		//		int id = waitingThreads.front();
+		//		ChangeState(id);
+		//		workerConditions[id]->notify_one();
+		//	}
+		//}
 	}
 	void Run()
 	{
-		taskCondition.notify_all();
+		int max = 0;
+		int i = 0;
+		while (tasks.size())
+		{
+			workerTasks[i]->push_back(tasks.front());
+			tasks.pop_front();
+			if (max <= i)
+				max = i;
+			if (i == maxThreadNums)
+				i = 0;
+			else i++;
+		}
+		std::unique_lock<std::mutex> lock(poolMutex);
+		for (int j = 0; j <= max; j++)
+		{
+			ChangeState(j);
+			workerConditions[j]->notify_one();
+		}
 	}
 	void WaitForAllThread()
 	{
-		while (true)
+		Run();
+		finishEvent= CreateEvent(NULL, TRUE, FALSE, NULL);
+		WaitForSingleObject(finishEvent, INFINITE);
+		/*while (true)
 		{
-			std::unique_lock<std::mutex> lock(poolMutex);
-			if (!workingThreads.size())
-				return;
-		}
-		/*for (int i = 0; i < maxThreadNums;)
-		{51
-			if (!(workerMutex[i]->try_lock()))
-				continue;
-			workerMutex[i]->unlock();
-			i++;
+			{
+				std::unique_lock<std::mutex> lock(poolMutex);
+				if (!workingThreads.size())
+					return;
+			}
 		}*/
 	}
 private:
@@ -87,23 +106,22 @@ private:
 	{
 		while (true)
 		{
-			printf("id : %d wait\n", id);
+
 			{
 				std::unique_lock<std::mutex> lock(poolMutex);
-				threadConditions[id]->wait(lock, [&]()->bool{return this->workerFlags[id]; });
+				workerConditions[id]->wait(lock, [&]()->bool {return this->workerFlags[id]; });
 			}
 			Task task;
-			printf("id : %d start\n", id);
-			while (GetWork(task))
+			while (workerTasks[id]->size())
 			{
+				task = workerTasks[id]->front();
+				workerTasks[id]->pop_front();
 				taskFunc(task);
 			}
-			printf("id : %d finished\n", id);
 			{
 				std::unique_lock<std::mutex> lock2(poolMutex);
 				ChangeState(id, false);
 			}
-			printf("id : %d change state\n", id);
 		}
 	}
 	void ChangeState(int id,bool isWaiting=true)
@@ -129,6 +147,8 @@ private:
 				}
 			workerFlags[id] = false;
 			waitingThreads.push_back(id);
+			if (!workingThreads.size())
+				SetEvent(finishEvent);
 		}
 	}
 	bool GetWork(Task& _task)
@@ -143,16 +163,19 @@ private:
 		return true;
 	}
 	std::vector<std::thread> workerThreads;
-	std::vector<HANDLE> workerEvents;
 	std::list<Task> tasks;
 	std::mutex taskMutex;
 
-	std::vector<std::mutex*> workerMutex;
 	std::vector<bool> workerFlags;
-	std::vector<std::condition_variable*> threadConditions;
+
+	std::vector<std::mutex*> workerMutexs;
+	std::vector<std::condition_variable*> workerConditions;
+	std::vector< std::list<Task>* > workerTasks;
 
 	std::list<int> workingThreads;
 	std::list<int> waitingThreads;
+	HANDLE finishEvent;
+
 	std::mutex poolMutex;
 
 	int maxThreadNums;

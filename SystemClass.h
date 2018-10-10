@@ -26,6 +26,7 @@ public:
 	ID3D11Device* GetDevice();
 	std::vector<SceneClass*>* GetSceneList();
 	SceneClass* GetMainScene();
+	HWND& GetHWND();
 private:
 	bool Frame();
 	void InitializeWindows(int&, int&);

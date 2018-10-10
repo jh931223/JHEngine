@@ -25,7 +25,7 @@
 #include<io.h>
 #include<direct.h>
 #include <stdio.h>
-
+#include<string>
 #include<time.h>
 
 #include"PerlinNoise.h"
@@ -574,7 +574,7 @@ void VoxelComponent::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexB
 	for (int i = 0; i < vertCount; i++)
 		vertDatas.push_back(regularVertexData[caseCode][i]);
 	int vertBegin = vertices.size();
-	std::vector<std::vector<XMFLOAT3>> vertNormalBuffer;
+	//std::vector<std::vector<XMFLOAT3>> vertNormalBuffer;
 	for (int i = 0; i < vertCount; i++)
 	{
 		XMFLOAT3 p0, p1;
@@ -590,7 +590,7 @@ void VoxelComponent::PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexB
 		//newVertex.position = pos;
 		newVertex.position = (lerpSelf(p0, p1, mu));
 		newVertex.normal = XMFLOAT3(0, 0, 0);
-		vertNormalBuffer.push_back(std::vector<XMFLOAT3>());
+		//vertNormalBuffer.push_back(std::vector<XMFLOAT3>());
 		vertices.push_back(newVertex);
 	}
 	for (int i = 0; i < triCount; i++)
@@ -1009,6 +1009,11 @@ RESULT_BUFFER VoxelComponent::GeneratePartitionFaces(XMFLOAT3 pos, int lodLevel,
 			}
 		}
 	}
+	for (int i = 0; i < vertices.size();i++)
+	{
+
+	}
+	printf("vertices = %d\n", vertices.size());
 	//printf("Marching Cube Create Buffer ( CPU ): %d ms x:%f y:%f z:%f\n", GetTickCount() - time,pos.x,pos.y,pos.z);
 	COMMAND_BUFFER buffer;
 	buffer.x = pos.x;
@@ -1751,19 +1756,47 @@ void VoxelComponent::LoadMapData(const char* _path)
 	LoadMapInfo();
 	NewChunks(info.width, info.height, info.depth);
 	char totalPath[256];
-	sprintf(totalPath,"%s\\chunks", dataPath);
+	sprintf(totalPath,"%s\\chunks\\*.*", dataPath);
+	struct _finddata_t fd;
 
-	for (int x=0;x<info.width;x+=info.partitionSize)
+	intptr_t handle;
+	std::vector<XMFLOAT3> cList;
+	if ((handle = _findfirst(totalPath, &fd)) == -1L)
+		printf("NO FIle\n");
+	do
 	{
-		for (int y = 0; y < info.height; y += info.partitionSize)
+		char* token = NULL;
+		char str[] = "_";
+		token = strtok(fd.name, str);
+		int p[3] = { 0,0,0 };
+		int i = 0;
+		while (token != NULL)
 		{
-			for (int z = 0; z < info.depth; z += info.partitionSize)
-			{
-				if(ReadVoxelData(XMFLOAT3(x, y, z), dataPath))
-					ReserveUpdate(XMFLOAT3(x, y, z), false, false);
-			}
+			p[i++] = std::atoi(token);
+			token = strtok(NULL, str);
 		}
-	}
+		cList.push_back(XMFLOAT3(p[0] * info.partitionSize, p[1] * info.partitionSize, p[2] * info.partitionSize));
+	} while (_findnext(handle, &fd) == 0);
+
+	_findclose(handle);
+
+	for(auto i:cList)
+		if(ReadVoxelData(i, dataPath))
+			ReserveUpdate(i, false, false);
+
+
+
+	//for (int x=0;x<info.width;x+=info.partitionSize)
+	//{
+	//	for (int y = 0; y < info.height; y += info.partitionSize)
+	//	{
+	//		for (int z = 0; z < info.depth; z += info.partitionSize)
+	//		{
+	//			if(ReadVoxelData(XMFLOAT3(x, y, z), dataPath))
+	//				ReserveUpdate(XMFLOAT3(x, y, z), false, false);
+	//		}
+	//	}
+	//}
 }
 void VoxelComponent::SaveMapData(const char* _path)
 {
@@ -2105,6 +2138,7 @@ void VoxelComponent::ProcessCommandQueue()
 		{ 
 			return;
 		}
+		//clock_t time = clock();
 		PolygonizeTask* job = new PolygonizeTask();
 		job->component = this;
 		PolygonizeTask* job2 = new PolygonizeTask();
@@ -2130,12 +2164,13 @@ void VoxelComponent::ProcessCommandQueue()
 		job2->resultBuffers.resize(job2->commandBuffers.size());
 		job2->Schedule(length, batch, handle1);
 		job2->Dispatch();
-		for(auto i:job->resultBuffers)
+		for (auto i : job->resultBuffers)
 			UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
 		for (auto i : job2->resultBuffers)
 			UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
 		delete job2;
 		delete job;
+		//printf("%d ms\n", clock() - time);		
 		//while (commandQueue_Main.size())
 		//{
 		//	COMMAND_BUFFER _node = commandQueue_Main.front();

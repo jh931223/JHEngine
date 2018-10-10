@@ -220,8 +220,8 @@ void SystemClass::InitializeWindows(int& _screenWidth, int& _screenHeight)
 	else
 	{
 		// 윈도우 모드의 경우 800 * 600 크기를 지정합니다.
-		_screenWidth = 800;
-		_screenHeight = 600;
+		_screenWidth *= 0.8333;
+		_screenHeight *= 0.8333;
 
 		// 윈도우 창을 가로, 세로의 정 가운데 오도록 합니다.
 		posX = (GetSystemMetrics(SM_CXSCREEN) - _screenWidth) / 2;
@@ -296,6 +296,11 @@ SceneClass * SystemClass::GetMainScene()
 	if (mainScene == NULL)
 		mainScene = sceneList[0];
 	return mainScene;
+}
+
+HWND & SystemClass::GetHWND()
+{
+	return m_hwnd;
 }
 
 
