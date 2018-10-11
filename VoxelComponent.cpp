@@ -971,6 +971,7 @@ RESULT_BUFFER VoxelComponent::GeneratePartitionFaces(XMFLOAT3 pos, int lodLevel,
 	pos = GetPartitionStartPos(pos);
 	float  _cellUnit=pow(2,lodLevel);
 	int max = info.partitionSize - _cellUnit;
+	//std::map<std::vector<
 	for (int i=0;i<info.partitionSize && (pos.x + i<info.width);i+= _cellUnit)
 	{
 		for (int j = 0; j < info.partitionSize && (pos.y + j<info.height); j += _cellUnit)
