@@ -78,10 +78,10 @@ void VoxelComponent::Initialize()
 
 	//LoadCube(32, 32, 32);
 	//LoadPerlin(128, 128, 128,128, 0.1f);
-	LoadPerlin(256, 128, 256, 128, 0.2f);
+	//LoadPerlin(256, 128, 256, 128, 0.2f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	//LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
+	LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
 
 	std::function<RESULT_BUFFER(COMMAND_BUFFER)> _task = ([&, this](COMMAND_BUFFER buf)
 	{
@@ -2145,7 +2145,7 @@ void VoxelComponent::ProcessCommandQueue()
 		PolygonizeTask* job2 = new PolygonizeTask();
 		job2->component = this;
 		int handle1 = -1;
-		int length = 8, batch = 1;
+		int length = 16, batch = 1;
 		for (int i = 0; i < length; i++)
 		{
 			if (!commandQueue_Main.size())

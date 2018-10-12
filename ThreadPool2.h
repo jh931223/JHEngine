@@ -76,9 +76,9 @@ public:
 			tasks.pop_front();
 			if (max <= i)
 				max = i;
+			i++;
 			if (i == maxThreadNums)
 				i = 0;
-			else i++;
 		}
 		std::unique_lock<std::mutex> lock(poolMutex);
 		for (int j = 0; j <= max; j++)
