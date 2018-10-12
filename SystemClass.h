@@ -1,6 +1,7 @@
 #pragma once
 #include"Singleton.h"
 #include<vector>
+#include<time.h>
 class InputClass;
 class GraphicsClass;
 class SceneClass;
@@ -27,7 +28,10 @@ public:
 	std::vector<SceneClass*>* GetSceneList();
 	SceneClass* GetMainScene();
 	HWND& GetHWND();
+	int DeltaTime() { return deltaTime; }
 private:
+	clock_t deltaTimeCheck = 0;
+	int deltaTime = 0;
 	bool Frame();
 	void InitializeWindows(int&, int&);
 	void ShutdownWindows();

@@ -134,12 +134,18 @@ void SystemClass::Run()
 
 bool SystemClass::Frame()
 {
-	for(auto i:sceneList)
+	clock_t newT = clock();
+	deltaTime = newT - deltaTimeCheck;
+	deltaTimeCheck = newT;
+	for (auto i : sceneList)
 		i->Update();
 	// 그래픽 객체의 Frame을 처리합니다
 	m_Input->Frame();
-	return m_Graphics->Frame();
+	m_Graphics->Frame();
+	printf("Frame : %f fps\n", 1000.0f / deltaTime);
+	return true;
 }
+
 
 
 LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
