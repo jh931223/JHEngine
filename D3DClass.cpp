@@ -322,7 +322,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// 2D 렌더링을위한 직교 투영 행렬을 만듭니다
 	m_orthoMatrix = XMMatrixOrthographicLH((float)screenWidth, (float)screenHeight, screenNear, screenDepth);
 
-	m_deferredContexts.resize(maxDeferredContextNum);
+	//m_deferredContexts.resize(maxDeferredContextNum);
 
 	return true;
 }
@@ -384,19 +384,7 @@ void D3DClass::Shutdown()
 		m_swapChain = 0;
 	}
 
-	for (int i = 0; i<maxDeferredContextNum; i++)
-	{
-		if (m_deferredContexts[i].context)
-		{
-			m_deferredContexts[i].context->Release();
-			m_deferredContexts[i].context = 0;
-		}
-		if (m_deferredContexts[i].commandList)
-		{
-			m_deferredContexts[i].commandList->Release();
-			m_deferredContexts[i].commandList = 0;
-		}
-	}
+	ReleaseDeferredContex();
 }
 
 
@@ -439,51 +427,50 @@ ID3D11DeviceContext* D3DClass::GetImmDeviceContext()
 {
 	return m_immDeviceContext;
 }
-
-DEFERRED_CONTEXT_BUFFER * D3DClass::CreateDeferredContext()
+ID3D11DeviceContext * D3DClass::GetDeferredContext(int index)
+{
+	if (deferredContexts.size() <= index)
+		return NULL;
+	return deferredContexts[index];
+}
+ID3D11CommandList * D3DClass::GetCommandList(int index)
+{
+	if (commandLists.size() <= index)
+		return NULL;
+	return commandLists[index];
+}
+int D3DClass::GetDeferredContextsSize()
+{
+	return deferredContexts.size();
+}
+void D3DClass::CreateDeferredContext(int num)
 {
 	ID3D11DeviceContext* DDC=NULL;
+	maxDeferredContextNum = num;
 	for (int i = 0; i < maxDeferredContextNum; i++)
 	{
-		if (!m_deferredContexts[i].context)
-		{
-			m_device->CreateDeferredContext(i, &DDC);
-			m_deferredContexts[i].context=DDC;
-			return &m_deferredContexts[i];
-		}
+		m_device->CreateDeferredContext(i, &DDC);
+		deferredContexts.push_back(DDC);
 	}
-	return NULL;
+	commandLists.resize(num);
 }
 
-bool D3DClass::ReleaseDeferredContex(DEFERRED_CONTEXT_BUFFER* _context)
+bool D3DClass::ReleaseDeferredContex()
 {
-	for (int i=0;i<maxDeferredContextNum;i++)
+	for (int i = 0; i<maxDeferredContextNum; i++)
 	{
-		if (&m_deferredContexts[i] == _context)
+		if (deferredContexts[i])
 		{
-			m_deferredContexts[i].context->Release();
-			m_deferredContexts[i].context = 0;
-			if (m_deferredContexts[i].commandList)
-			{
-				m_deferredContexts[i].commandList->Release();
-				m_deferredContexts[i].commandList = 0;
-			}
-			return true;
+			deferredContexts[i]->Release();
+			delete deferredContexts[i];
+		}
+		if (commandLists[i])
+		{
+			commandLists[i]->Release();
 		}
 	}
-	return false;
-}
-
-bool D3DClass::ExcuteCommandLists()
-{
-	if (m_deferredContexts.size() == 0)
-	{
-		return false;
-	}
-	for (auto i:m_deferredContexts)
-	{
-		i.ExcuteCommandList(m_immDeviceContext);
-	}
+	deferredContexts.clear();
+	commandLists.clear();
 	return true;
 }
 
@@ -524,28 +511,6 @@ void D3DClass::ResetViewport()
 {
 	// 뷰포트를 재설정합니다.
 	m_immDeviceContext->RSSetViewports(1, &m_viewport);
-}
-
-void DEFERRED_CONTEXT_BUFFER::FinishCommandList()
-{
-	if (context)
-	{
-		if (commandList)
-		{
-			commandList->Release();
-		}
-		context->FinishCommandList(FALSE, &commandList);
-	}
-}
-
-void DEFERRED_CONTEXT_BUFFER::ExcuteCommandList(ID3D11DeviceContext * immContext)
-{
-	if (commandList)
-	{
-		immContext->ExecuteCommandList(commandList, FALSE);
-		commandList->Release();
-		commandList = 0;
-	}
 }
 
 void D3DClass::ChangeFillMode(bool isSolid)

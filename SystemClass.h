@@ -47,6 +47,7 @@ private:
 	ResourcesClass* m_Resources = nullptr;
 	int screenWidth = 0;
 	int screenHeight = 0;
+	bool printFrame = false;
 };
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

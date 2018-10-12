@@ -137,12 +137,13 @@ bool SystemClass::Frame()
 	clock_t newT = clock();
 	deltaTime = newT - deltaTimeCheck;
 	deltaTimeCheck = newT;
-	for (auto i : sceneList)
+	for(auto i:sceneList)
 		i->Update();
 	// 그래픽 객체의 Frame을 처리합니다
 	m_Input->Frame();
 	m_Graphics->Frame();
-	printf("Frame : %f fps\n", 1000.0f / deltaTime);
+	if(printFrame)
+		printf("Frame : %f fps\n",1000.0f / deltaTime);
 	return true;
 }
 

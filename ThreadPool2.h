@@ -21,7 +21,6 @@ public:
 		for (int i = 0; i < maxThreadNums; i++)
 		{
 			workerThreads[i].join();
-			delete workerMutexs[i];
 			delete workerConditions[i];
 			delete workerTasks[i];
 		}
@@ -37,7 +36,6 @@ public:
 		for (int i = 0; i < maxThreadNums; i++)
 		{
 
-			workerMutexs.push_back(new std::mutex);
 			workerConditions.push_back(new std::condition_variable);
 			workerTasks.push_back(new std::list<Task>);
 			workerFlags.push_back(false);
@@ -50,12 +48,14 @@ public:
 	{
 		taskFunc = _taskFunc;
 	}
+	void SetFinishCallBack(std::function<void(int)> _finishCallback)
+	{
+		finishCallBack = _finishCallback;
+	}
 	void AddTask(Task _task)
 	{
 
-//		taskMutex.lock();
 		tasks.push_back(_task);
-		//taskMutex.unlock();
 		//{
 		//	std::unique_lock<std::mutex> lock(poolMutex);
 		//	if (waitingThreads.size())
@@ -76,9 +76,9 @@ public:
 			tasks.pop_front();
 			if (max <= i)
 				max = i;
+			i++;
 			if (i == maxThreadNums)
 				i = 0;
-			else i++;
 		}
 		std::unique_lock<std::mutex> lock(poolMutex);
 		for (int j = 0; j <= max; j++)
@@ -90,34 +90,36 @@ public:
 	void WaitForAllThread()
 	{
 		Run();
-		finishEvent= CreateEvent(NULL, TRUE, FALSE, NULL);
-		WaitForSingleObject(finishEvent, INFINITE);
-		/*while (true)
+		//finishEvent= CreateEvent(NULL, TRUE, FALSE, NULL);
+		//WaitForSingleObject(finishEvent, INFINITE);
+		while (true)
 		{
 			{
 				std::unique_lock<std::mutex> lock(poolMutex);
 				if (!workingThreads.size())
 					return;
 			}
-		}*/
+		}
 	}
 private:
 	void Excute(int id)
 	{
 		while (true)
 		{
-
 			{
 				std::unique_lock<std::mutex> lock(poolMutex);
 				workerConditions[id]->wait(lock, [&]()->bool {return this->workerFlags[id]; });
 			}
 			Task task;
+			bool isHaveTask = (workerTasks[id]->size() > 0);
 			while (workerTasks[id]->size())
 			{
 				task = workerTasks[id]->front();
 				workerTasks[id]->pop_front();
 				taskFunc(task);
 			}
+			if(isHaveTask)
+				finishCallBack(id);
 			{
 				std::unique_lock<std::mutex> lock2(poolMutex);
 				ChangeState(id, false);
@@ -135,6 +137,7 @@ private:
 					break;
 				}
 			workerFlags[id] = true;
+			//workingCount++;
 			workingThreads.push_back(id);
 		}
 		else
@@ -146,29 +149,19 @@ private:
 					break;
 				}
 			workerFlags[id] = false;
+			//workingCount--;
+			//if (workingCount == 0)
+			//	SetEvent(finishEvent);
 			waitingThreads.push_back(id);
 			if (!workingThreads.size())
 				SetEvent(finishEvent);
 		}
 	}
-	bool GetWork(Task& _task)
-	{
-		{
-			std::unique_lock<std::mutex> lock(taskMutex);
-			if (!tasks.size())
-				return false;
-			_task = tasks.front();
-			tasks.pop_front();
-		}
-		return true;
-	}
 	std::vector<std::thread> workerThreads;
 	std::list<Task> tasks;
-	std::mutex taskMutex;
 
 	std::vector<bool> workerFlags;
 
-	std::vector<std::mutex*> workerMutexs;
 	std::vector<std::condition_variable*> workerConditions;
 	std::vector< std::list<Task>* > workerTasks;
 
@@ -178,9 +171,12 @@ private:
 
 	std::mutex poolMutex;
 
+	int workingCount;
+
 	int maxThreadNums;
 
 	bool isInit = false;
 
 	std::function<void(Task)> taskFunc;
+	std::function<void(int)> finishCallBack;
 };

@@ -35,5 +35,8 @@ public:
 
 	ID3D11Buffer* psLightBuffer;
 	ID3D11Buffer* vsLightBuffer;
+
+	std::map<ID3D11DeviceContext*,ID3D11Buffer*> psLightBufferPerDC;
+	std::map<ID3D11DeviceContext*, ID3D11Buffer*> vsLightBufferPerDC;
 };
 

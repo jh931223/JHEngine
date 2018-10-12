@@ -66,9 +66,9 @@ void VoxelComponent::Initialize()
 
 
 	SetLODLevel(0, 32);
-	SetLODLevel(1, 128);
-	SetLODLevel(2, 256);
-	SetLODLevel(3, 512);
+	SetLODLevel(1, 64);
+	SetLODLevel(2, 128);
+	SetLODLevel(3, 256);
 
 	//lastBasePosition = XMFLOAT3(0, 30, 0);
 	lastBasePosition = XMFLOAT3(3000,3000,3000);
@@ -81,7 +81,7 @@ void VoxelComponent::Initialize()
 	LoadPerlin(256, 128, 256, 128, 0.2f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	//LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
+	LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
 
 	std::function<RESULT_BUFFER(COMMAND_BUFFER)> _task = ([&, this](COMMAND_BUFFER buf)
 	{
@@ -1182,35 +1182,27 @@ bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength)
 					if (SetVoxel(nPos.x, nPos.y, nPos.z, data, false))
 					{
 
-						ReserveUpdate(nPos, true);
+						ReserveUpdate(nPos, Reserve_Deform);
 						XMFLOAT3 pPos = GetPartitionStartPos(nPos);
 						if(pPos.x == nPos.x)
-							ReserveUpdate(nPos + XMFLOAT3(-1, 0, 0),true);
+							ReserveUpdate(nPos + XMFLOAT3(-1, 0, 0), Reserve_Deform);
 						if (pPos.y == nPos.y)
-							ReserveUpdate(nPos + XMFLOAT3(0, -1, 0), true);
+							ReserveUpdate(nPos + XMFLOAT3(0, -1, 0), Reserve_Deform);
 						if (pPos.x == nPos.x&&pPos.y == nPos.y)
-							ReserveUpdate(nPos + XMFLOAT3(-1, -1, 0), true);
+							ReserveUpdate(nPos + XMFLOAT3(-1, -1, 0), Reserve_Deform);
 						if (pPos.x == nPos.x&&pPos.y == nPos.y&&pPos.z==nPos.z)
-							ReserveUpdate(nPos + XMFLOAT3(-1, -1, -1), true);
+							ReserveUpdate(nPos + XMFLOAT3(-1, -1, -1), Reserve_Deform);
 						if (pPos.y == nPos.y&&pPos.z == nPos.z)
-							ReserveUpdate(nPos + XMFLOAT3(0, -1, -1), true);
+							ReserveUpdate(nPos + XMFLOAT3(0, -1, -1), Reserve_Deform);
 						if (pPos.x == nPos.x&&pPos.z == nPos.z)
-							ReserveUpdate(nPos + XMFLOAT3(-1, 0, -1), true);
+							ReserveUpdate(nPos + XMFLOAT3(-1, 0, -1), Reserve_Deform);
 						if (pPos.z == nPos.z)
-							ReserveUpdate(nPos + XMFLOAT3(0, 0, -1), true);
+							ReserveUpdate(nPos + XMFLOAT3(0, 0, -1), Reserve_Deform);
 					}
 				//}
 			}
 		}
 	}
-	//ReserveUpdate(partitionPos, true);
-	//ReserveUpdate(partitionPos + XMFLOAT3(-1, 0, 0), true);
-	//ReserveUpdate(partitionPos + XMFLOAT3(-1, -1, 0), true);
-	//ReserveUpdate(partitionPos + XMFLOAT3(-1, -1, -1), true);
-	//ReserveUpdate(partitionPos + XMFLOAT3(0, -1, 0), true);
-	//ReserveUpdate(partitionPos + XMFLOAT3(0, -1, -1), true);
-	//ReserveUpdate(partitionPos + XMFLOAT3(-1, 0, -1), true);
-	//ReserveUpdate(partitionPos + XMFLOAT3(0, 0, -1), true);
 	return true;
 }
 
@@ -1387,7 +1379,7 @@ void VoxelComponent::RefreshLODNodes()
 	*/
 	for (auto i : lodGropups)
 	{
-		ReserveUpdate(GetPositionFromIndex(i.first), false, true);
+		ReserveUpdate(GetPositionFromIndex(i.first), Reserve_LOD, true);
 	}
 	lodGropups.clear();
 	std::unordered_map<int, LODGroupData> newLODGroups;
@@ -1416,7 +1408,7 @@ void VoxelComponent::RefreshLODNodes()
 						}
 					}
 					newLODGroups[GetIndexFromPosition(targetPos)] = data;
-					ReserveUpdate(targetPos, data.transitionBasis, data.level, false, true);
+					ReserveUpdate(targetPos, data.transitionBasis, data.level, Reserve_LOD, true);
 				}
 			}
 	newLODGroups.swap(lodGropups);
@@ -1474,12 +1466,12 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 	}
 	for (auto i : newLODGroups)
 	{
-		ReserveUpdate(GetPositionFromIndex(i.first),i.second.transitionBasis,i.second.level, false, false);
+		ReserveUpdate(GetPositionFromIndex(i.first),i.second.transitionBasis,i.second.level, Reserve_LOD, false);
 		lodGropups[i.first] = i.second;
 	}
 	for (auto i : oldLODGroups)
 	{
-		ReserveUpdate(GetPositionFromIndex(i.first), false, false);
+		ReserveUpdate(GetPositionFromIndex(i.first), Reserve_LOD, false);
 	}
 	oldLODGroups.clear();
 
@@ -1676,7 +1668,7 @@ void VoxelComponent::UpdateMeshAsync(int lodLevel)
 		{
 			for (int k = 0; k < info.depth; k += info.partitionSize)
 			{
-				ReserveUpdate(XMFLOAT3(i,j,k), false,false);
+				ReserveUpdate(XMFLOAT3(i,j,k), Reserve_Load,false);
 			}
 		}
 	}
@@ -1727,7 +1719,7 @@ void VoxelComponent::LoadHeightMapFromRaw(int _width, int _height,int _depth, in
 				v.isoValue = convertY - y;
 				SetVoxel(x, y, z, v, true);
 				if ((x%info.partitionSize == 0) && (y%info.partitionSize == 0) && (z%info.partitionSize == 0))
-					ReserveUpdate(XMFLOAT3(x, y, z), false, false);
+					ReserveUpdate(XMFLOAT3(x, y, z), Reserve_Load, false);
 			}
 		}
 	}
@@ -1783,7 +1775,7 @@ void VoxelComponent::LoadMapData(const char* _path)
 
 	for(auto i:cList)
 		if(ReadVoxelData(i, dataPath))
-			ReserveUpdate(i, false, false);
+			ReserveUpdate(i, Reserve_Load, false);
 
 
 
@@ -1938,7 +1930,7 @@ void VoxelComponent::LoadCube(int _width, int _height, int _depth)
 				v.isoValue = info.height-y-1;
 				SetVoxel(x, y, z, v);
 				if(x%info.partitionSize==0&&y%info.partitionSize==0&&z%info.partitionSize==0)
-					ReserveUpdate(XMFLOAT3(x, y, z), false, false);
+					ReserveUpdate(XMFLOAT3(x, y, z), Reserve_Load, false);
 			}
 		}
 	}
@@ -1971,7 +1963,7 @@ void VoxelComponent::LoadPerlin(int _width,int _height, int _depth, int _maxHeig
 				vox.isoValue = noise - y;
 				SetVoxel(x, y, z, vox,true);
 				if ((x%info.partitionSize == 0) && (y%info.partitionSize == 0) && (z%info.partitionSize == 0))
-					ReserveUpdate(XMFLOAT3(x, y, z), false,false);
+					ReserveUpdate(XMFLOAT3(x, y, z), Reserve_Load,false);
 			}
 		}
 	}
@@ -2110,67 +2102,51 @@ void VoxelComponent::ProcessCommandQueue()
 {
 	if (!useAsyncBuild)
 	{
-		if (commandQueue_Main.size())
+		for (int t = 0; t < 3; t++)
 		{
-			//ULONG tick = GetTickCount64();
-			for (auto i : commandQueue_Main)
+			if (commandQueue[t].size())
 			{
-				RESULT_BUFFER result = UpdatePartialMesh(XMFLOAT3(i.x, i.y, i.z), i.lodLevel, i.transitionCellBasis);
-				UpdateMeshRenderer(result.newMesh, result.pos, result.lodLevel);
+				//ULONG tick = GetTickCount64();
+				for (auto i : commandQueue[t])
+				{
+					RESULT_BUFFER result = UpdatePartialMesh(XMFLOAT3(i.x, i.y, i.z), i.lodLevel, i.transitionCellBasis);
+					UpdateMeshRenderer(result.newMesh, result.pos, result.lodLevel);
+				}
+				commandQueue[t].clear();
+				//printf("updateQueue_Main Generated %dms\n", GetTickCount64() - tick);
 			}
-			commandQueue_Main.clear();
-			//printf("updateQueue_Main Generated %dms\n", GetTickCount64() - tick);
-		}
-		if (commandQueue_Deform.size())
-		{
-			//ULONG tick = GetTickCount64();
-			for (auto i : commandQueue_Deform)
-			{
-				RESULT_BUFFER result = UpdatePartialMesh(XMFLOAT3(i.x, i.y, i.z), i.lodLevel, i.transitionCellBasis);
-				UpdateMeshRenderer(result.newMesh, result.pos, result.lodLevel);
-			}
-			commandQueue_Deform.clear();
-			//printf("updateQueue_Deform Generated %dms\n", GetTickCount64() - tick);
 		}
 	}
 	else
 	{
-		if(!commandQueue_Main.size()&& !commandQueue_Deform.size())
+		if(!commandQueue[0].size()&& !commandQueue[1].size()&&!commandQueue[2].size())
 		{ 
 			return;
 		}
 		//clock_t time = clock();
-		PolygonizeTask* job = new PolygonizeTask();
-		job->component = this;
-		PolygonizeTask* job2 = new PolygonizeTask();
-		job2->component = this;
-		int handle1 = -1;
-		int length = 8, batch = 1;
-		for (int i = 0; i < length; i++)
+		int length = 16, batch = 1;
+		int handle = -1;
+		PolygonizeTask job[3];
+		
+		for (int t = 0; t < 3; t++)
 		{
-			if (!commandQueue_Main.size())
-				break;
-			job->commandBuffers.push_back(commandQueue_Main.front());
-			commandQueue_Main.pop_front();
+			job[t].component = this;
+			for (int i = 0; i < length; i++)
+			{
+				if (!commandQueue[t].size())
+					break;
+				job[t].commandBuffers.push_back(commandQueue[t].front());
+				commandQueue[t].pop_front();
+			}
+			job[t].resultBuffers.resize(job[t].commandBuffers.size());
+			handle = job[t].Schedule(length, batch, handle);
 		}
-		job->resultBuffers.resize(job->commandBuffers.size());
-		handle1 = job->Schedule(length, batch);
-		for (int i = 0; i < length; i++)
+		job[2].Dispatch();
+		for (int t = 0; t < 3; t++)
 		{
-			if (!commandQueue_Deform.size())
-				break;
-			job2->commandBuffers.push_back(commandQueue_Deform.front());
-			commandQueue_Deform.pop_front();
+			for (auto i : job[t].resultBuffers)
+				UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
 		}
-		job2->resultBuffers.resize(job2->commandBuffers.size());
-		job2->Schedule(length, batch, handle1);
-		job2->Dispatch();
-		for (auto i : job->resultBuffers)
-			UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
-		for (auto i : job2->resultBuffers)
-			UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
-		delete job2;
-		delete job;
 		//printf("%d ms\n", clock() - time);		
 		//while (commandQueue_Main.size())
 		//{
@@ -2228,7 +2204,7 @@ short VoxelComponent::GetTransitionBasis(int lodLevel, XMFLOAT3 basePos, XMFLOAT
 			transitionCellBasis |= (1 << i);
 	return transitionCellBasis;
 }
-short VoxelComponent::ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, bool isDeforming, bool isEnableOverWrite)
+short VoxelComponent::ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, ReserveType _reserveType, bool isEnableOverWrite)
 {
 	if (pos.x >= info.width || pos.y >= info.height || pos.z >= info.depth)
 		return -1;
@@ -2243,52 +2219,24 @@ short VoxelComponent::ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel,
 	input.transitionCellBasis = _basis;
 	if (isEnableOverWrite)
 	{
-		if (isDeforming)
+		auto iter = std::find(commandQueue[_reserveType].begin(), commandQueue[_reserveType].end(), input);
+		if (iter != commandQueue[_reserveType].end())
 		{
-			auto iter=std::find(commandQueue_Deform.begin(), commandQueue_Deform.end(), input);
-			if (iter != commandQueue_Deform.end())
-			{
-				iter->lodLevel = input.lodLevel;
-				iter->transitionCellBasis = input.transitionCellBasis;
-				return input.lodLevel;
-			}
-			/*for (auto i : updateQueue_Deform)
-				if (i == input)
-				{
-					i = input;
-					return input.lodLevel;
-				}*/
-		}
-		else
-		{
-			auto iter = std::find(commandQueue_Main.begin(), commandQueue_Main.end(), input);
-			if (iter != commandQueue_Main.end())
-			{
-				iter->lodLevel = input.lodLevel;
-				iter->transitionCellBasis = input.transitionCellBasis;
-				return input.lodLevel;
-			}
-			//for (auto i : updateQueue_Main)
-			//	if (i == input)
-			//	{
-			//		i = input;
-			//		return input.lodLevel;
-			//	}
+			iter->lodLevel = input.lodLevel;
+			iter->transitionCellBasis = input.transitionCellBasis;
+			return input.lodLevel;
 		}
 	}
-	if (!isDeforming)
-		commandQueue_Main.push_back(input);
-	else
-		commandQueue_Deform.push_back(input);
+	commandQueue[_reserveType].push_back(input);
 	return input.lodLevel;
 }
 
-short VoxelComponent::ReserveUpdate(XMFLOAT3 pos, bool isDeforming,bool isEnableOverWrite)
+short VoxelComponent::ReserveUpdate(XMFLOAT3 pos, ReserveType _reserveType,bool isEnableOverWrite)
 {
 	XMFLOAT3 basePos = GetLastBasePosition();
 	float lodLevel = GetLODLevel(basePos, pos);
 	short transitionCellBasis = GetTransitionBasis(lodLevel, basePos, pos);
-	return ReserveUpdate(pos, transitionCellBasis, lodLevel, isDeforming, isEnableOverWrite);
+	return ReserveUpdate(pos, transitionCellBasis, lodLevel, _reserveType, isEnableOverWrite);
 }
 
 int VoxelComponent::ReadTXT(const char * filename)

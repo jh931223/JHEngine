@@ -64,7 +64,10 @@ public:
 		float isoValue = -1;
 	};
 //#pragma pack(pop) 
-
+	enum ReserveType
+	{
+		Reserve_Deform,Reserve_Load,Reserve_LOD
+	};
 	
 
 	VoxelComponent();
@@ -156,8 +159,8 @@ private:
 	void BuildVertexBufferFrustumCulling(int targetDepth);
 
 	void UpdateMeshAsync(int lodLevel);
-	short ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, bool isDeforming=false , bool isEnableOverWrite=true);
-	short ReserveUpdate(XMFLOAT3 pos, bool isDeforming = false, bool isEnableOverWrite = true);
+	short ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, ReserveType reserveType= ReserveType::Reserve_Load , bool isEnableOverWrite=true);
+	short ReserveUpdate(XMFLOAT3 pos, ReserveType reserveType = ReserveType::Reserve_Load, bool isEnableOverWrite = true);
 
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
 	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height, int&, int&);
@@ -181,7 +184,7 @@ private:
 
 private:
 
-	static const int maxLODLevel = 0;
+	static const int maxLODLevel = 2;
 
 	
 	//#pragma pack(push, 1)
@@ -239,9 +242,11 @@ private:
 	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool_Main;
 	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool_Deform;
 
+	std::list<COMMAND_BUFFER> commandQueue[3];
 
 	std::list<COMMAND_BUFFER> commandQueue_Main;
 	std::list<COMMAND_BUFFER> commandQueue_Deform;
+	std::list<COMMAND_BUFFER> commandQueue_LOD;
 
 	std::vector<RESULT_BUFFER> meshBuildResult;
 	GameObject* camera;

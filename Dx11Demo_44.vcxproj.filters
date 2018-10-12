@@ -91,15 +91,6 @@
     <ClInclude Include="RenderTextureClass.h">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClInclude>
-    <ClInclude Include="DepthShaderClass.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadowShaderClass.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureShaderClass.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="InputComponent.h">
       <Filter>Scripts</Filter>
     </ClInclude>
@@ -112,9 +103,6 @@
     <ClInclude Include="ComputeShader.h">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClInclude>
-    <ClInclude Include="MarchingCubeShaderClass.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
     <ClInclude Include="StructuredBuffer.h">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClInclude>
@@ -123,9 +111,6 @@
     </ClInclude>
     <ClInclude Include="ShaderParameterCollections.h">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
-    </ClInclude>
-    <ClInclude Include="MarchingCubeCompute.h">
-      <Filter>Shaders</Filter>
     </ClInclude>
     <ClInclude Include="VoxelTable.h">
       <Filter>Scripts</Filter>
@@ -186,15 +171,6 @@
     <ClCompile Include="InputComponent.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
-    <ClCompile Include="TextureShaderClass.cpp">
-      <Filter>Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="ShadowShaderClass.cpp">
-      <Filter>Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="DepthShaderClass.cpp">
-      <Filter>Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="ResourcesClass.cpp" />
     <ClCompile Include="TextureClass.cpp">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
@@ -247,9 +223,6 @@
     <ClCompile Include="ComputeShader.cpp">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClCompile>
-    <ClCompile Include="MarchingCubeShaderClass.cpp">
-      <Filter>Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="StructuredBuffer.cpp">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClCompile>
@@ -258,9 +231,6 @@
     </ClCompile>
     <ClCompile Include="ShaderParameterCollections.cpp">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
-    </ClCompile>
-    <ClCompile Include="MarchingCubeCompute.cpp">
-      <Filter>Shaders</Filter>
     </ClCompile>
     <ClCompile Include="SceneClass.cpp">
       <Filter>JHEngine\Engine</Filter>
