@@ -39,11 +39,11 @@ public:
 					return;
 		};
 		threadPool.SetTaskFunction(task);
-		auto fCallback = [&,this](int threadID)
-		{
-			this->OnFinish(threadID);
-		};
-		threadPool.SetFinishCallBack(fCallback);
+		//auto fCallback = [&,this](int threadID)
+		//{
+		//	this->OnFinish(threadID);
+		//};
+		//threadPool.SetFinishCallBack(fCallback);
 		for (int i = 0; i < length; i += batch)
 		{
 			threadPool.AddTask(i);

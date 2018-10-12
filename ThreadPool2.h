@@ -111,15 +111,15 @@ private:
 				workerConditions[id]->wait(lock, [&]()->bool {return this->workerFlags[id]; });
 			}
 			Task task;
-			bool isHaveTask = (workerTasks[id]->size() > 0);
+			//bool isHaveTask = (workerTasks[id]->size() > 0);
 			while (workerTasks[id]->size())
 			{
 				task = workerTasks[id]->front();
 				workerTasks[id]->pop_front();
 				taskFunc(task);
 			}
-			if(isHaveTask)
-				finishCallBack(id);
+			//if(isHaveTask)
+			//	finishCallBack(id);
 			{
 				std::unique_lock<std::mutex> lock2(poolMutex);
 				ChangeState(id, false);
