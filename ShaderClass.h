@@ -4,6 +4,7 @@
 #include"StructuredBuffer.h"
 #include"TextureClass.h"
 #include"ShaderParameterCollections.h"
+#include"CameraComponent.h"
 class TextureClass;
 class RenderTextureClass;
 class ID3D11ShaderResourceView;
@@ -85,6 +86,11 @@ protected:
 			m_sampleState->Release();
 			m_sampleState = 0;
 		}
+		if (m_matrixBuffer)
+		{
+			m_matrixBuffer->Release();
+			m_matrixBuffer = 0;
+		}
 		ShutdownShaderCustomBuffer();
 	};
 	virtual bool DrawCall(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix,
@@ -102,12 +108,31 @@ protected:
 		}
 		return true;
 	}
+	template <typename T> bool CreateConstantBuffer(ID3D11Device* device,ID3D11Buffer** _buffer)
+	{
+		D3D11_BUFFER_DESC matrixBufferDesc;
+		matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+		matrixBufferDesc.ByteWidth = sizeof(T);
+		matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		matrixBufferDesc.MiscFlags = 0;
+		matrixBufferDesc.StructureByteStride = 0;
 
+		// 상수 버퍼 포인터를 만들어 이 클래스에서 정점 셰이더 상수 버퍼에 접근할 수 있게 합니다.
+		HRESULT result = device->CreateBuffer(&matrixBufferDesc, NULL, _buffer);
+		if (FAILED(result))
+		{
+			return false;
+		}
+		return true;
+	}
 protected:
 	ID3D11VertexShader * m_vertexShader = nullptr;
 	ID3D11PixelShader* m_pixelShader = nullptr;
 	ID3D11GeometryShader* m_geometryShader = nullptr;
 	ID3D11InputLayout* m_layout = nullptr;
+	
+	std::map<ID3D11DeviceContext*, ID3D11Buffer*> m_matrixBufferPerDC;// = nullptr;
 	ID3D11Buffer* m_matrixBuffer = nullptr;
 	ID3D11SamplerState* m_sampleState = nullptr;
 };

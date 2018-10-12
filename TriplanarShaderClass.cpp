@@ -101,45 +101,51 @@ bool TriplanarShaderClass::InitializeShader(ID3D11Device * device, HWND hwnd, co
 	pixelShaderBuffer = 0;
 
 	// 정점 셰이더에 있는 행렬 상수 버퍼의 구조체를 작성합니다.
-	D3D11_BUFFER_DESC matrixBufferDesc;
-	matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	matrixBufferDesc.ByteWidth = sizeof(MatrixBufferType);
-	matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	matrixBufferDesc.MiscFlags = 0;
-	matrixBufferDesc.StructureByteStride = 0;
+	if (!CreateConstantBuffer<MatrixBufferType>(device,&m_matrixBuffer))
+		return false;
+	if (!CreateConstantBuffer<VSLightBufferType>(device, &vsLightBuffer))
+		return false;
+	if (!CreateConstantBuffer<PSLightBufferType>(device, &psLightBuffer))
+		return false;
+	//D3D11_BUFFER_DESC matrixBufferDesc;
+	//matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	//matrixBufferDesc.ByteWidth = sizeof(MatrixBufferType);
+	//matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	//matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	//matrixBufferDesc.MiscFlags = 0;
+	//matrixBufferDesc.StructureByteStride = 0;
 
-	// 상수 버퍼 포인터를 만들어 이 클래스에서 정점 셰이더 상수 버퍼에 접근할 수 있게 합니다.
-	result = device->CreateBuffer(&matrixBufferDesc, NULL, &m_matrixBuffer);
-	if (FAILED(result))
-	{
-		return false;
-	}
+	//// 상수 버퍼 포인터를 만들어 이 클래스에서 정점 셰이더 상수 버퍼에 접근할 수 있게 합니다.
+	//result = device->CreateBuffer(&matrixBufferDesc, NULL, &m_matrixBuffer);
+	//if (FAILED(result))
+	//{
+	//	return false;
+	//}
 
-	D3D11_BUFFER_DESC lightBufferDesc;
-	lightBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	lightBufferDesc.ByteWidth = sizeof(PSLightBufferType);
-	lightBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	lightBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	lightBufferDesc.MiscFlags = 0;
-	lightBufferDesc.StructureByteStride = 0;
-	result = device->CreateBuffer(&lightBufferDesc, NULL, &psLightBuffer);
-	if (FAILED(result))
-	{
-		return false;
-	}
-	D3D11_BUFFER_DESC lightBufferDesc2;
-	lightBufferDesc2.Usage = D3D11_USAGE_DYNAMIC;
-	lightBufferDesc2.ByteWidth = sizeof(VSLightBufferType);
-	lightBufferDesc2.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	lightBufferDesc2.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	lightBufferDesc2.MiscFlags = 0;
-	lightBufferDesc2.StructureByteStride = 0;
-	result = device->CreateBuffer(&lightBufferDesc, NULL, &vsLightBuffer);
-	if (FAILED(result))
-	{
-		return false;
-	}
+	//D3D11_BUFFER_DESC lightBufferDesc;
+	//lightBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	//lightBufferDesc.ByteWidth = sizeof(PSLightBufferType);
+	//lightBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	//lightBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	//lightBufferDesc.MiscFlags = 0;
+	//lightBufferDesc.StructureByteStride = 0;
+	//result = device->CreateBuffer(&lightBufferDesc, NULL, &psLightBuffer);
+	//if (FAILED(result))
+	//{
+	//	return false;
+	//}
+	//D3D11_BUFFER_DESC lightBufferDesc2;
+	//lightBufferDesc2.Usage = D3D11_USAGE_DYNAMIC;
+	//lightBufferDesc2.ByteWidth = sizeof(VSLightBufferType);
+	//lightBufferDesc2.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	//lightBufferDesc2.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	//lightBufferDesc2.MiscFlags = 0;
+	//lightBufferDesc2.StructureByteStride = 0;
+	//result = device->CreateBuffer(&lightBufferDesc, NULL, &vsLightBuffer);
+	//if (FAILED(result))
+	//{
+	//	return false;
+	//}
 	
 
 	// 텍스처 샘플러 상태 구조체를 생성 및 설정합니다.
@@ -184,7 +190,9 @@ void TriplanarShaderClass::ShutdownShaderCustomBuffer()
 bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM & params)
 {
 	// 상수 버퍼의 내용을 쓸 수 있도록 잠급니다.
+	//printf("dc : %x\n", deviceContext);
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
+
 	if (FAILED(deviceContext->Map(m_matrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 	{
 		return false;

@@ -9,11 +9,7 @@
 
 // Ω¶¿Ã¥ıµÈ
 
-#include "TextureShaderClass.h"
-#include "ShadowShaderClass.h"
 #include "RenderTextureClass.h"
-#include "DepthShaderClass.h"
-#include "MarchingCubeShaderClass.h"
 #include "TriplanarShaderClass.h"
 
 #include <map>
@@ -103,21 +99,6 @@ RenderTextureClass * ResourcesClass::FindRenderTexture(std::string _name)
 void ResourcesClass::InitializeShader(HWND hwnd)
 {
 	ShaderClass* result;
-	result = new TextureShaderClass;
-	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
-	shaderMap["TextureShader"] = result;
-
-	result = new ShadowShaderClass;
-	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
-	shaderMap["ShadowShader"] = result;
-
-	result = new DepthShaderClass;
-	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
-	shaderMap["DepthShader"] = result;
-
-	result = new MarchingCubeShaderClass;
-	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
-	shaderMap["MarchingCubeShader"] = result;
 
 	result = new TriplanarShaderClass;
 	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
@@ -158,39 +139,9 @@ void ResourcesClass::InitializeTexture(HWND hwnd)
 void ResourcesClass::InitializeMaterial(HWND hwnd)
 {
 	Material* result = new Material;
-	result->SetShader(new ShadowShaderClass,hwnd);
-	result->GetParams()->SetTexture("Texture", FindTexture("stone"));
-	result->GetParams()->SetRenderTexture("DepthMapTexture", FindRenderTexture("rt_Shadow"));
-	result->GetParams()->SetFloat4("ambientColor", XMFLOAT4(1.0, 1.0, 1, 1));
-	result->GetParams()->SetFloat4("diffuseColor", XMFLOAT4(4, 1.0, 0, 1));
-	materialMap["cube"] = result;
 
 	result = new Material;
-	result->SetShader(new ShadowShaderClass, hwnd);
-	result->GetParams()->SetTexture("Texture", FindTexture("floor"));
-	result->GetParams()->SetRenderTexture("DepthMapTexture", FindRenderTexture("rt_Shadow"));
-	result->GetParams()->SetFloat4("ambientColor", XMFLOAT4(1,1.0,1,1));
-	result->GetParams()->SetFloat4("diffuseColor", XMFLOAT4(1, 1.0, 0, 1));
-	materialMap["floor"] = result;
-
-	result = new Material;
-	result->SetShader(new DepthShaderClass, hwnd);
-	materialMap["depthMap"] = result;
-
-	result = new Material;
-	result->SetShader(FindShader("MarchingCubeShader"), hwnd);
-	result->GetParams()->SetTexture("Texture1", FindTexture("soil"));
-	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
-	result->GetParams()->SetTexture("Texture3", FindTexture("soil"));
-	materialMap["m_marchingCube"] = result;	
-	
-	result = new Material;
-	result->SetShader(new TextureShaderClass, hwnd);
-	result->GetParams()->SetTexture("Texture", FindTexture("tile"));
-	materialMap["m_texture"] = result;
-
-	result = new Material;
-	result->SetShader(FindShader("TriplanarShader"), hwnd);
+	result->SetShader(new TriplanarShaderClass/*FindShader("TriplanarShader")*/, hwnd);
 	result->GetParams()->SetTexture("Texture1", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture1Normal", FindTexture("cliffNormal"));
 	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));

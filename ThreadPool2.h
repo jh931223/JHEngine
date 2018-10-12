@@ -21,7 +21,6 @@ public:
 		for (int i = 0; i < maxThreadNums; i++)
 		{
 			workerThreads[i].join();
-			delete workerMutexs[i];
 			delete workerConditions[i];
 			delete workerTasks[i];
 		}
@@ -37,7 +36,6 @@ public:
 		for (int i = 0; i < maxThreadNums; i++)
 		{
 
-			workerMutexs.push_back(new std::mutex);
 			workerConditions.push_back(new std::condition_variable);
 			workerTasks.push_back(new std::list<Task>);
 			workerFlags.push_back(false);
@@ -50,12 +48,14 @@ public:
 	{
 		taskFunc = _taskFunc;
 	}
+	void SetFinishCallBack(std::function<void(int)> _finishCallback)
+	{
+		finishCallBack = _finishCallback;
+	}
 	void AddTask(Task _task)
 	{
 
-//		taskMutex.lock();
 		tasks.push_back(_task);
-		//taskMutex.unlock();
 		//{
 		//	std::unique_lock<std::mutex> lock(poolMutex);
 		//	if (waitingThreads.size())
@@ -106,18 +106,20 @@ private:
 	{
 		while (true)
 		{
-
 			{
 				std::unique_lock<std::mutex> lock(poolMutex);
 				workerConditions[id]->wait(lock, [&]()->bool {return this->workerFlags[id]; });
 			}
 			Task task;
+			bool isHaveTask = (workerTasks[id]->size() > 0);
 			while (workerTasks[id]->size())
 			{
 				task = workerTasks[id]->front();
 				workerTasks[id]->pop_front();
 				taskFunc(task);
 			}
+			if(isHaveTask)
+				finishCallBack(id);
 			{
 				std::unique_lock<std::mutex> lock2(poolMutex);
 				ChangeState(id, false);
@@ -128,47 +130,38 @@ private:
 	{
 		if (isWaiting)
 		{
-			for (auto i = waitingThreads.begin(); i != waitingThreads.end();i++)
+			/*for (auto i = waitingThreads.begin(); i != waitingThreads.end();i++)
 				if (*i == id)
 				{
 					waitingThreads.erase(i);
 					break;
-				}
+				}*/
 			workerFlags[id] = true;
-			workingThreads.push_back(id);
+			workingCount++;
+			//workingThreads.push_back(id);
 		}
 		else
 		{
-			for (auto i = workingThreads.begin(); i != workingThreads.end();i++)
+			/*for (auto i = workingThreads.begin(); i != workingThreads.end();i++)
 				if (*i == id)
 				{
 					workingThreads.erase(i);
 					break;
-				}
+				}*/
 			workerFlags[id] = false;
-			waitingThreads.push_back(id);
-			if (!workingThreads.size())
+			workingCount--;
+			if (workingCount == 0)
 				SetEvent(finishEvent);
+			/*waitingThreads.push_back(id);
+			if (!workingThreads.size())
+				SetEvent(finishEvent);*/
 		}
-	}
-	bool GetWork(Task& _task)
-	{
-		{
-			std::unique_lock<std::mutex> lock(taskMutex);
-			if (!tasks.size())
-				return false;
-			_task = tasks.front();
-			tasks.pop_front();
-		}
-		return true;
 	}
 	std::vector<std::thread> workerThreads;
 	std::list<Task> tasks;
-	std::mutex taskMutex;
 
 	std::vector<bool> workerFlags;
 
-	std::vector<std::mutex*> workerMutexs;
 	std::vector<std::condition_variable*> workerConditions;
 	std::vector< std::list<Task>* > workerTasks;
 
@@ -178,9 +171,12 @@ private:
 
 	std::mutex poolMutex;
 
+	int workingCount;
+
 	int maxThreadNums;
 
 	bool isInit = false;
 
 	std::function<void(Task)> taskFunc;
+	std::function<void(int)> finishCallBack;
 };

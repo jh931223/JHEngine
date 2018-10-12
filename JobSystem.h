@@ -39,6 +39,11 @@ public:
 					return;
 		};
 		threadPool.SetTaskFunction(task);
+		auto fCallback = [&,this](int threadID)
+		{
+			this->OnFinish(threadID);
+		};
+		threadPool.SetFinishCallBack(fCallback);
 		for (int i = 0; i < length; i += batch)
 		{
 			threadPool.AddTask(i);
@@ -61,8 +66,14 @@ public:
 		myHandle = scheduleList.size() - 1;
 		return myHandle;
 	}
+	int GetThreadID(int index)
+	{
+		return
+			(index / batch) % threadNums;
+	}
 protected:
 	virtual bool Excute(int index)=0;
+	virtual void OnFinish(int threadID) {}
 private:
 	int pathHandle = -1;
 	int myHandle = -1;

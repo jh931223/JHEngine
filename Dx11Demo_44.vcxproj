@@ -112,7 +112,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -169,11 +169,9 @@
     <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="D3DClass.h" />
     <ClInclude Include="DDSTextureLoader.h" />
-    <ClInclude Include="DepthShaderClass.h" />
     <ClInclude Include="DxDefine.h" />
     <ClInclude Include="JobSystem.h" />
     <ClInclude Include="MainScene.h" />
-    <ClInclude Include="MarchingCubeCompute.h" />
     <ClInclude Include="RWLock.h" />
     <ClInclude Include="ShaderParameterCollections.h" />
     <ClInclude Include="ThreadPool.h" />
@@ -187,7 +185,6 @@
     <ClInclude Include="JHVector.h" />
     <ClInclude Include="LightComponent.h" />
     <ClInclude Include="SceneClass.h" />
-    <ClInclude Include="MarchingCubeShaderClass.h" />
     <ClInclude Include="MaterialClass.h" />
     <ClInclude Include="MeshRenderer.h" />
     <ClInclude Include="MeshClass.h" />
@@ -197,14 +194,12 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="ResourcesClass.h" />
     <ClInclude Include="ShaderClass.h" />
-    <ClInclude Include="ShadowShaderClass.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="StructuredBuffer.h" />
     <ClInclude Include="SystemClass.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TextureClass.h" />
-    <ClInclude Include="TextureShaderClass.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="VoxelTable.h" />
     <ClInclude Include="WICTextureLoader.h" />
@@ -217,10 +212,8 @@
     <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
-    <ClCompile Include="DepthShaderClass.cpp" />
     <ClCompile Include="JobSystem.cpp" />
     <ClCompile Include="MainScene.cpp" />
-    <ClCompile Include="MarchingCubeCompute.cpp" />
     <ClCompile Include="RWLock.cpp" />
     <ClCompile Include="ShaderParameterCollections.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
@@ -234,7 +227,6 @@
     <ClCompile Include="InputClass.cpp" />
     <ClCompile Include="LightComponent.cpp" />
     <ClCompile Include="SceneClass.cpp" />
-    <ClCompile Include="MarchingCubeShaderClass.cpp" />
     <ClCompile Include="MaterialClass.cpp" />
     <ClCompile Include="MeshRenderer.cpp" />
     <ClCompile Include="MeshClass.cpp" />
@@ -243,7 +235,6 @@
     <ClCompile Include="RenderTextureClass.cpp" />
     <ClCompile Include="ResourcesClass.cpp" />
     <ClCompile Include="ShaderClass.cpp" />
-    <ClCompile Include="ShadowShaderClass.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -253,7 +244,6 @@
     <ClCompile Include="StructuredBuffer.cpp" />
     <ClCompile Include="SystemClass.cpp" />
     <ClCompile Include="TextureClass.cpp" />
-    <ClCompile Include="TextureShaderClass.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="WICTextureLoader.cpp" />
   </ItemGroup>

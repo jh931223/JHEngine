@@ -1,6 +1,7 @@
 #pragma once
 #include<vector>
 #include<mutex>
+#include"JobSystem.h"
 /////////////
 // GLOBALS //
 /////////////
@@ -51,4 +52,14 @@ private:
 	std::vector<MeshRenderer*> meshRenderers;
 	std::vector<LightComponent*> lights;
 	std::vector<CameraComponent*> cameras;
+	bool useMultiThreadedRendering=false;
+};
+struct RenderTask : ITaskParallel
+{
+	std::vector<MeshRenderer*>* renderers;
+	XMMATRIX worldMatrix, viewMatrix, projectionMatrix;
+	D3DClass* m_Direct3D = NULL;
+	// ITaskParallel을(를) 통해 상속됨
+	virtual bool Excute(int index);
+	virtual void OnFinish(int id)override;
 };

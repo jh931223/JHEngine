@@ -115,7 +115,6 @@ void GraphicsClass::Shutdown()
 bool GraphicsClass::Frame()
 {
 	// 그래픽 장면을 렌더링합니다.
-	m_Direct3D->ExcuteCommandLists();
 	return Render();
 }
 
@@ -182,20 +181,42 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 	m_Direct3D->GetWorldMatrix(worldMatrix);
 	m_Camera->GetViewMatrix(viewMatrix);
 	m_Camera->GetProjectionMatrix(projectionMatrix);
-	std::vector<MeshRenderer*> renderers = meshRenderers;
-	// 메쉬를 그립니다.
-	for (const auto i : renderers)
+	if (useMultiThreadedRendering)
 	{
-		if (!i)
+		if (!m_Direct3D->GetDeferredContextsSize())
+			m_Direct3D->CreateDeferredContext(ITaskParallel::threadNums);
+		RenderTask job;
+		job.m_Direct3D = m_Direct3D;
+		job.renderers = &meshRenderers;
+		job.worldMatrix = worldMatrix;
+		job.projectionMatrix = projectionMatrix;
+		job.viewMatrix = viewMatrix;
+		job.Schedule(meshRenderers.size(), 1);
+		job.Dispatch();
+		for (int i = 0; i < m_Direct3D->GetDeferredContextsSize(); i++)
 		{
-			continue;
+			if (m_Direct3D->GetCommandList(i))
+				m_Direct3D->GetImmDeviceContext()->ExecuteCommandList(m_Direct3D->GetCommandList(i), FALSE);
 		}
-		m_Direct3D->GetWorldMatrix(worldMatrix);
-		GameObject* gameObject = i->gameObject;
-		if (gameObject)
+		//m_Direct3D->ReleaseDeferredContex();
+		
+	}
+	else
+	{
+		//std::vector<MeshRenderer*> renderers = meshRenderers;
+		for (const auto i : meshRenderers)
 		{
-			//  yaw, pitch, roll 값을 통해 회전 행렬을 만듭니다.
-			i->Render(m_Direct3D->GetImmDeviceContext(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix);
+			if (!i)
+			{
+				continue;
+			}
+			m_Direct3D->GetWorldMatrix(worldMatrix);
+			GameObject* gameObject = i->gameObject;
+			if (gameObject)
+			{
+				//  yaw, pitch, roll 값을 통해 회전 행렬을 만듭니다.
+				i->Render(m_Direct3D->GetImmDeviceContext(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix);
+			}
 		}
 	}
 	return true;
@@ -281,4 +302,31 @@ bool GraphicsClass::Render()
 	m_Direct3D->EndScene();
 
 	return true;
+}
+
+bool RenderTask::Excute(int index)
+{
+	if (renderers->size() <= index)
+		return false;
+	int threadID = GetThreadID(index);
+	auto i = (*renderers)[index];
+	auto c = m_Direct3D->GetDeferredContext(threadID);
+	if (!i)
+		return false;
+	m_Direct3D->GetWorldMatrix(worldMatrix);
+	GameObject* gameObject = i->gameObject;
+	if (gameObject)
+	{
+		//  yaw, pitch, roll 값을 통해 회전 행렬을 만듭니다.
+		i->Render(c, gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix);
+	}
+	return true;
+}
+
+void RenderTask::OnFinish(int threadID)
+{
+	auto c = m_Direct3D->GetDeferredContext(threadID);
+	//printf("finish thread id : %d DC : %x\n", threadID,m_Direct3D->deferredContexts[threadID]);
+	ID3D11CommandList*& cList = m_Direct3D->commandLists[threadID];// (m_Direct3D->GetCommandList(threadID));
+	c->FinishCommandList(FALSE,  &cList);
 }

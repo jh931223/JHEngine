@@ -1014,7 +1014,7 @@ RESULT_BUFFER VoxelComponent::GeneratePartitionFaces(XMFLOAT3 pos, int lodLevel,
 	{
 
 	}
-	printf("vertices = %d\n", vertices.size());
+	//printf("vertices = %d\n", vertices.size());
 	//printf("Marching Cube Create Buffer ( CPU ): %d ms x:%f y:%f z:%f\n", GetTickCount() - time,pos.x,pos.y,pos.z);
 	COMMAND_BUFFER buffer;
 	buffer.x = pos.x;
