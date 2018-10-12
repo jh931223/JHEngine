@@ -33,7 +33,7 @@ bool Material::Render(ID3D11DeviceContext * _deviceContext, const int _index, XM
 void Material::SetShader(ShaderClass * _shader,HWND hwnd)
 {
 	shader = _shader;
-	shader->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
+	//shader->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
 }
 
 ShaderParameterCollections * Material::GetParams()

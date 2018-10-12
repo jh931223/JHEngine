@@ -141,7 +141,7 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	Material* result = new Material;
 
 	result = new Material;
-	result->SetShader(new TriplanarShaderClass/*FindShader("TriplanarShader")*/, hwnd);
+	result->SetShader(FindShader("TriplanarShader"), hwnd);
 	result->GetParams()->SetTexture("Texture1", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture1Normal", FindTexture("cliffNormal"));
 	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));

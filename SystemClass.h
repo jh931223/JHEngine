@@ -1,6 +1,8 @@
 #pragma once
 #include"Singleton.h"
 #include<vector>
+#include<time.h>
+
 class InputClass;
 class GraphicsClass;
 class SceneClass;
@@ -27,7 +29,10 @@ public:
 	std::vector<SceneClass*>* GetSceneList();
 	SceneClass* GetMainScene();
 	HWND& GetHWND();
+	int DeltaTime() { return deltaTime; }
 private:
+	clock_t deltaTimeCheck = 0;
+	int deltaTime = 0;
 	bool Frame();
 	void InitializeWindows(int&, int&);
 	void ShutdownWindows();
@@ -42,7 +47,7 @@ private:
 	SceneClass* mainScene;
 	ResourcesClass* m_Resources = nullptr;
 	int screenWidth = 0;
-	int screenHeight = 0;
+	int screenHeight = 0; 
 };
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
