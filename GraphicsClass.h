@@ -52,7 +52,7 @@ private:
 	std::vector<MeshRenderer*> meshRenderers;
 	std::vector<LightComponent*> lights;
 	std::vector<CameraComponent*> cameras;
-	bool useMultiThreadedRendering=false;
+	bool useMultiThreadedRendering=true;
 };
 struct RenderTask : ITaskParallel
 {
