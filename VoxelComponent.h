@@ -15,7 +15,7 @@ template<typename T> class OctreeNode;
 struct COMMAND_BUFFER
 {
 	int x, y, z;
-	int lodLevel;
+	int lodLevel=-1;
 	short transitionCellBasis;
 	void SetXYZ(XMFLOAT3 pos, int _partitionSize)
 	{
@@ -54,6 +54,11 @@ struct SaveTask : public ITaskParallel
 protected:
 	bool Excute(int index) override;
 };
+struct LODTask : public ITaskParallel
+{
+	std::vector<VoxelComponent::LODGroupData> commandBuffers;
+};
+
 class VoxelComponent : public Component
 {
 public:
@@ -78,6 +83,12 @@ public:
 		VoxelData* chunk = NULL;
 		MeshRenderer* renderer=NULL;
 		bool isPolygonizable = false;
+	};
+
+	struct LODGroupData
+	{
+		short level = 0;
+		short transitionBasis = 0;
 	};
 //#pragma pack(pop) 
 	enum ReserveType
@@ -166,7 +177,6 @@ private:
 	void UpdateMarchingCubeMesh(int lodLevel = 0);
 	XMFLOAT3 GetPositionFromIndex(int index);
 	unsigned int GetIndexFromPosition(XMFLOAT3 pos);
-	void RefreshLODNodes();
 	void RefreshLODNodes(XMFLOAT3 centerPos);
 	bool FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius);
 	bool FrustumCheckSphere(float xCenter, float yCenter, float zCenter, float radius);
@@ -175,8 +185,8 @@ private:
 	void BuildVertexBufferFrustumCulling(int targetDepth);
 
 	void UpdateMeshAsync(int lodLevel);
-	short ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, ReserveType reserveType= ReserveType::Reserve_Load , bool isEnableOverWrite=true);
-	short ReserveUpdate(XMFLOAT3 pos, ReserveType reserveType = ReserveType::Reserve_Load, bool isEnableOverWrite = true);
+	COMMAND_BUFFER ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, ReserveType reserveType= ReserveType::Reserve_Load , bool isEnableOverWrite=true,bool autoPush=true);
+	COMMAND_BUFFER ReserveUpdate(XMFLOAT3 pos, ReserveType reserveType = ReserveType::Reserve_Load, bool isEnableOverWrite = true, bool autoPush = true);
 
 	void ReadRawEX(unsigned char** &_srcBuf, const char* filename, int _width, int _height);
 	void ReadRawEX16(unsigned short** &_srcBuf, const char* filename, int _width, int _height, int&, int&);
@@ -236,11 +246,6 @@ private:
 
 	OctreeNode<MeshRenderer*>* currentLODNode;
 
-	struct LODGroupData
-	{
-		short level=0;
-		short transitionBasis=0;
-	};
 	std::unordered_map<int, LODGroupData> lodGropups;
 
 

@@ -61,13 +61,13 @@ void VoxelComponent::Initialize()
 
 	//useFrustum = true;
 
-	info.partitionSize = 16;
+	info.partitionSize = 32;
 //	SetLODLevel(0, 100000);
 
 
-	SetLODLevel(0, 32);
-	SetLODLevel(1, 64);
-	SetLODLevel(2, 128);
+	SetLODLevel(0, 64);
+	SetLODLevel(1, 128);
+	SetLODLevel(2, 256);
 	SetLODLevel(3, 256);
 
 	//lastBasePosition = XMFLOAT3(0, 30, 0);
@@ -190,7 +190,6 @@ void VoxelComponent::Update()
 	{
 		isLockedBasePosition = true;
 		lastBasePosition = GetPartitionStartPos(camera->transform->GetWorldPosition());
-		RefreshLODNodes();
 		//if (!useAsyncBuild)
 		//{
 		//	UpdateMesh(0);
@@ -252,39 +251,6 @@ void VoxelComponent::Update()
 		float radius = brushRadius;
 		bool isUpdated = false;
 		EditVoxel(pos, brushRadius, -strength);
-
-		//for (int x = cpos.x - radius; x < cpos.x + radius; x += 1)
-		//{
-		//	for (int y = cpos.y - radius; y < cpos.y + radius; y += 1)
-		//	{
-		//		for (int z = cpos.z - radius; z < cpos.z + radius; z += 1)
-		//		{
-		//			float dis = GetDistance(XMFLOAT3(x + 0.5f, y + 0.5f, z + 0.5f), cpos);
-		//			if (radius >= dis)
-		//			{
-		//				float amount = 1 - dis / radius;
-		//				VoxelData vox = GetVoxel(x, y, z);
-		//				vox.isoValue -= strength * amount;
-		//				if (!useMarchingCube)
-		//				{
-		//					vox.material = 0;
-		//				}
-		//				if (SetVoxel((int)x, (int)y, (int)z, vox))
-		//				{
-		//					ReserveUpdate(XMFLOAT3(x, y, z), true);
-		//					ReserveUpdate(XMFLOAT3(x - 1, y, z), true);
-		//					ReserveUpdate(XMFLOAT3(x, y - 1, z), true);
-		//					ReserveUpdate(XMFLOAT3(x, y, z - 1), true);
-		//					ReserveUpdate(XMFLOAT3(x - 1, y - 1, z), true);
-		//					ReserveUpdate(XMFLOAT3(x - 1, y, z - 1), true);
-		//					ReserveUpdate(XMFLOAT3(x, y - 1, z - 1), true);
-		//					ReserveUpdate(XMFLOAT3(x - 1, y - 1, z - 1), true);
-		//				}
-		//				//isUpdated = true;
-		//			}
-		//		}
-		//	}
-		//}
 	}
 	else if (Input()->GetKey(VK_LBUTTON))
 	{
@@ -1311,112 +1277,6 @@ unsigned int VoxelComponent::GetIndexFromPosition(XMFLOAT3 pos)
 		return -1;
 	return (int)pos.x + (int)pos.y*info.width + (int)pos.z*info.width*info.height;
 }
-void VoxelComponent::RefreshLODNodes()
-{
-	/*
-	XMFLOAT3 basePos = GetPartitionStartPos(lastBasePosition);
-	std::unordered_map<int, LODGroupData> newLODGroupsLoaded;
-	std::unordered_map<int, LODGroupData> newLODGroups;
-	std::unordered_map<int, LODGroupData> oldLODGroups;
-	oldLODGroups.swap(lodGropups);
-	int lodDistance = LODDistance[maxLODLevel - 1];
-	int min = -lodDistance - info.partitionSize;
-	int max = lodDistance;
-
-	for (int i = min; i <= max; i += info.partitionSize)
-	{
-		for (int j = min; j <= max; j += info.partitionSize)
-		{
-			for (int k = min; k <= max; k += info.partitionSize)
-			{
-				XMFLOAT3 targetPos = basePos + XMFLOAT3(i, j, k);
-				if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= info.width || targetPos.y >= info.height || targetPos.z >= info.depth)
-					continue;
-
-				LODGroupData lodGroupData;
-				lodGroupData.level = GetLODLevel(basePos, targetPos);
-
-				lodGroupData.transitionBasis = GetTransitionBasis(lodGroupData.level, basePos, targetPos);
-				int index = (int)targetPos.x + (int)targetPos.y*info.width + (int)targetPos.z*info.width*info.height;
-				auto iter = oldLODGroups.find(index);
-				if (iter == oldLODGroups.end())
-				{
-					//if ((i == min && j == min && k == min)
-					//	|| (i == max && j == min && k == min)
-					//	|| (i == min && j == max && k == min)
-					//	|| (i == min && j == min && k == max)
-					//	|| (i == max && j == max && k == min)
-					//	|| (i == max && j == min && k == max)
-					//	|| (i == min && j == max && k == max)
-					//	|| (i == max && j == max && k == max))
-					//	continue;
-					newLODGroups[index] = lodGroupData;
-				}
-				else
-				{
-					newLODGroups[index] = lodGroupData;
-					oldLODGroups.erase(iter);
-				}
-			}
-		}
-	}
-
-	for (auto i : newLODGroupsLoaded)
-	{
-		lodGropups[i.first] = i.second;
-	}
-	for (auto i : newLODGroups)
-	{
-		ReserveUpdate(GetPositionFromIndex(i.first), i.second.transitionBasis, i.second.level, false, false);
-		lodGropups[i.first] = i.second;
-	}
-
-	for (auto i : oldLODGroups)
-	{
-		if (ReserveUpdate(GetPositionFromIndex(i.first), false, false) == maxLODLevel)
-		{
-			int x = i.second.level;
-			int y = i.second.transitionBasis;
-		}
-	}
-	oldLODGroups.clear();
-	*/
-	for (auto i : lodGropups)
-	{
-		ReserveUpdate(GetPositionFromIndex(i.first), Reserve_LOD, true);
-	}
-	lodGropups.clear();
-	std::unordered_map<int, LODGroupData> newLODGroups;
-	XMFLOAT3 basePos = GetPartitionStartPos(lastBasePosition);
-	int lodDistance = LODDistance[maxLODLevel - 1];
-	int min = -lodDistance - info.partitionSize;
-	int max = lodDistance;
-	for (int i = min; i <= max; i += info.partitionSize)
-		for (int j = min; j <= max; j += info.partitionSize)
-			for (int k = min; k <= max; k += info.partitionSize)
-			{
-				XMFLOAT3 targetPos = XMFLOAT3(i, j, k) + basePos;
-				int level = GetLODLevel(basePos, targetPos);//ReserveUpdate(targetPos, false, false);
-				if (level >= 0)
-				{
-					unsigned int index = GetIndexFromPosition(targetPos);
-					LODGroupData data;
-					data.level = level;
-					data.transitionBasis = GetTransitionBasis(level, basePos, targetPos);
-					auto iter = lodGropups.find(index);
-					if (iter != lodGropups.end())
-					{
-						if (iter->second.level == data.level&&iter->second.transitionBasis == data.transitionBasis)
-						{
-
-						}
-					}
-					newLODGroups[GetIndexFromPosition(targetPos)] = data;
-					ReserveUpdate(targetPos, data.transitionBasis, data.level, Reserve_LOD, true);
-				}
-			}
-	newLODGroups.swap(lodGropups);
-}
 void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 {
 
@@ -2186,40 +2046,61 @@ short VoxelComponent::GetTransitionBasis(int lodLevel, XMFLOAT3 basePos, XMFLOAT
 			transitionCellBasis |= (1 << i);
 	return transitionCellBasis;
 }
-short VoxelComponent::ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, ReserveType _reserveType, bool isEnableOverWrite)
+COMMAND_BUFFER VoxelComponent::ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, ReserveType _reserveType, bool isEnableOverWrite, bool autoPush)
 {
-	if (pos.x >= info.width || pos.y >= info.height || pos.z >= info.depth)
-		return -1;
-	if (pos.x < 0 || pos.y < 0 || pos.z < 0)
-		return -1;
 	COMMAND_BUFFER input;
+	if (pos.x >= info.width || pos.y >= info.height || pos.z >= info.depth)
+		return input;
+	if (pos.x < 0 || pos.y < 0 || pos.z < 0)
+		return input;
 	XMFLOAT3 targetPos = GetPartitionStartPos(pos);
 	input.x = (int)targetPos.x;
 	input.y = (int)targetPos.y;
 	input.z = (int)targetPos.z;
 	input.lodLevel = _lodLevel;
 	input.transitionCellBasis = _basis;
-	if (isEnableOverWrite)
+	if (isEnableOverWrite&&autoPush)
 	{
 		auto iter = std::find(commandQueue[_reserveType].begin(), commandQueue[_reserveType].end(), input);
 		if (iter != commandQueue[_reserveType].end())
 		{
 			iter->lodLevel = input.lodLevel;
 			iter->transitionCellBasis = input.transitionCellBasis;
-			return input.lodLevel;
+			return input;
 		}
 	}
-	commandQueue[_reserveType].push_back(input);
-	return input.lodLevel;
+	auto node = tempChunks->GetNodeAtPosition(targetPos, 0);
+	if (node->GetDepth() != 0&&node->GetValue().renderer==NULL)
+	{
+		int size = info.partitionSize;
+		XMFLOAT3 offset[7] = { XMFLOAT3(size,0,0),XMFLOAT3(0,size,0),XMFLOAT3(0,0,size),XMFLOAT3(size,size,0),XMFLOAT3(size,0,size),XMFLOAT3(0,size,size),XMFLOAT3(size,size,size) };
+		bool reserve = false;
+		for (int i = 0; i < 7; i++)
+		{
+			auto node_extra = tempChunks->GetNodeAtPosition(targetPos + offset[i], 0);
+			if (node_extra->GetValue().IsHaveChunk())
+			{
+				reserve = true;
+				break;
+			}
+		}
+		if (!reserve)
+			return COMMAND_BUFFER();
+	}
+	if(autoPush)
+		commandQueue[_reserveType].push_back(input);
+	return input;
 }
 
-short VoxelComponent::ReserveUpdate(XMFLOAT3 pos, ReserveType _reserveType,bool isEnableOverWrite)
+COMMAND_BUFFER VoxelComponent::ReserveUpdate(XMFLOAT3 pos, ReserveType _reserveType,bool isEnableOverWrite, bool autoPush)
 {
 	XMFLOAT3 basePos = GetLastBasePosition();
 	float lodLevel = GetLODLevel(basePos, pos);
 	short transitionCellBasis = GetTransitionBasis(lodLevel, basePos, pos);
 	return ReserveUpdate(pos, transitionCellBasis, lodLevel, _reserveType, isEnableOverWrite);
 }
+
+
 
 int VoxelComponent::ReadTXT(const char * filename)
 {
