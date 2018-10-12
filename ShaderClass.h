@@ -4,7 +4,7 @@
 #include"StructuredBuffer.h"
 #include"TextureClass.h"
 #include"ShaderParameterCollections.h"
-#include"CameraComponent.h"
+//#include"CameraComponent.h"
 class TextureClass;
 class RenderTextureClass;
 class ID3D11ShaderResourceView;
