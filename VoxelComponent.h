@@ -54,10 +54,7 @@ struct SaveTask : public ITaskParallel
 protected:
 	bool Excute(int index) override;
 };
-struct LODTask : public ITaskParallel
-{
-	std::vector<VoxelComponent::LODGroupData> commandBuffers;
-};
+
 
 class VoxelComponent : public Component
 {
