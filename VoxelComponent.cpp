@@ -1973,7 +1973,9 @@ void VoxelComponent::ProcessCommandQueue()
 		for (int t = 0; t < 3; t++)
 		{
 			job[t].component = this;
-			for (int i = 0; i < length; i++)
+			int _l = length;
+			//int _l = (t == 2) ? 16 : length;
+			for (int i = 0; i < _l; i++)
 			{
 				if (!commandQueue[t].size())
 					break;
@@ -1981,7 +1983,7 @@ void VoxelComponent::ProcessCommandQueue()
 				commandQueue[t].pop_front();
 			}
 			job[t].resultBuffers.resize(job[t].commandBuffers.size());
-			handle = job[t].Schedule(length, batch, handle);
+			handle = job[t].Schedule(_l, batch, handle);
 		}
 		job[2].Dispatch();
 		for (int t = 0; t < 3; t++)
