@@ -63,6 +63,22 @@ public:
 		int material = 0;
 		float isoValue = -1;
 	};
+	struct ChunkData
+	{
+		ChunkData() {}
+		void MakeChunk(int length)
+		{
+			chunk = new VoxelData[length*length*length];
+		}
+		~ChunkData() { if(chunk)delete[] chunk; }
+		bool IsHaveChunk()
+		{
+			return (chunk);
+		}
+		VoxelData* chunk = NULL;
+		MeshRenderer* renderer=NULL;
+		bool isPolygonizable = false;
+	};
 //#pragma pack(pop) 
 	enum ReserveType
 	{
@@ -210,8 +226,9 @@ private:
 
 	char dataPath[256];
 	const char* pathRoot = "MapData";
-	Octree< std::vector<VoxelData> >* tempChunks;
-	Octree<MeshRenderer*>* meshRendererOctree;
+	//Octree< std::vector<VoxelData> >* tempChunks;
+	Octree< ChunkData >* tempChunks;
+	//Octree<MeshRenderer*>* meshRendererOctree;
 
 	
 

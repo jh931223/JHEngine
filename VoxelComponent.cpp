@@ -112,36 +112,38 @@ void VoxelComponent::Initialize()
 }
 void VoxelComponent::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel)
 {
-	OctreeNode<MeshRenderer*>* rendererNode;
-	rendererNode = meshRendererOctree->Subdivide(pos, 0, newMesh!=NULL);
+
+	auto chunk = tempChunks->Subdivide(pos, 0, newMesh!=NULL);
 	if (newMesh)
 	{
-		if (rendererNode->GetValue() == NULL)
+		if (chunk->GetValue().renderer == NULL)
 		{
 			GameObject* gobj = new GameObject("voxel partition");
 			MeshRenderer* newRenderer = new MeshRenderer;
 			newRenderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_triplanar"));
 			gobj->AddComponent(newRenderer);
-			rendererNode->SetValue(newRenderer);
+			if (chunk->GetDepth() != 0)
+				chunk = tempChunks->Insert(pos, ChunkData(), 0);
+			chunk->GetValue().renderer=newRenderer;
 		}
-		else if (rendererNode->GetValue()->GetMesh())
+		else if (chunk->GetValue().renderer->GetMesh())
 		{
-			rendererNode->GetValue()->ReleaseMesh();
+			chunk->GetValue().renderer->ReleaseMesh();
 		}
-		rendererNode->GetValue()->SetMesh(newMesh);
+		chunk->GetValue().renderer->SetMesh(newMesh);
 	}
 	else
 	{
-		if (rendererNode)
+		if (chunk)
 		{
-			if (rendererNode->GetValue())
+			if (chunk->GetValue().renderer)
 			{
-				if (rendererNode->GetValue()->GetMesh())
+				if (chunk->GetValue().renderer->GetMesh())
 				{
-					rendererNode->GetValue()->ReleaseMesh();
+					chunk->GetValue().renderer->ReleaseMesh();
 				}
-				GameObject::Destroy(rendererNode->GetValue()->gameObject);
-				rendererNode->SetValue((NULL));
+				GameObject::Destroy(chunk->GetValue().renderer->gameObject);
+				chunk->GetValue().renderer=NULL;
 			}
 		}
 	}
@@ -317,9 +319,9 @@ void VoxelComponent::ReleaseChunks()
 	if (tempChunks)
 		delete tempChunks;
 	tempChunks = 0;
-	if (meshRendererOctree)
-		delete meshRendererOctree;
-	meshRendererOctree = 0;
+	//if (meshRendererOctree)
+	//	delete meshRendererOctree;
+	//meshRendererOctree = 0;
 }
 void VoxelComponent::CreateCubeFace_Up(float x, float y, float z, float _unit, BYTE type, int& faceCount, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
@@ -1107,13 +1109,13 @@ VoxelComponent::VoxelData VoxelComponent::GetVoxel(int x, int y, int z)
 	int index = GetCellIndex(x, y, z);
 	XMFLOAT3 pos = XMFLOAT3(x, y, z);
 	auto node = tempChunks->GetNodeAtPosition(pos, 0);
-	if (node->GetDepth() == 0&&node->GetValue().size())
+	if (node->GetDepth() == 0&&node->GetValue().IsHaveChunk())
 	{
 		//node=tempChunks->Insert(pos, new std::vector<VoxelData>(info.partitionSize*info.partitionSize*info.partitionSize), 0);
 		x = x - (int)node->GetPosition().x;
 		y = y - (int)node->GetPosition().y;
 		z = z - (int)node->GetPosition().z;
-		v = node->GetValue()[x+y*info.partitionSize+z*info.partitionSize*info.partitionSize];
+		v = node->GetValue().chunk[x+y*info.partitionSize+z*info.partitionSize*info.partitionSize];
 	}
 
 	return v;
@@ -1139,14 +1141,16 @@ bool VoxelComponent::SetVoxel(int x, int y, int z, VoxelData value,bool isInit)
 	int index = GetCellIndex(x, y, z);
 
 	auto node = tempChunks->GetNodeAtPosition(pos, 0);
-	if (node->GetDepth() != 0||!node->GetValue().size())
-		node = tempChunks->Insert(pos, std::vector<VoxelData>(info.partitionSize*info.partitionSize*info.partitionSize), 0);
+	if (node->GetDepth() != 0)
+		node = tempChunks->Insert(pos,ChunkData(), 0);
+	if (!node->GetValue().IsHaveChunk())
+		node->GetValue().MakeChunk(GetPartitionSize());
 	x = x - (int)node->GetPosition().x;
 	y = y - (int)node->GetPosition().y;
 	z = z - (int)node->GetPosition().z;
 	int idx = x + y*info.partitionSize + z*info.partitionSize*info.partitionSize;
-	(node->GetValue())[idx]=value;
-	node->GetValue()[idx] = node->GetValue()[idx];
+	node->GetValue().chunk[idx]=value;
+	node->GetValue().chunk[idx] = node->GetValue().chunk[idx];
 
 	return true;
 }
@@ -1795,7 +1799,7 @@ void VoxelComponent::SaveMapData(const char* _path)
 {
 	InitDataDirectory(_path);
 	SaveMapInfo();
-	std::vector < OctreeNode<std::vector<VoxelData>>*> vec;
+	std::vector < OctreeNode<ChunkData>*> vec;
 	tempChunks->root->GetLeafs(vec);
 	SaveTask task;/////Task
 
@@ -1803,7 +1807,7 @@ void VoxelComponent::SaveMapData(const char* _path)
 	{
 		for (auto i : vec)
 		{
-			if (i->GetValue().size())
+			if (i->GetValue().IsHaveChunk()||i->GetValue().renderer)
 			{
 				task.commandBuffers.push_back(i->GetPosition());/////Task
 				//WriteVoxelData(i->GetPosition());
@@ -1811,23 +1815,6 @@ void VoxelComponent::SaveMapData(const char* _path)
 		}
 	}
 	task.component = this;/////Task
-	task.Schedule(vec.size(), 2);/////Task
-	task.Dispatch();/////Task
-
-	task.commandBuffers.clear();
-
-	std::vector<OctreeNode<MeshRenderer*>*> vec2;
-	meshRendererOctree->root->GetLeafs(vec2);
-	if (vec2.size())
-	{
-		for (auto i : vec2)
-		{
-			if (i->GetValue())
-			{
-				task.commandBuffers.push_back(i->GetPosition());/////Task
-			}
-		}
-	}
 	task.Schedule(vec.size(), 2);/////Task
 	task.Dispatch();/////Task
 }
@@ -1881,10 +1868,10 @@ bool VoxelComponent::ReadVoxelData(XMFLOAT3 pos, const char* _path)
 		return isRendered;
 	int aNums = info.partitionSize * info.partitionSize*info.partitionSize;
 	int elementSize = sizeof(VoxelData);
-	std::vector<VoxelData> temp(aNums);
-	fread(&temp[0], elementSize,aNums, pInput);
+	if(node->GetDepth()!=0)
+		node=tempChunks->Insert(pos, ChunkData(), 0);
+	fread(&(node->GetValue().chunk[0]), elementSize, aNums, pInput);
 	fread(&isRendered, sizeof(bool), 1, pInput);
-	tempChunks->Insert(pos, temp, 0);
 	fclose(pInput);
 	return isRendered;
 }
@@ -1892,12 +1879,9 @@ void VoxelComponent::WriteVoxelData(XMFLOAT3 pos)
 {
 	pos = GetPartitionStartPos(pos);
 	auto node = tempChunks->GetNodeAtPosition(pos, 0);
-	auto node2 = meshRendererOctree->GetNodeAtPosition(pos, 0);
-	if (node->GetDepth() != 0)
+	if (node->GetDepth() != 0&&node->GetValue().renderer==NULL)
 		return;
-	bool isRendered = (node2->GetValue() != NULL);
-	//if (node->GetValue().size()==0)
-	//	return;
+	bool isRendered = (node->GetValue().renderer != NULL);
 	FILE* pInput = NULL;
 	char totalPath[256];
 	float ps = 1.0f / info.partitionSize;
@@ -1910,7 +1894,7 @@ void VoxelComponent::WriteVoxelData(XMFLOAT3 pos)
 		return;
 	int aNums = info.partitionSize * info.partitionSize*info.partitionSize;
 	int elementSize = sizeof(VoxelData);
-	fwrite(&node->GetValue()[0], elementSize, aNums, pInput);
+	fwrite(&(node->GetValue().chunk[0]), elementSize, aNums, pInput);
 	fwrite(&isRendered, sizeof(bool), 1, pInput);
 	fclose(pInput);
 }
@@ -1976,9 +1960,7 @@ void VoxelComponent::NewChunks(int _w, int _h, int _d)
 	info.width = _w;
 	info.height = _h;
 	info.depth = _d;
-	tempChunks = new Octree<std::vector<VoxelData>>(_w,info.partitionSize);
-	meshRendererOctree = new Octree<MeshRenderer*>(_w,info.partitionSize);
-
+	tempChunks = new Octree<ChunkData>(_w,info.partitionSize);
 }
 
 void VoxelComponent::SetOctreeDepth(int _targetDepth)
