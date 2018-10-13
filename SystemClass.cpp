@@ -135,7 +135,7 @@ void SystemClass::Run()
 bool SystemClass::Frame()
 {
 	clock_t newT = clock();
-	deltaTime = newT - deltaTimeCheck;
+	deltaTime = float(newT - deltaTimeCheck)/1000.0f;
 	deltaTimeCheck = newT;
 	for(auto i:sceneList)
 		i->Update();
@@ -143,7 +143,7 @@ bool SystemClass::Frame()
 	m_Input->Frame();
 	m_Graphics->Frame();
 	if(printFrame)
-		printf("Frame : %f fps\n",1000.0f / deltaTime);
+		printf("Frame : %f fps\n",1.0f / deltaTime);
 	return true;
 }
 

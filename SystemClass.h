@@ -28,10 +28,10 @@ public:
 	std::vector<SceneClass*>* GetSceneList();
 	SceneClass* GetMainScene();
 	HWND& GetHWND();
-	int DeltaTime() { return deltaTime; }
+	float DeltaTime() { return deltaTime; }
 private:
 	clock_t deltaTimeCheck = 0;
-	int deltaTime = 0;
+	float deltaTime = 0;
 	bool Frame();
 	void InitializeWindows(int&, int&);
 	void ShutdownWindows();

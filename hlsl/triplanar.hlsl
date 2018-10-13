@@ -88,7 +88,7 @@ float4 ps(v2f input) : SV_TARGET
 	{
 		// Compute the UV coords for each of the 3 planar projections.
 		// tex_scale (default ~ 1.0) determines how big the textures appear.
-		float tex_scale = 0.1f;
+		float tex_scale = 1.0f;
 		float2 coord1 = input.worldPos.yz * tex_scale;
 		float2 coord2 = input.worldPos.zx * tex_scale;
 		float2 coord3 = input.worldPos.xy * tex_scale;
