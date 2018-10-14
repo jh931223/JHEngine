@@ -28,10 +28,7 @@ public:
 	std::vector<SceneClass*>* GetSceneList();
 	SceneClass* GetMainScene();
 	HWND& GetHWND();
-	float DeltaTime() { return deltaTime; }
 private:
-	clock_t deltaTimeCheck = 0;
-	float deltaTime = 0;
 	bool Frame();
 	void InitializeWindows(int&, int&);
 	void ShutdownWindows();
@@ -47,7 +44,7 @@ private:
 	ResourcesClass* m_Resources = nullptr;
 	int screenWidth = 0;
 	int screenHeight = 0;
-	bool printFrame = true;
+	bool printFrame = false;
 };
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

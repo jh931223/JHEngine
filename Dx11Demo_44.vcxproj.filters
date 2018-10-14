@@ -166,6 +166,9 @@
     <ClInclude Include="Singleton.h">
       <Filter>JHEngine\ETC</Filter>
     </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>JHEngine\Engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InputComponent.cpp">
@@ -272,6 +275,9 @@
       <Filter>JHEngine\ETC</Filter>
     </ClCompile>
     <ClCompile Include="JHEngine.cpp">
+      <Filter>JHEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
       <Filter>JHEngine\Engine</Filter>
     </ClCompile>
   </ItemGroup>

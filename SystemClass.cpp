@@ -6,7 +6,7 @@
 #include"resourcesclass.h"
 #include "D3DClass.h"
 #include<time.h>
-
+#include"Timer.h"
 //씬
 #include "MainScene.h"
 //
@@ -134,16 +134,14 @@ void SystemClass::Run()
 
 bool SystemClass::Frame()
 {
-	clock_t newT = clock();
-	deltaTime = float(newT - deltaTimeCheck)/1000.0f;
-	deltaTimeCheck = newT;
+	Timer::TimerUpdate();
 	for(auto i:sceneList)
 		i->Update();
 	// 그래픽 객체의 Frame을 처리합니다
 	m_Input->Frame();
 	m_Graphics->Frame();
 	if(printFrame)
-		printf("Frame : %f fps\n",1.0f / deltaTime);
+		printf("Frame : %f fps\n",1.0f / Timer::DeltaTime());
 	return true;
 }
 

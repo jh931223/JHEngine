@@ -62,13 +62,19 @@ void VoxelComponent::Initialize()
 	//useFrustum = true;
 
 	info.partitionSize = 32;
-	SetLODLevel(0, 100000);
+	//SetLODLevel(0, 100000);
 
 
 	//SetLODLevel(0, 64);
-	SetLODLevel(1, 128);
-	SetLODLevel(2, 256);
-	SetLODLevel(3, 256);
+	//SetLODLevel(1, 128);
+	//SetLODLevel(2, 256);
+	//SetLODLevel(3, 256);
+
+	SetLODLevel(0, 128);
+	SetLODLevel(1, 256);
+	SetLODLevel(2, 384);
+	//SetLODLevel(3, 256);
+
 
 	//lastBasePosition = XMFLOAT3(0, 30, 0);
 	lastBasePosition = XMFLOAT3(3000,3000,3000);
@@ -78,7 +84,7 @@ void VoxelComponent::Initialize()
 
 	//LoadCube(32, 32, 32);
 	//LoadPerlin(128, 128, 128,128, 0.1f);
-	//LoadPerlin(256, 128, 256, 128, 0.2f);
+	//LoadPerlin(2048, 256, 2048, 128, 0.3f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
 	LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
@@ -1280,7 +1286,7 @@ unsigned int VoxelComponent::GetIndexFromPosition(XMFLOAT3 pos)
 void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 {
 
-
+	clock_t t = clock();
 	basePos = GetPartitionStartPos(basePos);
 	std::unordered_map<int, LODGroupData> newLODGroupsLoaded;
 	std::unordered_map<int, LODGroupData> newLODGroups;
@@ -1330,14 +1336,15 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 	}
 	for (auto i : newLODGroups)
 	{
-		ReserveUpdate(GetPositionFromIndex(i.first),i.second.transitionBasis,i.second.level, Reserve_LOD, false);
+		ReserveUpdate(GetPositionFromIndex(i.first),i.second.transitionBasis,i.second.level, Reserve_LOD, true);
 		lodGropups[i.first] = i.second;
 	}
 	for (auto i : oldLODGroups)
 	{
-		ReserveUpdate(GetPositionFromIndex(i.first), Reserve_LOD, false);
+		ReserveUpdate(GetPositionFromIndex(i.first), Reserve_LOD, true);
 	}
 	oldLODGroups.clear();
+	printf("LOD Update %dms\n", clock() - t);
 
 }
 
@@ -1965,27 +1972,33 @@ void VoxelComponent::ProcessCommandQueue()
 		{ 
 			return;
 		}
-		//clock_t time = clock();
+		clock_t time = clock();
 		int length = 16, batch = 1;
 		int handle = -1;
+		int lastJob = -1;
 		PolygonizeTask job[3];
 		
 		for (int t = 0; t < 3; t++)
 		{
-			job[t].component = this;
-			int _l = length;
-			//int _l = (t == 2) ? 16 : length;
-			for (int i = 0; i < _l; i++)
+			if (commandQueue[t].size())
 			{
-				if (!commandQueue[t].size())
-					break;
-				job[t].commandBuffers.push_back(commandQueue[t].front());
-				commandQueue[t].pop_front();
+				job[t].component = this;
+				int _l = (t == Reserve_LOD) ? 32 : length;
+				for (int i = 0; i < _l; i++)
+				{
+					if (!commandQueue[t].size())
+						break;
+					job[t].commandBuffers.push_back(commandQueue[t].front());
+					commandQueue[t].pop_front();
+				}
+				job[t].resultBuffers.resize(job[t].commandBuffers.size());
+				handle = job[t].Schedule(_l, batch, handle);
+				lastJob = t;
 			}
-			job[t].resultBuffers.resize(job[t].commandBuffers.size());
-			handle = job[t].Schedule(_l, batch, handle);
 		}
-		job[2].Dispatch();
+		if (lastJob == -1)
+			return;
+		job[lastJob].Dispatch();
 		for (int t = 0; t < 3; t++)
 		{
 			for (auto i : job[t].resultBuffers)
@@ -2004,6 +2017,7 @@ void VoxelComponent::ProcessCommandQueue()
 		//	commandQueue_Deform.pop_front();
 		//	threadPool_Deform.AddTask(_node);
 		//}
+		printf("%d ms\n", clock() - time);
 	}
 }
 

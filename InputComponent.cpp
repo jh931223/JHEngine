@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "InputComponent.h"
 #include "InputClass.h"
-#include "SystemClass.h"
+#include "Timer.h"
 #include "CameraComponent.h"
 InputComponent::InputComponent()
 {
@@ -33,7 +33,7 @@ void InputComponent::Update()
 		axis -= forward();
 	}
 	axis=Normalize3(axis);
-	float deltaTime=SystemClass::GetInstance()->DeltaTime();
+	float deltaTime=Timer::DeltaTime();
 
 	XMFLOAT3 euler = transform()->GetWorldRotation();
 	XMFLOAT3 a = Input()->GetMouseAxis();
