@@ -70,9 +70,12 @@ void VoxelComponent::Initialize()
 	//SetLODLevel(2, 256);
 	//SetLODLevel(3, 256);
 
-	SetLODLevel(0, 128);
-	SetLODLevel(1, 256);
-	SetLODLevel(2, 384);
+	int start = 64;
+
+	SetLODLevel(0, start);
+	SetLODLevel(1, start + info.partitionSize);
+	SetLODLevel(2, start + info.partitionSize + info.partitionSize);
+	SetLODLevel(3, start + info.partitionSize + info.partitionSize+ info.partitionSize);
 	//SetLODLevel(3, 256);
 
 
@@ -137,6 +140,7 @@ void VoxelComponent::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel
 			chunk->GetValue().renderer->ReleaseMesh();
 		}
 		chunk->GetValue().renderer->SetMesh(newMesh);
+		chunk->GetValue().isPolygonizable = true;
 	}
 	else
 	{
@@ -150,6 +154,7 @@ void VoxelComponent::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel
 				}
 				GameObject::Destroy(chunk->GetValue().renderer->gameObject);
 				chunk->GetValue().renderer=NULL;
+				chunk->GetValue().isPolygonizable = false;
 			}
 		}
 	}
@@ -598,8 +603,8 @@ void VoxelComponent::GetVertexInnerBox(short _basis,XMFLOAT3 offset,int _unit,XM
 	vertOut[6] = XMFLOAT3(0, 1, 1);
 	vertOut[7] = XMFLOAT3(1, 1, 1);
 
-	float lowValue = 0.4f;
-	float highValue = 0.6f;
+	float lowValue = 0.001f;
+	float highValue = 0.999f;
 
 	if (_basis & 1)
 	{
@@ -1298,8 +1303,9 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 
 	clock_t t = clock();
 	basePos = GetPartitionStartPos(basePos);
-	std::unordered_map<int, LODGroupData> newLODGroupsLoaded;
-	std::unordered_map<int, LODGroupData> newLODGroups;
+	std::unordered_map<int, LODGroupData> newLoadedLODGroup;
+	std::unordered_map<int, LODGroupData> newLODGroup;
+	std::vector<int> newLODGroupIndex[maxLODLevel + 1];
 	std::unordered_map<int, LODGroupData> oldLODGroups;
 	oldLODGroups.swap(lodGropups);
 	int lodDistance = LODDistance[maxLODLevel - 1];
@@ -1324,31 +1330,42 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 				auto iter = oldLODGroups.find(index);
 				if (iter == oldLODGroups.end())
 				{
-					newLODGroups[index] = lodGroupData;
+					newLODGroup[index] = lodGroupData;
+					newLODGroupIndex[lodGroupData.level].push_back(index);
 				}
 				else
 				{
 					if (lodGroupData.transitionBasis == iter->second.transitionBasis&&lodGroupData.level == iter->second.level)
-						newLODGroupsLoaded[index] = lodGroupData;
+						newLoadedLODGroup[index] = lodGroupData;
 					else
 					{
 						oldLODGroups.erase(iter);
-						newLODGroups[index] = lodGroupData;
+						newLODGroup[index] = lodGroupData;
+						newLODGroupIndex[lodGroupData.level].push_back(index);
 					}
 				}
 			}
 		}
 	}
 
-	for (auto i : newLODGroupsLoaded)
+	for (auto i : newLoadedLODGroup)
 	{
 		lodGropups[i.first] = i.second;
 	}
-	for (auto i : newLODGroups)
+	for (int i = 0; i <= maxLODLevel; i++)
 	{
-		ReserveUpdate(GetPositionFromIndex(i.first),i.second.transitionBasis,i.second.level, Reserve_LOD, true);
-		lodGropups[i.first] = i.second;
+		for (auto j : newLODGroupIndex[i])
+		{
+			LODGroupData data = newLODGroup[j];
+			ReserveUpdate(GetPositionFromIndex(j), data.transitionBasis, data.level, Reserve_LOD, true);
+			lodGropups[j] = data;
+		}
 	}
+	//for (auto i : newLODGroup)
+	//{
+	//	ReserveUpdate(GetPositionFromIndex(i.first),i.second.transitionBasis,i.second.level, Reserve_LOD, true);
+	//	lodGropups[i.first] = i.second;
+	//}
 	for (auto i : oldLODGroups)
 	{
 		ReserveUpdate(GetPositionFromIndex(i.first), Reserve_LOD, true);
@@ -1604,10 +1621,12 @@ void VoxelComponent::LoadHeightMapFromRaw(int _width, int _height,int _depth, in
 			}
 		}
 	}
-
 	for (int i = 0; i < info.width; i++)
 		delete[] data[i];
 	delete[] data;
+
+
+
 	printf("%d BYTE chunk data 생성 완료\n", info.width*info.depth*info.height);
 }
 void VoxelComponent::GetFileNamesInDirectory(const char* path, std::vector<std::string>& vstr)
@@ -1921,41 +1940,41 @@ int VoxelComponent::GetLODLevel(const XMFLOAT3& basePos, const XMFLOAT3& targetP
 	if (targetPos.x < 0 || targetPos.y < 0 || targetPos.z < 0 || targetPos.x >= info.width || targetPos.y >= info.height || targetPos.z >= info.depth)
 		return maxLODLevel;
 
-	XMFLOAT3 basePos2 = GetPartitionCenter(basePos);
-	XMFLOAT3 targetPos2 = GetPartitionCenter(targetPos);
-	XMFLOAT3 n = targetPos2 - basePos2;
-	XMFLOAT3 max, min;
-	for (int i = 0; i <= maxLODLevel; i++)
-	{
-		//max = basePos2 + XMFLOAT3(LODDistance[i], LODDistance[i], LODDistance[i]);
-		//min = basePos2 - XMFLOAT3(LODDistance[i], LODDistance[i], LODDistance[i]);
-		//if (targetPos2.x <= max.x&&targetPos2.y <= max.y&&targetPos2.z <= max.z)
-		//{
-		//	if (targetPos2.x >= min.x&&targetPos2.y >= min.y&&targetPos2.z >= min.z)
-		//	{
-		//		return i;
-		//	}
-		//}
-		if (abs(n.x) < LODDistance[i] 
-			&& abs(n.y) < LODDistance[i]
-			&& abs(n.z) < LODDistance[i])
-		{
-			return i;
-		}
-	}
-	//XMVECTOR v1, v2;
-	//float dis;
 	//XMFLOAT3 basePos2 = GetPartitionCenter(basePos);
 	//XMFLOAT3 targetPos2 = GetPartitionCenter(targetPos);
-	//v1 = XMVectorSet(basePos2.x, basePos2.y, basePos2.z, 1);
-	//v2 = XMVectorSet(targetPos2.x, targetPos2.y, targetPos2.z, 1);
-
-	//dis = XMVectorGetX(XMVector3Length(XMVectorSubtract(v2, v1)));
-	//for (int i = 0; i < 4; i++)
-	//	if (LODDistance[i] >= dis)
+	//XMFLOAT3 n = targetPos2 - basePos2;
+	//XMFLOAT3 max, min;
+	//for (int i = 0; i <= maxLODLevel; i++)
+	//{
+	//	//max = basePos2 + XMFLOAT3(LODDistance[i], LODDistance[i], LODDistance[i]);
+	//	//min = basePos2 - XMFLOAT3(LODDistance[i], LODDistance[i], LODDistance[i]);
+	//	//if (targetPos2.x <= max.x&&targetPos2.y <= max.y&&targetPos2.z <= max.z)
+	//	//{
+	//	//	if (targetPos2.x >= min.x&&targetPos2.y >= min.y&&targetPos2.z >= min.z)
+	//	//	{
+	//	//		return i;
+	//	//	}
+	//	//}
+	//	if (abs(n.x) < LODDistance[i] 
+	//		&& abs(n.y) < LODDistance[i]
+	//		&& abs(n.z) < LODDistance[i])
 	//	{
 	//		return i;
 	//	}
+	//}
+	XMVECTOR v1, v2;
+	float dis;
+	XMFLOAT3 basePos2 = GetPartitionCenter(basePos);
+	XMFLOAT3 targetPos2 = GetPartitionCenter(targetPos);
+	v1 = XMVectorSet(basePos2.x, basePos2.y, basePos2.z, 1);
+	v2 = XMVectorSet(targetPos2.x, targetPos2.y, targetPos2.z, 1);
+
+	dis = XMVectorGetX(XMVector3Length(XMVectorSubtract(v2, v1)));
+	for (int i = 0; i <= maxLODLevel; i++)
+		if (LODDistance[i] > dis)
+		{
+			return i;
+		}
 	return maxLODLevel;
 }
 
@@ -2003,7 +2022,7 @@ void VoxelComponent::ProcessCommandQueue()
 			if (commandQueue[t].size())
 			{
 				job[t].component = this;
-				int _l = (t == Reserve_LOD) ? 3000 : length;
+				int _l = (t == Reserve_LOD) ? 16 : length;
 				for (int i = 0; i < _l; i++)
 				{
 					if (!commandQueue[t].size())
