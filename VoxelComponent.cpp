@@ -1127,6 +1127,8 @@ bool VoxelComponent::SetVoxel(int x, int y, int z, VoxelData value,bool isInit)
 	return true;
 }
 
+
+
 bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength)
 {
 	XMFLOAT3 partitionPos = GetPartitionStartPos(pos);
@@ -1157,23 +1159,31 @@ bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength)
 						continue;
 					if (SetVoxel(nPos.x, nPos.y, nPos.z, data, false))
 					{
-
 						ReserveUpdate(nPos, Reserve_Deform);
 						XMFLOAT3 pPos = GetPartitionStartPos(nPos);
-						if(pPos.x == nPos.x)
-							ReserveUpdate(nPos + XMFLOAT3(-1, 0, 0), Reserve_Deform);
-						if (pPos.y == nPos.y)
-							ReserveUpdate(nPos + XMFLOAT3(0, -1, 0), Reserve_Deform);
-						if (pPos.x == nPos.x&&pPos.y == nPos.y)
-							ReserveUpdate(nPos + XMFLOAT3(-1, -1, 0), Reserve_Deform);
-						if (pPos.x == nPos.x&&pPos.y == nPos.y&&pPos.z==nPos.z)
-							ReserveUpdate(nPos + XMFLOAT3(-1, -1, -1), Reserve_Deform);
-						if (pPos.y == nPos.y&&pPos.z == nPos.z)
-							ReserveUpdate(nPos + XMFLOAT3(0, -1, -1), Reserve_Deform);
-						if (pPos.x == nPos.x&&pPos.z == nPos.z)
-							ReserveUpdate(nPos + XMFLOAT3(-1, 0, -1), Reserve_Deform);
-						if (pPos.z == nPos.z)
-							ReserveUpdate(nPos + XMFLOAT3(0, 0, -1), Reserve_Deform);
+						XMFLOAT3 offset[7] = { XMFLOAT3(1,0,0),XMFLOAT3(0,1,0),XMFLOAT3(0,0,1),XMFLOAT3(1,1,0),XMFLOAT3(0,1,1),XMFLOAT3(1,1,1) };
+						for (int o = 0; o < 7; o++)
+						{
+							XMFLOAT3 oPos = GetPartitionStartPos(nPos-offset[o]);
+							if(pPos!=oPos)
+								if(IsPolygonizableCell(nPos-offset[i]))
+									ReserveUpdate(oPos, Reserve_Deform);
+						}
+						//XMFLOAT3 pPos = GetPartitionStartPos(nPos);
+						//if(pPos.x == nPos.x)
+						//	ReserveUpdate(nPos + XMFLOAT3(-1, 0, 0), Reserve_Deform);
+						//if (pPos.y == nPos.y)
+						//	ReserveUpdate(nPos + XMFLOAT3(0, -1, 0), Reserve_Deform);
+						//if (pPos.x == nPos.x&&pPos.y == nPos.y)
+						//	ReserveUpdate(nPos + XMFLOAT3(-1, -1, 0), Reserve_Deform);
+						//if (pPos.x == nPos.x&&pPos.y == nPos.y&&pPos.z==nPos.z)
+						//	ReserveUpdate(nPos + XMFLOAT3(-1, -1, -1), Reserve_Deform);
+						//if (pPos.y == nPos.y&&pPos.z == nPos.z)
+						//	ReserveUpdate(nPos + XMFLOAT3(0, -1, -1), Reserve_Deform);
+						//if (pPos.x == nPos.x&&pPos.z == nPos.z)
+						//	ReserveUpdate(nPos + XMFLOAT3(-1, 0, -1), Reserve_Deform);
+						//if (pPos.z == nPos.z)
+						//	ReserveUpdate(nPos + XMFLOAT3(0, 0, -1), Reserve_Deform);
 					}
 				//}
 			}
@@ -1614,6 +1624,16 @@ void VoxelComponent::GetFileNamesInDirectory(const char* path, std::vector<std::
 	_findclose(handle);
 }
 
+bool VoxelComponent::IsPolygonizableCell(XMFLOAT3 pos, int _size)
+{
+	XMFLOAT3 offset[8] = { XMFLOAT3(),XMFLOAT3(_size,0,0),XMFLOAT3(0,_size,0),XMFLOAT3(0,0,_size),XMFLOAT3(_size,_size,0),XMFLOAT3(0,_size,_size),XMFLOAT3(_size,_size,_size) };
+	for (int i = 0; i < 8; i++)
+		if (GetVoxel(pos + offset[i]).isoValue > isoLevel)
+			return true;
+	return false;
+}
+
+
 void VoxelComponent::LoadMapData(const char* _path)
 {
 	InitDataDirectory(_path);
@@ -1983,7 +2003,7 @@ void VoxelComponent::ProcessCommandQueue()
 			if (commandQueue[t].size())
 			{
 				job[t].component = this;
-				int _l = (t == Reserve_LOD) ? 32 : length;
+				int _l = (t == Reserve_LOD) ? 3000 : length;
 				for (int i = 0; i < _l; i++)
 				{
 					if (!commandQueue[t].size())

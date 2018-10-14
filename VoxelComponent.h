@@ -148,6 +148,7 @@ private:
 
 	void GetFileNamesInDirectory(const char* path,std::vector<std::string>& vstr);
 
+	bool IsPolygonizableCell(XMFLOAT3 pos, int _size = 1);
 
 	void LoadCube(int,int,int);
 	void LoadPerlin(int _width,int _height, int _depth, int _maxHeight,float refinement);
