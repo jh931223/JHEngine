@@ -61,7 +61,7 @@ void VoxelComponent::Initialize()
 
 	//useFrustum = true;
 
-	info.partitionSize = 16;
+	info.partitionSize = 32;
 	SetLODLevel(0, 100000);
 
 
