@@ -88,10 +88,10 @@ void VoxelComponent::Initialize()
 
 	//LoadCube(32, 32, 32);
 	//LoadPerlin(128, 128, 128,128, 0.1f);
-	LoadPerlin(2048, 256, 2048, 128, 0.07f);
+	//LoadPerlin(2048, 256, 2048, 128, 0.07f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	//LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
+	LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
 
 	std::function<RESULT_BUFFER(COMMAND_BUFFER)> _task = ([&, this](COMMAND_BUFFER buf)
 	{
@@ -123,38 +123,41 @@ void VoxelComponent::Initialize()
 void VoxelComponent::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel)
 {
 
-	auto chunk = tempChunks->Subdivide(pos, 0, newMesh!=NULL);
+	auto chunk = meshRendererOctree->Subdivide(pos, 0, newMesh!=NULL);
 	if (newMesh)
 	{
-		if (chunk->GetValue().renderer == NULL)
+		if (chunk->GetValue() == NULL)
 		{
 			GameObject* gobj = new GameObject("voxel partition");
 			MeshRenderer* newRenderer = new MeshRenderer;
 			newRenderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_triplanar"));
 			gobj->AddComponent(newRenderer);
-			if (chunk->GetDepth() != 0)
-				chunk = tempChunks->Insert(pos, ChunkData(), 0);
-			chunk->GetValue().renderer=newRenderer;
+			if(chunk->GetDepth())
+				chunk = meshRendererOctree->Insert(pos, newRenderer, 0);
+			else chunk->SetValue(newRenderer);
+			float hSize = (float)info.partitionSize*0.5f;
+			newRenderer->boundary.centerOffset = chunk->GetPosition()+XMFLOAT3(hSize, hSize, hSize);
+			newRenderer->boundary.size = hSize;
 		}
-		else if (chunk->GetValue().renderer->GetMesh())
+		else if (chunk->GetValue()->GetMesh())
 		{
-			chunk->GetValue().renderer->ReleaseMesh();
+			chunk->GetValue()->ReleaseMesh();
 		}
-		chunk->GetValue().renderer->SetMesh(newMesh);
+		chunk->GetValue()->SetMesh(newMesh);
 		//chunk->GetValue().isPolygonizable = true;
 	}
 	else
 	{
 		if (chunk)
 		{
-			if (chunk->GetValue().renderer)
+			if (chunk->GetValue())
 			{
-				if (chunk->GetValue().renderer->GetMesh())
+				if (chunk->GetValue()->GetMesh())
 				{
-					chunk->GetValue().renderer->ReleaseMesh();
+					chunk->GetValue()->ReleaseMesh();
 				}
-				GameObject::Destroy(chunk->GetValue().renderer->gameObject);
-				chunk->GetValue().renderer=NULL;
+				GameObject::Destroy(chunk->GetValue()->gameObject);
+				chunk->SetValue(NULL);
 				//chunk->GetValue().isPolygonizable = false;
 			}
 		}
@@ -215,6 +218,10 @@ void VoxelComponent::Update()
 	if (Input()->GetKeyDown(DIK_L))
 	{
 		isLockedBasePosition = !isLockedBasePosition;
+	}
+	if (Input()->GetKeyDown(DIK_K))
+	{
+		Frustum::isLockFrustum = !Frustum::isLockFrustum;
 	}
 	if (Input()->GetKeyDown(DIK_1))
 	{
@@ -297,9 +304,9 @@ void VoxelComponent::ReleaseChunks()
 	if (tempChunks)
 		delete tempChunks;
 	tempChunks = 0;
-	//if (meshRendererOctree)
-	//	delete meshRendererOctree;
-	//meshRendererOctree = 0;
+	if (meshRendererOctree)
+		delete meshRendererOctree;
+	meshRendererOctree = 0;
 }
 void VoxelComponent::CreateCubeFace_Up(float x, float y, float z, float _unit, BYTE type, int& faceCount, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
@@ -1389,176 +1396,6 @@ void VoxelComponent::ProcessLOD()
 	return;
 }
 
-bool VoxelComponent::FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius)
-{
-	for (int i = 0; i<6; i++)
-	{
-		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter - radius), (yCenter - radius), (zCenter - radius),
-			1.0f))) >= 0.0f)
-			continue;
-
-		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter + radius), (yCenter - radius), (zCenter - radius),
-			1.0f))) >= 0.0f)
-			continue;
-
-		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter - radius), (yCenter + radius), (zCenter - radius),
-			1.0f))) >= 0.0f)
-			continue;
-
-		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter + radius), (yCenter + radius), (zCenter - radius),
-			1.0f))) >= 0.0f)
-			continue;
-
-		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter - radius), (yCenter - radius), (zCenter + radius),
-			1.0f))) >= 0.0f)
-			continue;
-
-		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter + radius), (yCenter - radius), (zCenter + radius),
-			1.0f))) >= 0.0f)
-			continue;
-
-		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter - radius), (yCenter + radius), (zCenter + radius),
-			1.0f))) >= 0.0f)
-			continue;
-
-		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter + radius), (yCenter + radius), (zCenter + radius),
-			1.0f))) >= 0.0f)
-			continue;
-
-		return false;
-	}
-
-	return true;
-}
-
-bool VoxelComponent::FrustumCheckSphere(float xCenter, float yCenter, float zCenter, float radius)
-{
-	for (int i = 0; i<6; i++)
-	{
-		// 구의 반경이 뷰 frustum 안에 있는지 확인합니다.
-		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet(xCenter, yCenter, zCenter, 1.0f))) < -radius)
-			return false;
-	}
-
-	return true;
-}
-
-
-void VoxelComponent::ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, XMMATRIX viewMatrix)
-{
-	XMFLOAT4X4 pMatrix;
-	XMStoreFloat4x4(&pMatrix, projectionMatrix);
-
-	// 절두체에서 최소 Z 거리를 계산합니다.
-	float zMinimum = -pMatrix._43 / pMatrix._33;
-	float r = screenDepth / (screenDepth - zMinimum);
-
-	// 업데이트 된 값을 다시 투영 행렬에 설정합니다.
-	pMatrix._33 = r;
-	pMatrix._43 = -r * zMinimum;
-	projectionMatrix = XMLoadFloat4x4(&pMatrix);
-
-	// 뷰 매트릭스와 업데이트 된 프로젝션 매트릭스에서 절두체 매트릭스를 만듭니다.
-	XMMATRIX finalMatrix = XMMatrixMultiply(viewMatrix, projectionMatrix);
-
-	// 최종 행렬을 XMFLOAT4X4 유형으로 변환합니다.
-	XMFLOAT4X4 matrix;
-	XMStoreFloat4x4(&matrix, finalMatrix);
-
-	// 절두체의 가까운 평면을 계산합니다.
-	float x = (float)(matrix._14 + matrix._13);
-	float y = (float)(matrix._24 + matrix._23);
-	float z = (float)(matrix._34 + matrix._33);
-	float w = (float)(matrix._44 + matrix._43);
-	m_planes[0] = XMVectorSet(x, y, z, w);
-	m_planes[0] = XMPlaneNormalize(m_planes[0]);
-
-	// 절두체의 먼 평면을 계산합니다.
-	x = (float)(matrix._14 + matrix._13);
-	y = (float)(matrix._24 + matrix._23);
-	z = (float)(matrix._34 + matrix._33);
-	w = (float)(matrix._44 + matrix._43);
-	m_planes[1] = XMVectorSet(x, y, z, w);
-	m_planes[1] = XMPlaneNormalize(m_planes[1]);
-
-	// 절두체의 왼쪽 평면을 계산합니다.
-	x = (float)(matrix._14 + matrix._13);
-	y = (float)(matrix._24 + matrix._23);
-	z = (float)(matrix._34 + matrix._33);
-	w = (float)(matrix._44 + matrix._43);
-	m_planes[2] = XMVectorSet(x, y, z, w);
-	m_planes[2] = XMPlaneNormalize(m_planes[2]);
-
-	// 절두체의 오른쪽 평면을 계산합니다.
-	x = (float)(matrix._14 + matrix._13);
-	y = (float)(matrix._24 + matrix._23);
-	z = (float)(matrix._34 + matrix._33);
-	w = (float)(matrix._44 + matrix._43);
-	m_planes[3] = XMVectorSet(x, y, z, w);
-	m_planes[3] = XMPlaneNormalize(m_planes[3]);
-
-	// 절두체의 윗 평면을 계산합니다.
-	x = (float)(matrix._14 + matrix._13);
-	y = (float)(matrix._24 + matrix._23);
-	z = (float)(matrix._34 + matrix._33);
-	w = (float)(matrix._44 + matrix._43);
-	m_planes[4] = XMVectorSet(x, y, z, w);
-	m_planes[4] = XMPlaneNormalize(m_planes[4]);
-
-	// 절두체의 아래 평면을 계산합니다.
-	x = (float)(matrix._14 + matrix._13);
-	y = (float)(matrix._24 + matrix._23);
-	z = (float)(matrix._34 + matrix._33);
-	w = (float)(matrix._44 + matrix._43);
-	m_planes[5] = XMVectorSet(x, y, z, w);
-	m_planes[5] = XMPlaneNormalize(m_planes[5]);
-
-	return;
-}
-
-
-
-void VoxelComponent::BuildVertexBufferFrustumCulling(int targetDepth)
-{
-	//int length = info.width;
-	//std::vector<VertexBuffer> vertices;
-	//float _unit = unit;
-	//if (useOctree)
-	//{
-	//	_unit = gOctree(targetDepth);//여기
-	//	length = aOctree->GetLength(targetDepth);
-	//}
-	//CameraComponent* camComp=camera->GetComponent<CameraComponent>();
-	//XMMATRIX proj, view;
-	//camComp->GetProjectionMatrix(proj);
-	//camComp->Render();
-	//camComp->GetViewMatrix(view);
-	//ConstructFrustum(camComp->m_farPlane, proj, view);
-	//ULONG time2 = GetTickCount();
-	//vertices.reserve(length*length*length);
-	//for (int i = 0; i < length - 1; i++)
-	//	for (int j = 0; j < length - 1; j++)
-	//		for (int k = 0; k < length - 1; k++)
-	//		{
-	//			XMFLOAT3 pos = XMFLOAT3(i*_unit, j*_unit, k*_unit);
-	//			float halfUnit = _unit * 0.5f;
-	//			XMFLOAT3 frustumPos = pos + transform()->GetWorldPosition()+XMFLOAT3(halfUnit, halfUnit, halfUnit);
-	//			//if (FrustumCheckSphere(frustumPos.x, frustumPos.y, frustumPos.z, halfUnit))
-	//			if (FrustumCheckCube(frustumPos.x , frustumPos.y , frustumPos.z, halfUnit))
-	//			{
-	//				VertexBuffer vert;
-	//				vert.position = XMFLOAT3(pos);
-	//				vertices.push_back(vert);
-	//			}
-	//		}
-	//unit = _unit;
-	//Material* material = renderer->GetMaterial();
-	//material->GetParams()->SetInt("vertCount", vertices.size());
-	//material->GetParams()->SetInt("length", length);
-	//material->GetParams()->SetFloat2("unitSize", XMFLOAT2(unit, 0));
-	//printf("Marching Cube Build Data ( Geometry, useOctree=%d ): %d ms\n", useOctree, GetTickCount() - time2);
-}
-
 void VoxelComponent::UpdateMeshAsync(int lodLevel)
 {
 	for (int i = 0; i < info.width; i+=info.partitionSize)
@@ -1714,7 +1551,7 @@ void VoxelComponent::SaveMapData(const char* _path)
 	{
 		for (auto i : vec)
 		{
-			if (i->GetValue().IsHaveChunk()||i->GetValue().renderer)
+			if (i->GetValue().IsHaveChunk()|| meshRendererOctree->GetNodeAtPosition(i->GetPosition(),0)->GetValue())
 			{
 				task.commandBuffers.push_back(i->GetPosition());/////Task
 				//WriteVoxelData(i->GetPosition());
@@ -1786,9 +1623,10 @@ void VoxelComponent::WriteVoxelData(XMFLOAT3 pos)
 {
 	pos = GetPartitionStartPos(pos);
 	auto node = tempChunks->GetNodeAtPosition(pos, 0);
-	if (node->GetDepth() != 0&&node->GetValue().renderer==NULL)
+	auto node2 = meshRendererOctree->GetNodeAtPosition(pos, 0);
+	if (node->GetDepth() != 0&& node2->GetValue()==NULL)
 		return;
-	bool isRendered = (node->GetValue().renderer != NULL);
+	bool isRendered = (node2->GetValue() != NULL);
 	FILE* pInput = NULL;
 	char totalPath[256];
 	float ps = 1.0f / info.partitionSize;
@@ -1868,6 +1706,7 @@ void VoxelComponent::NewChunks(int _w, int _h, int _d)
 	info.height = _h;
 	info.depth = _d;
 	tempChunks = new Octree<ChunkData>(_w,info.partitionSize);
+	meshRendererOctree = new Octree<MeshRenderer*>(_w, info.partitionSize);
 }
 
 void VoxelComponent::SetOctreeDepth(int _targetDepth)
@@ -2126,7 +1965,8 @@ COMMAND_BUFFER VoxelComponent::ReserveUpdate(XMFLOAT3 pos, short _basis, short _
 		}
 	}
 	auto node = tempChunks->GetNodeAtPosition(targetPos, 0);
-	if (node->GetDepth() != 0&&node->GetValue().renderer==NULL)
+	auto node2 = meshRendererOctree->GetNodeAtPosition(targetPos, 0);
+	if (node->GetDepth() != 0&& node2->GetValue()==NULL)
 	{
 		int size = info.partitionSize;
 		XMFLOAT3 offset[7] = { XMFLOAT3(size,0,0),XMFLOAT3(0,size,0),XMFLOAT3(0,0,size),XMFLOAT3(size,size,0),XMFLOAT3(size,0,size),XMFLOAT3(0,size,size),XMFLOAT3(size,size,size) };

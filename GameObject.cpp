@@ -100,7 +100,8 @@ void GameObject::Update()
 	{
 		for (auto i : components)
 		{
-			i->Update();
+			if(i->enabled)
+				i->Update();
 		}
 	}
 	//for (auto i : childObjects)

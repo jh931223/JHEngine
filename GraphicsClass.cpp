@@ -181,6 +181,7 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 	m_Direct3D->GetWorldMatrix(worldMatrix);
 	m_Camera->GetViewMatrix(viewMatrix);
 	m_Camera->GetProjectionMatrix(projectionMatrix);
+	Frustum::ConstructFrustum(m_Camera->m_farPlane, projectionMatrix, viewMatrix);
 	if (useMultiThreadedRendering)
 	{
 		if (!m_Direct3D->GetDeferredContextsSize())
@@ -206,18 +207,18 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 		//std::vector<MeshRenderer*> renderers = meshRenderers;
 		for (const auto i : meshRenderers)
 		{
-			if (!i)
+			if (!i||!i->enabled)
 			{
 				continue;
 			}
-			m_Direct3D->GetWorldMatrix(worldMatrix);
+			//m_Direct3D->GetWorldMatrix(worldMatrix);
 			GameObject* gameObject = i->gameObject;
 			if (gameObject)
 			{
-				//  yaw, pitch, roll 값을 통해 회전 행렬을 만듭니다.
-				i->Render(m_Direct3D->GetImmDeviceContext(), gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix);
+				i->Render(m_Direct3D->GetImmDeviceContext(), viewMatrix, projectionMatrix);
 			}
 		}
+		//printf("%d rendered\n", Frustum::frustumCulled);
 	}
 	return true;
 }
@@ -313,12 +314,10 @@ bool RenderTask::Excute(int index)
 	auto c = m_Direct3D->GetDeferredContext(threadID);
 	if (!i)
 		return false;
-	m_Direct3D->GetWorldMatrix(worldMatrix);
 	GameObject* gameObject = i->gameObject;
 	if (gameObject)
 	{
-		//  yaw, pitch, roll 값을 통해 회전 행렬을 만듭니다.
-		i->Render(c, gameObject->transform->GetTransformMatrix(), viewMatrix, projectionMatrix);
+		i->Render(c, viewMatrix, projectionMatrix);
 	}
 	return true;
 }

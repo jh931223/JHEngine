@@ -78,9 +78,11 @@ public:
 			return (chunk);
 		}
 		VoxelData* chunk = NULL;
-		MeshRenderer* renderer=NULL;
-		bool isPolygonizable = false;
+		//MeshRenderer* renderer=NULL;
+		//bool isPolygonizable = false;
 	};
+	typedef std::vector<OctreeNode<ChunkData>*> ChunkLeafs;
+	typedef std::vector<OctreeNode<MeshRenderer*>*> RendererLeafs;
 
 	struct LODGroupData
 	{
@@ -176,11 +178,6 @@ private:
 	XMFLOAT3 GetPositionFromIndex(int index);
 	unsigned int GetIndexFromPosition(XMFLOAT3 pos);
 	void RefreshLODNodes(XMFLOAT3 centerPos);
-	bool FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius);
-	bool FrustumCheckSphere(float xCenter, float yCenter, float zCenter, float radius);
-	void ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, XMMATRIX viewMatrix);
-
-	void BuildVertexBufferFrustumCulling(int targetDepth);
 
 	void UpdateMeshAsync(int lodLevel);
 	COMMAND_BUFFER ReserveUpdate(XMFLOAT3 pos, short _basis, short _lodLevel, ReserveType reserveType= ReserveType::Reserve_Load , bool isEnableOverWrite=true,bool autoPush=true);
@@ -208,7 +205,7 @@ private:
 
 private:
 
-	static const int maxLODLevel = 4;
+	static const int maxLODLevel = 3;
 
 	
 	//#pragma pack(push, 1)
@@ -236,7 +233,7 @@ private:
 	const char* pathRoot = "MapData";
 	//Octree< std::vector<VoxelData> >* tempChunks;
 	Octree< ChunkData >* tempChunks;
-	//Octree<MeshRenderer*>* meshRendererOctree;
+	Octree<MeshRenderer*>* meshRendererOctree;
 
 	
 
@@ -273,6 +270,5 @@ private:
 
 
 	//frustum
-	XMVECTOR m_planes[6];
 	//
 };

@@ -1,6 +1,6 @@
 #pragma once
-class GameObject;
-class CTransform;
+#include "GameObject.h"
+#include "Transform.h"
 class Component : public AlignedAllocationPolicy<16>
 {
 public:
