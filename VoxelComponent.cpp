@@ -70,12 +70,13 @@ void VoxelComponent::Initialize()
 	//SetLODLevel(2, 256);
 	//SetLODLevel(3, 256);
 
-	int start = 64;
+	int start = 128;
 
 	SetLODLevel(0, start);
 	SetLODLevel(1, start + info.partitionSize);
 	SetLODLevel(2, start + info.partitionSize + info.partitionSize);
 	SetLODLevel(3, start + info.partitionSize + info.partitionSize+ info.partitionSize);
+	SetLODLevel(4, start + info.partitionSize + info.partitionSize + info.partitionSize+ info.partitionSize);
 	//SetLODLevel(3, 256);
 
 
@@ -87,10 +88,10 @@ void VoxelComponent::Initialize()
 
 	//LoadCube(32, 32, 32);
 	//LoadPerlin(128, 128, 128,128, 0.1f);
-	//LoadPerlin(2048, 256, 2048, 128, 0.3f);
+	LoadPerlin(2048, 256, 2048, 128, 0.07f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
+	//LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
 
 	std::function<RESULT_BUFFER(COMMAND_BUFFER)> _task = ([&, this](COMMAND_BUFFER buf)
 	{
@@ -140,7 +141,7 @@ void VoxelComponent::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel
 			chunk->GetValue().renderer->ReleaseMesh();
 		}
 		chunk->GetValue().renderer->SetMesh(newMesh);
-		chunk->GetValue().isPolygonizable = true;
+		//chunk->GetValue().isPolygonizable = true;
 	}
 	else
 	{
@@ -154,7 +155,7 @@ void VoxelComponent::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel
 				}
 				GameObject::Destroy(chunk->GetValue().renderer->gameObject);
 				chunk->GetValue().renderer=NULL;
-				chunk->GetValue().isPolygonizable = false;
+				//chunk->GetValue().isPolygonizable = false;
 			}
 		}
 	}
@@ -1127,8 +1128,6 @@ bool VoxelComponent::SetVoxel(int x, int y, int z, VoxelData value,bool isInit)
 	z = z - (int)node->GetPosition().z;
 	int idx = x + y*info.partitionSize + z*info.partitionSize*info.partitionSize;
 	node->GetValue().chunk[idx]=value;
-	node->GetValue().chunk[idx] = node->GetValue().chunk[idx];
-
 	return true;
 }
 
@@ -1357,7 +1356,7 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 		for (auto j : newLODGroupIndex[i])
 		{
 			LODGroupData data = newLODGroup[j];
-			ReserveUpdate(GetPositionFromIndex(j), data.transitionBasis, data.level, Reserve_LOD, true);
+			auto result=ReserveUpdate(GetPositionFromIndex(j), data.transitionBasis, data.level, Reserve_LOD, true);
 			lodGropups[j] = data;
 		}
 	}
@@ -1380,7 +1379,9 @@ void VoxelComponent::ProcessLOD()
 	if (isLockedBasePosition)
 		return;
 	XMFLOAT3 newPosition = GetPartitionStartPos(CameraComponent::mainCamera()->transform()->GetWorldPosition());
-	if (newPosition!=lastBasePosition)
+	float processDis = info.partitionSize * 2;
+	float distance = GetDistance(newPosition, lastBasePosition);
+	if (distance>=processDis)
 	{
 		lastBasePosition = newPosition;
 		RefreshLODNodes(newPosition);
@@ -2022,7 +2023,7 @@ void VoxelComponent::ProcessCommandQueue()
 			if (commandQueue[t].size())
 			{
 				job[t].component = this;
-				int _l = (t == Reserve_LOD) ? 16 : length;
+				int _l = (t == Reserve_LOD) ? 8 : length;
 				for (int i = 0; i < _l; i++)
 				{
 					if (!commandQueue[t].size())
@@ -2056,7 +2057,7 @@ void VoxelComponent::ProcessCommandQueue()
 		//	commandQueue_Deform.pop_front();
 		//	threadPool_Deform.AddTask(_node);
 		//}
-		printf("%d ms\n", clock() - time);
+		//printf("%d ms\n", clock() - time);
 	}
 }
 
