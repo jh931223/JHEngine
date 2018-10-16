@@ -1,12 +1,30 @@
 #pragma once
-#include<amp.h>
-#include<amp_graphics.h>
+struct RegularCellCacheBuffer
+{
+	int verts[3] = { -1, };
+	byte caseCode = 0;
+};
 
-
-
-using namespace concurrency;
-using namespace concurrency::graphics;
-using namespace concurrency::direct3d;
+struct RegularCellCache
+{
+	RegularCellCacheBuffer* cache;
+	int size;
+	int unit;
+	RegularCellCache(int _chunkSize,int _unit)
+	{
+		size = _chunkSize / _unit;
+		cache = new RegularCellCacheBuffer[size*size*size];
+	}
+	RegularCellCacheBuffer& operator [](XMINT3 pos)
+	{
+		assert(pos.x < 0 || pos.y < 0 || pos.z < 0);
+		return cache[pos.x + pos.y * size + pos.z * size*size];
+	}
+	static XMINT3 PrevOffset(int dir)
+	{
+		XMINT3(-(dir&1), -((dir >> 1) & 1), -((dir >> 2) & 1));
+	}
+};
 
 struct RegularCell
 {

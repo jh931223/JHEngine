@@ -29,6 +29,10 @@ struct COMMAND_BUFFER
 		return  ((data1.x == x) && (data1.y == y) && (data1.z == z));
 	}
 };
+struct ReuseData
+{
+	int edgeVertIndex[12] = { -1, };
+};
 struct RESULT_BUFFER
 {
 	Mesh* newMesh;
@@ -135,8 +139,8 @@ private:
 	void CreateCubeFace_Forward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
 	void CreateCubeFace_Backward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
 
-	void PolygonizeCell(XMFLOAT3 pos, int _unit,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices,XMFLOAT3 min=XMFLOAT3(0,0,0),XMFLOAT3 max=XMFLOAT3(1,1,1));
-	void PolygonizeCell(XMFLOAT3 pos, int _unit, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, XMFLOAT3 corners[]);
+	void PolygonizeCell(XMFLOAT3 pos, XMINT3 offset, int _unit,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, RegularCellCache& cache,XMFLOAT3 min=XMFLOAT3(0,0,0),XMFLOAT3 max=XMFLOAT3(1,1,1));
+	void PolygonizeCell(XMFLOAT3 pos, XMINT3 offset, int _unit, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, RegularCellCache& cache,XMFLOAT3 corners[]);
 
 	void GetVertexInnerBox(short _basis, XMFLOAT3 offset,int _unit, XMFLOAT3 vertOut[]);
 
