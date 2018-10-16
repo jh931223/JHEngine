@@ -1307,7 +1307,7 @@ unsigned int VoxelComponent::GetIndexFromPosition(XMFLOAT3 pos)
 void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 {
 
-	clock_t t = clock();
+	//clock_t t = clock();
 	basePos = GetPartitionStartPos(basePos);
 	std::unordered_map<int, LODGroupData> newLoadedLODGroup;
 	std::unordered_map<int, LODGroupData> newLODGroup;
@@ -1377,7 +1377,7 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 		ReserveUpdate(GetPositionFromIndex(i.first), Reserve_LOD, true);
 	}
 	oldLODGroups.clear();
-	printf("LOD Update %dms\n", clock() - t);
+	//printf("LOD Update %dms\n", clock() - t);
 
 }
 
