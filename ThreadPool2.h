@@ -5,6 +5,11 @@
 #include<mutex>
 #include<functional>
 #include<condition_variable>
+#include<atomic>
+
+#define USE_COMPETITION_QUEUE
+//#define USE_ATOMIC_QUEUE
+
 template<typename Task> class ThreadPool2
 {
 public:
@@ -54,7 +59,6 @@ public:
 	}
 	void AddTask(Task _task)
 	{
-
 		tasks.push_back(_task);
 		//{
 		//	std::unique_lock<std::mutex> lock(poolMutex);
@@ -68,6 +72,16 @@ public:
 	}
 	void Run()
 	{
+#ifdef USE_COMPETITION_QUEUE
+		taskIDX=0;
+		std::unique_lock<std::mutex> lock(poolMutex);
+		while (waitingThreads.size())
+		{
+			int id = waitingThreads.front();
+			ChangeState(id);
+			workerConditions[id]->notify_one();
+		}
+#else
 		int max = 0;
 		int i = 0;
 		while (tasks.size())
@@ -86,12 +100,11 @@ public:
 			ChangeState(j);
 			workerConditions[j]->notify_one();
 		}
+#endif
 	}
 	void WaitForAllThread()
 	{
 		Run();
-		//finishEvent= CreateEvent(NULL, TRUE, FALSE, NULL);
-		//WaitForSingleObject(finishEvent, INFINITE);
 		while (true)
 		{
 			{
@@ -111,20 +124,54 @@ private:
 				workerConditions[id]->wait(lock, [&]()->bool {return this->workerFlags[id]; });
 			}
 			Task task;
-			bool isHaveTask = (workerTasks[id]->size() > 0);
+			bool isHaveTask = false;
+#ifdef USE_COMPETITION_QUEUE
+			while (GetTask(task))
+			{
+				isHaveTask = true;
+				taskFunc(task);
+			}
+#else
+			isHaveTask = (workerTasks[id]->size() > 0);
 			while (workerTasks[id]->size())
 			{
 				task = workerTasks[id]->front();
 				workerTasks[id]->pop_front();
 				taskFunc(task);
 			}
-			if(isHaveTask)
+#endif
+			if (isHaveTask)
 				finishCallBack(id);
 			{
 				std::unique_lock<std::mutex> lock2(poolMutex);
 				ChangeState(id, false);
 			}
 		}
+	}
+	bool GetTask(Task& task)
+	{
+#ifdef USE_ATOMIC_QUEUE
+		int idx = taskIDX.fetch_add(1);
+		//int idx = i.load();
+		if (idx < tasks.size())
+		{
+			Task _task = tasks[idx];
+			task = _task;
+			return true;
+		}
+#else
+		{
+			std::unique_lock<std::mutex> lock(taskMutex);
+			if (tasks.size())
+			{
+				Task _task = tasks.front();
+				tasks.pop_front();
+				task = _task;
+				return true;
+			}
+		}
+#endif // USE_ATOMIC_QUEUE
+		return false;
 	}
 	void ChangeState(int id,bool isWaiting=true)
 	{
@@ -158,7 +205,11 @@ private:
 		}
 	}
 	std::vector<std::thread> workerThreads;
+#ifdef USE_ATOMIC_QUEUE
+	std::vector<Task> tasks;
+#else
 	std::list<Task> tasks;
+#endif
 
 	std::vector<bool> workerFlags;
 
@@ -170,8 +221,11 @@ private:
 	HANDLE finishEvent;
 
 	std::mutex poolMutex;
+	std::mutex taskMutex;
 
 	int workingCount;
+
+	std::atomic<int> taskIDX;
 
 	int maxThreadNums;
 

@@ -1914,7 +1914,7 @@ void VoxelComponent::ProcessCommandQueue()
 			threadPool_Deform.AddTask(_node);
 		}
 #else
-		int length = 8, batch = 1;
+		int length = 16, batch = 1;
 		int handle = -1;
 		int lastJob = -1;
 		PolygonizeTask job[3];
@@ -1924,7 +1924,7 @@ void VoxelComponent::ProcessCommandQueue()
 		if (commandQueue[t].size())
 		{
 		job[t].component = this;
-		int _l = (t == Reserve_LOD) ? length/2 : length;
+		int _l = (t == Reserve_LOD) ? 4 : length;
 		for (int i = 0; i < _l; i++)
 		{
 		if (!commandQueue[t].size())
