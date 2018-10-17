@@ -61,7 +61,7 @@ void VoxelComponent::Initialize()
 	//SetLODLevel(2, 256);
 	//SetLODLevel(3, 256);
 
-	int start = 128;
+	int start = 256;
 
 	SetLODLevel(0, start);
 	SetLODLevel(1, start + info.partitionSize);
@@ -84,17 +84,19 @@ void VoxelComponent::Initialize()
 	//int h = ReadTXT("/data/info.height.txt");
 	LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
 
+
+#ifndef USE_JOBSYSTEM
 	std::function<RESULT_BUFFER(COMMAND_BUFFER)> _task = ([&, this](COMMAND_BUFFER buf)
 	{
-		//float halfSize = this->GetPartitionSize()*0.5f;
-		//XMFLOAT3 targetPos = XMFLOAT3(buf.x + halfSize, buf.y + halfSize, buf.z + halfSize);
-		return this->UpdatePartialMesh(XMFLOAT3(buf.x, buf.y, buf.z), buf.lodLevel,buf.transitionCellBasis);
+
+		return this->UpdatePartialMesh(XMFLOAT3(buf.x, buf.y, buf.z), buf.lodLevel, buf.transitionCellBasis);
 	});
-#ifdef USE_THREADPOOL
-	threadPool_Main.SetTaskFunc(_task);
-	threadPool_Deform.SetTaskFunc(_task);
-	threadPool_Main.Initialize(8, false);
-	threadPool_Deform.Initialize(8, false);
+	threadPool[Reserve_Load].SetTaskFunc(_task);
+	threadPool[Reserve_Load].Initialize(8, false);
+	threadPool[Reserve_Deform].SetTaskFunc(_task);
+	threadPool[Reserve_Deform].Initialize(8, false);
+	threadPool[Reserve_LOD].SetTaskFunc(_task);
+	threadPool[Reserve_LOD].Initialize(8, false);
 #endif
 
 
@@ -136,7 +138,6 @@ void VoxelComponent::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel
 			chunk->GetValue()->ReleaseMesh();
 		}
 		chunk->GetValue()->SetMesh(newMesh);
-		//chunk->GetValue().isPolygonizable = true;
 	}
 	else
 	{
@@ -150,7 +151,6 @@ void VoxelComponent::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel
 				}
 				GameObject::Destroy(chunk->GetValue()->gameObject);
 				chunk->SetValue(NULL);
-				//chunk->GetValue().isPolygonizable = false;
 			}
 		}
 	}
@@ -270,10 +270,6 @@ void VoxelComponent::Update()
 		EditVoxel(pos, brushRadius, strength);
 	}
 	ProcessCommandQueue();
-#ifdef USE_THREADPOOL
-	threadPool_Main.ThreadPoolUpdate();
-	threadPool_Deform.ThreadPoolUpdate();
-#endif
 }
 
 void VoxelComponent::OnStart()
@@ -1398,11 +1394,11 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 		{
 			LODGroupData data = newLODGroup[j];
 			auto result=ReserveUpdate(GetPositionFromIndex(j), data.transitionBasis, data.level,
-#ifdef USE_THREADPOOL
-				Reserve_Load
-#else 
+//#ifdef USE_THREADPOOL
+//				Reserve_Load
+//#else 
 				Reserve_LOD
-#endif
+//#endif
 				, true);
 			lodGropups[j] = data;
 		}
@@ -1415,11 +1411,11 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 	for (auto i : oldLODGroups)
 	{
 		ReserveUpdate(GetPositionFromIndex(i.first),
-#ifdef USE_THREADPOOL
-			Reserve_Load
-#else 
+//#ifdef USE_THREADPOOL
+//			Reserve_Load
+//#else 
 			Reserve_LOD
-#endif
+//#endif
 			, true);
 	}
 	oldLODGroups.clear();
@@ -1899,18 +1895,15 @@ void VoxelComponent::ProcessCommandQueue()
 		}
 		
 
-#ifdef USE_THREADPOOL
-		while (commandQueue[Reserve_Load].size())
+#ifndef USE_JOBSYSTEM
+		for (int i = 0; i < 3; i++)
 		{
-			COMMAND_BUFFER _node = commandQueue[Reserve_Load].front();
-			commandQueue[Reserve_Load].pop_front();
-			threadPool_Main.AddTask(_node);
-		}
-		while (commandQueue[Reserve_Deform].size())
-		{
-			COMMAND_BUFFER _node = commandQueue[Reserve_Deform].front();
-			commandQueue[Reserve_Deform].pop_front();
-			threadPool_Deform.AddTask(_node);
+			while (commandQueue[i].size())
+			{
+				COMMAND_BUFFER _node = commandQueue[i].front();
+				commandQueue[i].pop_front();
+				threadPool[i].AddTask(_node);
+			}
 		}
 #else
 		int length = 16, batch = 1;
@@ -1923,7 +1916,7 @@ void VoxelComponent::ProcessCommandQueue()
 		if (commandQueue[t].size())
 		{
 		job[t].component = this;
-		int _l = (t == Reserve_LOD) ? 30 : length;
+		int _l = (t == Reserve_LOD) ? 4 : length;
 		for (int i = 0; i < _l; i++)
 		{
 		if (!commandQueue[t].size())
@@ -1950,31 +1943,23 @@ void VoxelComponent::ProcessCommandQueue()
 
 void VoxelComponent::ProcessResultQueue()
 {
-#ifdef USE_THREADPOOL
-	if (threadPool_Main.IsInitialized())
+#ifndef USE_JOBSYSTEM
+	for (int i = 0; i < 3; i++)
 	{
-		if (threadPool_Main.GetResultQueue()->size())
+		if (threadPool[i].IsInitialized())
 		{
-			//ULONG tick = GetTickCount64();
-			for (auto i : *(threadPool_Main.GetResultQueue()))
+			std::list<RESULT_BUFFER> resultQueue;
+			threadPool[i].GetResultQueue(resultQueue);
+			if (resultQueue.size())
 			{
-				UpdateMeshRenderer(i.newMesh, i.pos,i.lodLevel);
+				//ULONG tick = GetTickCount64();
+				for (auto i : resultQueue)
+				{
+					UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
+				}
+				resultQueue.clear();
+				//printf("threadPool_Main Updated %dms\n", GetTickCount64() - tick);
 			}
-			threadPool_Main.GetResultQueue()->clear();
-			//printf("threadPool_Main Updated %dms\n", GetTickCount64() - tick);
-		}
-	}
-	if (threadPool_Deform.IsInitialized())
-	{
-		if (threadPool_Deform.GetResultQueue()->size())
-		{
-			//ULONG tick = GetTickCount64();
-			for (auto i : *(threadPool_Deform.GetResultQueue()))
-			{
-				UpdateMeshRenderer(i.newMesh, i.pos,i.lodLevel);
-			}
-			threadPool_Deform.GetResultQueue()->clear();
-			//printf("threadPool_Deform Updated %dms\n", GetTickCount64() - tick);
 		}
 	}
 #endif

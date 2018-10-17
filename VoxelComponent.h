@@ -13,7 +13,7 @@ class RegularCellCache;
 template<typename T> class Octree;
 template<typename T> class OctreeNode;
 
-#define USE_THREADPOOL
+//#define USE_JOBSYSTEM
 
 struct COMMAND_BUFFER
 {
@@ -257,9 +257,8 @@ private:
 
 
 
-#ifdef USE_THREADPOOL
-	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool_Main;
-	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool_Deform;
+#ifndef USE_JOBSYSTEM
+	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool[3];
 #endif
 	std::list<COMMAND_BUFFER> commandQueue[3];
 

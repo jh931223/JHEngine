@@ -11,65 +11,91 @@ template<typename TaskBuffer,typename ResultBuffer> class ThreadPool
 public:
 	ThreadPool() {}
 
-	virtual ~ThreadPool() 
+	~ThreadPool() 
 	{
 		for (int i = 0; i < maxThreads; i++)
 		{
 			workers[i].join();
 		}
 	}
-	virtual void Initialize(int _maxThread,bool _keepOrder=true)
+	void Initialize(int _maxThread,bool _keepOrder=true)
 	{
 		maxThreads = _maxThread;
 		keepOrder = _keepOrder;
-		workerFlag.resize(_maxThread);
-		taskOfWorker.resize(_maxThread);
-		workerResult.resize(_maxThread);
+		workerFlags.resize(_maxThread);
 		for (int i = 0; i < _maxThread; i++)
 		{
-			workerLocks.push_back(new std::mutex);
 			workerConditions.push_back(new std::condition_variable);
 			workers.push_back(std::thread([&]() { WorkerFunc(i); }));
-			waitQueue.push_back(i);
+			waitingQueue.push_back(i);
 		}
 		isInit = true;
 	}
 	void AddTask(TaskBuffer _task)
 	{
-		auto iter = std::find(taskBuffers.begin(), taskBuffers.end(), _task);
-		if (iter!=taskBuffers.end())
-			return;
-		taskBuffers.push_back(_task);
+		{
+			std::unique_lock<std::mutex> lock(taskMutex);
+			taskQueue.push_back(_task);
+			{
+				std::unique_lock<std::mutex> lock(workerMutex);
+				if (waitingQueue.size())
+				{
+					int id = waitingQueue.front();
+					ChangeState(id);
+					workerConditions[id]->notify_one();
+				}
+			}
+		}
 	}
 	void AddTaskFront(TaskBuffer _task)
 	{
-
-		auto iter = std::find(taskBuffers.begin(), taskBuffers.end(), _task);
-		if (iter != taskBuffers.end())
-			taskBuffers.erase(iter);
-		taskBuffers.push_front(_task);
+		{
+			std::unique_lock<std::mutex> lock(taskMutex);
+			taskQueue.push_front(_task);
+			{
+				std::unique_lock<std::mutex> lock(workerMutex);
+				if (waitingThreads.size())
+				{
+					int id = waitingThreads.front();
+					ChangeState(id);
+					workerConditions[id]->notify_one();
+				}
+			}
+		}
 	}
-	void ThreadPoolUpdate()
+	void ChangeState(int id, bool isWaiting = true)
 	{
-		if (!isInit)
-			return;
-		WaitQueueUpdate();
-		RunningQueueUpdate();
-		EndQueueUpdate();
+		if (isWaiting)
+		{
+			for (auto i = waitingQueue.begin(); i != waitingQueue.end(); i++)
+				if (*i == id)
+				{
+					waitingQueue.erase(i);
+					break;
+				}
+			workerFlags[id] = true;
+			workingQueue.push_back(id);
+		}
+		else
+		{
+			for (auto i = workingQueue.begin(); i != workingQueue.end(); i++)
+				if (*i == id)
+				{
+					workingQueue.erase(i);
+					break;
+				}
+			workerFlags[id] = false;
+			waitingQueue.push_back(id);
+		}
 	}
-	std::list<ResultBuffer>* GetResultQueue()
+	void GetResultQueue(std::list<ResultBuffer>& _resultQueue)
 	{
-		return &resultQueue;
-	}
-	bool IsAllTaskFinished()
-	{
-		if (!IsInitialized())
-			return false;
-		return !runningQueue.size()&&!taskBuffers.size();
-	}
-	int GetRunningQueueSize()
-	{
-		return runningQueue.size();
+		{
+			std::unique_lock<std::mutex> lock(resultMutex);
+			for(auto i:resultQueue)
+				_resultQueue.push_back(i);
+			resultQueue.clear();
+		}
 	}
 	void SetTaskFunc(std::function<ResultBuffer(TaskBuffer)> func)
 	{
@@ -80,89 +106,43 @@ public:
 		return isInit;
 	}
 protected :
-	virtual void WaitQueueUpdate()
+
+	bool GetTask(TaskBuffer& _task)
 	{
-		while (waitQueue.size())
+		std::unique_lock<std::mutex> lg(taskMutex);
+		if (taskQueue.size())
 		{
-			if (!taskBuffers.size())
-			{
-				break;
-			}
-			int i = waitQueue.front();
-			waitQueue.pop_front();
-			taskOfWorker[i] = taskBuffers.front();
-			taskBuffers.pop_front();
-			runningQueue.push_back(i);
-			{
-				std::lock_guard<std::mutex> lg(*workerLocks[i]);
-				workerFlag[i] = true;
-			}
-			workerConditions[i]->notify_one();
+			_task = taskQueue.front();
+			taskQueue.pop_front();
+			return true;
+		}
+		return false;
+	}
+	void ResultEnqueue(ResultBuffer _buffer)
+	{
+		{
+			std::unique_lock<std::mutex> lock(resultMutex);
+			resultQueue.push_back(_buffer);
 		}
 	}
-	virtual void RunningQueueUpdate()
-	{
-		if (!keepOrder)
-		{
-			std::list<int>::iterator iter = runningQueue.begin();
-			while (iter != runningQueue.end())
-			{
-				int i = *iter;
-				if (workerFlag[i] || !workerLocks[i]->try_lock())
-				{
-					iter++;
-				}
-				else
-				{
-					endQueue.push_back(i);
-					runningQueue.erase(iter++);
-					workerLocks[i]->unlock();
-				}
-			}
-		}
-		else
-		{
-			while (runningQueue.size())
-			{
-				int i = runningQueue.front();
-				if (workerFlag[i] || !workerLocks[i]->try_lock())
-				{
-					break;
-				}
-				endQueue.push_back(i);
-				runningQueue.pop_front();
-				workerLocks[i]->unlock();
-			}
-		}
-	}
-	void EndQueueUpdate()
-	{
-		while (endQueue.size())
-		{
-			int i = endQueue.front();
-			resultQueue.push_back(workerResult[i]);
-			waitQueue.push_back(i);
-			endQueue.pop_front();
-		}
-	}
-	virtual TaskBuffer GetTaskBuffer()
-	{
-		taskMutex.lock();
-		TaskBuffer task = taskBuffers.front();
-		taskBuffers.pop_front();
-		taskMutex.unlock();
-		return task;
-	}
-	virtual TaskBuffer WorkerFunc(int id)
+	void WorkerFunc(int id)
 	{
 		while (true)
 		{
-			std::unique_lock<std::mutex> lg( (*workerLocks[id]) );
-			workerConditions[id]->wait(lg, [&]()->bool {return workerFlag[id]; });
-			ResultBuffer rBuffer = taskFunc(taskOfWorker[id]);
-			workerResult[id] = rBuffer;
-			//printf("id:%d thread finished task\n", id);
-			workerFlag[id] = false;
+			{
+				std::unique_lock<std::mutex> lock(workerMutex);
+				workerConditions[id]->wait(lock, [&,this]()->bool {return this->workerFlags[id]; });
+			}
+			TaskBuffer task;
+			while (GetTask(task))
+			{
+				ResultBuffer rBuffer = taskFunc(task);
+				ResultEnqueue(rBuffer);
+			}
+			{
+				std::unique_lock<std::mutex> lock2(workerMutex);
+				ChangeState(id, false);
+			}
 		}
 	}
 public:
@@ -170,24 +150,20 @@ protected:
 	bool isInit = false;
 	int maxThreads;
 	bool keepOrder;
+
 	std::vector<std::thread> workers;
-	std::vector<bool> workerFlag;
-
-	std::vector<TaskBuffer> taskOfWorker;
-	std::vector<ResultBuffer> workerResult;
-
-	std::list<TaskBuffer> taskBuffers;
+	std::vector<bool> workerFlags;
+	std::vector<std::condition_variable*> workerConditions;
+	std::mutex workerMutex;
 
 	std::function<ResultBuffer(TaskBuffer)> taskFunc;
 
-	std::list<int> waitQueue;
-	std::list<int> runningQueue;
-	std::list<int> endQueue;
+	std::list<TaskBuffer> taskQueue;
 	std::list<ResultBuffer> resultQueue;
-
-	std::vector<std::mutex*> workerLocks;
-	std::vector<std::condition_variable*> workerConditions;
+	std::list<int> waitingQueue;
+	std::list<int> workingQueue;
 
 	std::mutex taskMutex;
+	std::mutex resultMutex;
 };
 
