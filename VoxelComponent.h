@@ -255,15 +255,12 @@ private:
 
 
 
-
+#ifdef USE_THREADPOOL
 	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool_Main;
 	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool_Deform;
-
+#endif
 	std::list<COMMAND_BUFFER> commandQueue[3];
 
-	std::list<COMMAND_BUFFER> commandQueue_Main;
-	std::list<COMMAND_BUFFER> commandQueue_Deform;
-	std::list<COMMAND_BUFFER> commandQueue_LOD;
 
 	std::vector<RESULT_BUFFER> meshBuildResult;
 	GameObject* camera;

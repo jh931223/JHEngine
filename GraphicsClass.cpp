@@ -218,7 +218,7 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 				i->Render(m_Direct3D->GetImmDeviceContext(), viewMatrix, projectionMatrix);
 			}
 		}
-		//printf("%d rendered\n", Frustum::frustumCulled);
+		printf("%d vertices \n", Frustum::drawnVertex);
 	}
 	return true;
 }

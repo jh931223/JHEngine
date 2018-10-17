@@ -70,6 +70,11 @@ int Mesh::GetIndexCount()
 	return m_indexCount;
 }
 
+int Mesh::GetVertexCount()
+{
+	return m_vertexCount;
+}
+
 ID3D11Buffer * const* Mesh::GetVertexBuffer()
 {
 	return &m_vertexBuffer;

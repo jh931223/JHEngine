@@ -69,6 +69,7 @@ void MeshRenderer::Render(ID3D11DeviceContext * _deviceContext, XMMATRIX _view, 
 		_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		material->GetShader()->Render(_deviceContext, mesh->GetIndexCount(), _world, _view, _proj, *material->GetParams());
 		Frustum::frustumCulled++;
+		Frustum::drawnVertex+=mesh->GetVertexCount();
 	}
 }
 
@@ -138,6 +139,7 @@ bool Frustum::FrustumCheckSphere(float xCenter, float yCenter, float zCenter, fl
 void Frustum::ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, XMMATRIX viewMatrix)
 {
 	frustumCulled = 0;
+	drawnVertex = 0;
 	if (isLockFrustum)
 		return;
 	XMFLOAT4X4 pMatrix;
@@ -213,3 +215,4 @@ void Frustum::ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, XMM
 XMVECTOR Frustum::m_planes[6];
 bool Frustum::isLockFrustum=false;
 int Frustum::frustumCulled = 0;
+int Frustum::drawnVertex = 0;

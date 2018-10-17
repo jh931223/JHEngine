@@ -52,7 +52,7 @@ void VoxelComponent::Initialize()
 	tUnit = 0.25f;
 	tAmount = 4;
 
-	info.partitionSize = 16;
+	info.partitionSize = 32;
 	//SetLODLevel(0, 100000);
 
 
@@ -61,7 +61,7 @@ void VoxelComponent::Initialize()
 	//SetLODLevel(2, 256);
 	//SetLODLevel(3, 256);
 
-	int start = 5000000;
+	int start = 128;
 
 	SetLODLevel(0, start);
 	SetLODLevel(1, start + info.partitionSize);
@@ -90,11 +90,12 @@ void VoxelComponent::Initialize()
 		//XMFLOAT3 targetPos = XMFLOAT3(buf.x + halfSize, buf.y + halfSize, buf.z + halfSize);
 		return this->UpdatePartialMesh(XMFLOAT3(buf.x, buf.y, buf.z), buf.lodLevel,buf.transitionCellBasis);
 	});
+#ifdef USE_THREADPOOL
 	threadPool_Main.SetTaskFunc(_task);
 	threadPool_Deform.SetTaskFunc(_task);
-	//threadPool_Main.Initialize(8, false);
-	//threadPool_Deform.Initialize(8, false);
-
+	threadPool_Main.Initialize(8, false);
+	threadPool_Deform.Initialize(8, false);
+#endif
 
 
 
@@ -270,8 +271,10 @@ void VoxelComponent::Update()
 		
 	}
 	ProcessCommandQueue();
+#ifdef USE_THREADPOOL
 	threadPool_Main.ThreadPoolUpdate();
 	threadPool_Deform.ThreadPoolUpdate();
+#endif
 }
 
 void VoxelComponent::OnStart()
@@ -630,7 +633,8 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 }
 void VoxelComponent::PolygonizeTransitionCell(XMFLOAT3 pos,XMINT3 offset, int _unit, short _basis, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
-	if (pos.x + _unit >= info.width || pos.y + _unit >= info.height || pos.z + _unit >= info.depth)
+	XMFLOAT3 totalPos = pos + XMFLOAT3(offset.x, offset.y, offset.z)*_unit;
+	if (totalPos.x + _unit >= info.width || totalPos.y + _unit >= info.height || totalPos.z + _unit >= info.depth)
 		return;
 	int caseCode = 0;
 	std::vector<XMFLOAT3> newCorners;
@@ -647,7 +651,7 @@ void VoxelComponent::PolygonizeTransitionCell(XMFLOAT3 pos,XMINT3 offset, int _u
 		{ vertOut[4],vertOut[5],vertOut[6],vertOut[7] },
 	};
 
-	PolygonizeRegularCell(startPos, offset,_unit, vertices, indices, NULL, vertOut);
+	PolygonizeRegularCell(pos, offset,_unit, vertices, indices, NULL, vertOut);
 	//PolygonizeRegularCell(pos, _unit, vertices, indices, innerBoxMin, innerBoxMax);
 	int basis = _basis;
 	for(int b=0;b<6;b++)
@@ -658,11 +662,11 @@ void VoxelComponent::PolygonizeTransitionCell(XMFLOAT3 pos,XMINT3 offset, int _u
 			float density[13] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
 			for (int j=0;j<9;j++)
 			{
-				newCorners.push_back(pos + transitionCornersByBasis[b][j] * _unit);
+				newCorners.push_back(totalPos + transitionCornersByBasis[b][j] * _unit);
 				density[j] = GetVoxel(newCorners[j]).isoValue;
 			}
 			for (int j = 0; j < 4; j++)
-				newCorners.push_back(pos + _9abc[b][j] * _unit);
+				newCorners.push_back(totalPos + _9abc[b][j] * _unit);
 
 			density[9] = density[0];
 			density[10] = density[2];
@@ -1394,7 +1398,13 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 		for (auto j : newLODGroupIndex[i])
 		{
 			LODGroupData data = newLODGroup[j];
-			auto result=ReserveUpdate(GetPositionFromIndex(j), data.transitionBasis, data.level, Reserve_LOD, true);
+			auto result=ReserveUpdate(GetPositionFromIndex(j), data.transitionBasis, data.level,
+#ifdef USE_THREADPOOL
+				Reserve_Load
+#else 
+				Reserve_LOD
+#endif
+				, true);
 			lodGropups[j] = data;
 		}
 	}
@@ -1405,7 +1415,13 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 	//}
 	for (auto i : oldLODGroups)
 	{
-		ReserveUpdate(GetPositionFromIndex(i.first), Reserve_LOD, true);
+		ReserveUpdate(GetPositionFromIndex(i.first),
+#ifdef USE_THREADPOOL
+			Reserve_Load
+#else 
+			Reserve_LOD
+#endif
+			, true);
 	}
 	oldLODGroups.clear();
 	//printf("LOD Update %dms\n", clock() - t);
@@ -1882,57 +1898,60 @@ void VoxelComponent::ProcessCommandQueue()
 		{ 
 			return;
 		}
-		clock_t time = clock();
-		int length = 16, batch = 1;
+		
+
+#ifdef USE_THREADPOOL
+		while (commandQueue[Reserve_Load].size())
+		{
+			COMMAND_BUFFER _node = commandQueue[Reserve_Load].front();
+			commandQueue[Reserve_Load].pop_front();
+			threadPool_Main.AddTask(_node);
+		}
+		while (commandQueue[Reserve_Deform].size())
+		{
+			COMMAND_BUFFER _node = commandQueue[Reserve_Deform].front();
+			commandQueue[Reserve_Deform].pop_front();
+			threadPool_Deform.AddTask(_node);
+		}
+#else
+		int length = 8, batch = 1;
 		int handle = -1;
 		int lastJob = -1;
 		PolygonizeTask job[3];
-		
+
 		for (int t = 0; t < 3; t++)
 		{
-			if (commandQueue[t].size())
-			{
-				job[t].component = this;
-				int _l = (t == Reserve_LOD) ? 8 : length;
-				for (int i = 0; i < _l; i++)
-				{
-					if (!commandQueue[t].size())
-						break;
-					job[t].commandBuffers.push_back(commandQueue[t].front());
-					commandQueue[t].pop_front();
-				}
-				job[t].resultBuffers.resize(job[t].commandBuffers.size());
-				handle = job[t].Schedule(_l, batch, handle);
-				lastJob = t;
-			}
+		if (commandQueue[t].size())
+		{
+		job[t].component = this;
+		int _l = (t == Reserve_LOD) ? length/2 : length;
+		for (int i = 0; i < _l; i++)
+		{
+		if (!commandQueue[t].size())
+		break;
+		job[t].commandBuffers.push_back(commandQueue[t].front());
+		commandQueue[t].pop_front();
+		}
+		job[t].resultBuffers.resize(job[t].commandBuffers.size());
+		handle = job[t].Schedule(_l, batch, handle);
+		lastJob = t;
+		}
 		}
 		if (lastJob == -1)
-			return;
+		return;
 		job[lastJob].Dispatch();
 		for (int t = 0; t < 3; t++)
 		{
-			for (auto i : job[t].resultBuffers)
-				UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
+		for (auto i : job[t].resultBuffers)
+		UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
 		}
-		//printf("%d ms\n", clock() - time);		
-		//while (commandQueue_Main.size())
-		//{
-		//	COMMAND_BUFFER _node = commandQueue_Main.front();
-		//	commandQueue_Main.pop_front();
-		//	threadPool_Main.AddTask(_node);
-		//}
-		//while (commandQueue_Deform.size())
-		//{
-		//	COMMAND_BUFFER _node = commandQueue_Deform.front();
-		//	commandQueue_Deform.pop_front();
-		//	threadPool_Deform.AddTask(_node);
-		//}
-		//printf("%d ms\n", clock() - time);
+#endif
 	}
 }
 
 void VoxelComponent::ProcessResultQueue()
 {
+#ifdef USE_THREADPOOL
 	if (threadPool_Main.IsInitialized())
 	{
 		if (threadPool_Main.GetResultQueue()->size())
@@ -1959,6 +1978,7 @@ void VoxelComponent::ProcessResultQueue()
 			//printf("threadPool_Deform Updated %dms\n", GetTickCount64() - tick);
 		}
 	}
+#endif
 }
 short VoxelComponent::GetTransitionBasis(int lodLevel, XMFLOAT3 basePos, XMFLOAT3 targetPos)
 {

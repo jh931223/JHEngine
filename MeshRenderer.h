@@ -38,6 +38,7 @@ class Frustum
 public:
 	static bool isLockFrustum;
 	static int frustumCulled;
+	static int drawnVertex;
 public:
 	static void ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, XMMATRIX viewMatrix);
 	static bool FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius);

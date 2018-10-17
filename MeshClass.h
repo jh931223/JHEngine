@@ -31,6 +31,7 @@ public:
 	bool RecalculateNormals();
 
 	int GetIndexCount();
+	int GetVertexCount();
 	VertexBuffer* vertices;
 	ID3D11Buffer* const* GetVertexBuffer();
 	ID3D11Buffer* GetIndexBuffer();
