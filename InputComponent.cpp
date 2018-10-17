@@ -18,19 +18,19 @@ void InputComponent::Update()
 	XMFLOAT3 axis(0,0,0);
 	if (Input()->GetKey(DIK_D))
 	{
-		axis += right();
+		axis += BasicVector::right;
 	}
 	else if (Input()->GetKey(DIK_A))
 	{
-		axis -= right();
+		axis -= BasicVector::right;
 	}
 	if (Input()->GetKey(DIK_W))
 	{
-		axis += forward();
+		axis += BasicVector::forward;
 	}
 	else if (Input()->GetKey(DIK_S))
 	{
-		axis -= forward();
+		axis -= BasicVector::forward;
 	}
 	axis=Normalize3(axis);
 	float deltaTime=Timer::DeltaTime();

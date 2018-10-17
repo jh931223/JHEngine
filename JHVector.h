@@ -19,22 +19,28 @@ namespace JHDev
 	{
 		return one.x != other.x || one.y != other.y || one.z != other.z;
 	}
-
-	inline const XMFLOAT3 right()
+	namespace BasicVector
 	{
-		return XMFLOAT3(1, 0, 0);
+		const XMFLOAT3 right= XMFLOAT3(1, 0, 0);
+		const XMFLOAT3 up = XMFLOAT3(0, 1, 0);
+		const XMFLOAT3 forward = XMFLOAT3(0, 0, 1);
 	}
-
-	inline const XMFLOAT3 up()
+	inline const float Dot(const XMFLOAT3& one, const XMFLOAT3& other)
 	{
-		return XMFLOAT3(0, 1, 0);
+		XMVECTOR vec1 = XMLoadFloat3(&one);
+		XMVECTOR vec2 = XMLoadFloat3(&other);
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMVector3Dot(vec1, vec2));
+		return result.x;
 	}
-
-	inline const XMFLOAT3 forward()
+	inline const XMFLOAT3 Cross(const XMFLOAT3& one, const XMFLOAT3& other)
 	{
-		return XMFLOAT3(0, 0, 1);
+		XMVECTOR vec1 = XMLoadFloat3(&one);
+		XMVECTOR vec2 = XMLoadFloat3(&other);
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMVector3Cross(vec1, vec2));
+		return result;
 	}
-
 	inline XMFLOAT3 operator+=(XMFLOAT3& one, const XMFLOAT3&other)
 	{
 		one = XMFLOAT3(one.x + other.x, one.y + other.y, one.z + other.z);
@@ -59,6 +65,10 @@ namespace JHDev
 	inline  XMFLOAT3 operator+(const XMFLOAT3& one, const XMFLOAT3&other)
 	{
 		return XMFLOAT3(one.x + other.x, one.y + other.y, one.z + other.z);
+	}
+	inline  XMINT3 operator+(const XMINT3& one, const XMINT3&other)
+	{
+		return XMINT3(one.x + other.x, one.y + other.y, one.z + other.z);
 	}
 	inline  XMFLOAT3 operator-(const XMFLOAT3& one, const XMFLOAT3&other)
 	{

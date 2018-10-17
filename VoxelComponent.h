@@ -9,6 +9,7 @@
 class MeshRenderer;
 class Material;
 class VoxelComponent;
+class RegularCellCache;
 template<typename T> class Octree;
 template<typename T> class OctreeNode;
 
@@ -28,10 +29,6 @@ struct COMMAND_BUFFER
 	{
 		return  ((data1.x == x) && (data1.y == y) && (data1.z == z));
 	}
-};
-struct ReuseData
-{
-	int edgeVertIndex[12] = { -1, };
 };
 struct RESULT_BUFFER
 {
@@ -139,12 +136,12 @@ private:
 	void CreateCubeFace_Forward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
 	void CreateCubeFace_Backward(float x, float y, float z, float _unit, BYTE, int&, std::vector<VertexBuffer>&, std::vector<unsigned long>&);
 
-	void PolygonizeCell(XMFLOAT3 pos, XMINT3 offset, int _unit,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, RegularCellCache& cache,XMFLOAT3 min=XMFLOAT3(0,0,0),XMFLOAT3 max=XMFLOAT3(1,1,1));
-	void PolygonizeCell(XMFLOAT3 pos, XMINT3 offset, int _unit, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, RegularCellCache& cache,XMFLOAT3 corners[]);
+	void PolygonizeRegularCell(XMFLOAT3 pos, XMINT3 offset, int _unit,std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, RegularCellCache* cache,XMFLOAT3 min=XMFLOAT3(0,0,0),XMFLOAT3 max=XMFLOAT3(1,1,1));
+	void PolygonizeRegularCell(XMFLOAT3 pos, XMINT3 offset, int _unit, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices, RegularCellCache* cache, XMFLOAT3 corners[]);
+	void PolygonizeTransitionCell(XMFLOAT3 pos, XMINT3 offset, int _unit, short _basis, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
 
-	void GetVertexInnerBox(short _basis, XMFLOAT3 offset,int _unit, XMFLOAT3 vertOut[]);
+	void GetVertexInnerBox(short _basis, XMINT3 offset,int _unit, XMFLOAT3 vertOut[]);
 
-	void PolygonizeTransitionCell(XMFLOAT3 pos, int _unit, short _basis, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices);
 
 	RESULT_BUFFER GenerateCubeFaces(XMFLOAT3 pos);
 
@@ -226,7 +223,6 @@ private:
 	bool useMarchingCube=true;
 	bool useAsyncBuild=true;
 
-	bool useFrustum=false;
 	bool useGPGPU = false;
 	bool useGetDataFromFile = false;
 

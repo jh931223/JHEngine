@@ -1,30 +1,78 @@
 #pragma once
-struct RegularCellCacheBuffer
+#include"stdafx.h"
+
+struct ReusedCell
 {
-	int verts[3] = { -1, };
-	byte caseCode = 0;
+	int* verts;
+	ReusedCell(int _size)
+	{
+		verts = new int[_size];
+		for (int i = 0; i < _size; i++)
+			verts[i] = -1;
+	}
+	~ReusedCell()
+	{
+		delete[] verts;
+	}
 };
 
 struct RegularCellCache
 {
-	RegularCellCacheBuffer* cache;
+	ReusedCell** cache[2];
 	int size;
 	int unit;
 	RegularCellCache(int _chunkSize,int _unit)
 	{
 		size = _chunkSize / _unit;
-		cache = new RegularCellCacheBuffer[size*size*size];
+		cache[0] = new ReusedCell*[size*size];
+		for (int i = 0; i < size*size; i++)
+			cache[0][i] = new ReusedCell(4);
+		cache[1] = new ReusedCell*[size*size];
+		for (int i = 0; i < size*size; i++)
+			cache[1][i] = new ReusedCell(4);
 	}
-	RegularCellCacheBuffer& operator [](XMINT3 pos)
+	~RegularCellCache()
 	{
-		assert(pos.x < 0 || pos.y < 0 || pos.z < 0);
-		return cache[pos.x + pos.y * size + pos.z * size*size];
+		if (cache[0])
+		{
+			for (int i = 0; i < size*size; i++)
+				delete cache[0][i];
+			delete[]cache[0];
+		}
+		if (cache[1])
+		{
+			for (int i = 0; i < size*size; i++)
+				delete cache[1][i];
+			delete[]cache[1];
+		}
+		cache[0] = 0;
+		cache[1] = 0;
 	}
-	static XMINT3 PrevOffset(int dir)
+	ReusedCell* operator [](XMINT3 pos)
 	{
-		XMINT3(-(dir&1), -((dir >> 1) & 1), -((dir >> 2) & 1));
+		if(pos.x < 0 || pos.y < 0 || pos.z < 0)
+			return NULL;
+		return cache[pos.x&1][pos.y*size + pos.z];
+	}
+	ReusedCell* GetReusedCell(XMINT3 pos, byte rDir)
+	{
+		int rx = rDir & 0x01;
+		int rz = (rDir >> 1) & 0x01;
+		int ry = (rDir >> 2) & 0x01;
+
+		int dx = pos.x - rx;
+		int dy = pos.y - ry;
+		int dz = pos.z - rz;
+
+		if(!(dx >= 0 && dy >= 0 && dz >= 0))
+		{
+			return NULL;
+		}
+		return cache[dx & 1][dy * size + dz];
 	}
 };
+
+
 
 struct RegularCell
 {
