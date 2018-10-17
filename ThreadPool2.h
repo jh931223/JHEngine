@@ -113,6 +113,7 @@ public:
 					return;
 			}
 		}
+		tasks.clear();
 	}
 private:
 	void Excute(int id)

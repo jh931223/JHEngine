@@ -1924,7 +1924,7 @@ void VoxelComponent::ProcessCommandQueue()
 		if (commandQueue[t].size())
 		{
 		job[t].component = this;
-		int _l = (t == Reserve_LOD) ? 4 : length;
+		int _l = (t == Reserve_LOD) ? 30 : length;
 		for (int i = 0; i < _l; i++)
 		{
 		if (!commandQueue[t].size())
