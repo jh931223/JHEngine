@@ -21,85 +21,17 @@ bool TriplanarShaderClass::InitializeShader(ID3D11Device * device, HWND hwnd, co
 {
 	HRESULT result;
 	ID3D10Blob* errorMessage = nullptr;
-
-	// 버텍스 쉐이더 코드를 컴파일한다.
-	ID3D10Blob* vertexShaderBuffer = nullptr;
-	result = D3DCompileFromFile(vsFilename, NULL, NULL, "main", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS,
-		0, &vertexShaderBuffer, &errorMessage);
-	if (FAILED(result))
-	{
-		// 셰이더 컴파일 실패시 오류메시지를 출력합니다.
-		if (errorMessage)
-		{
-			OutputShaderErrorMessage(errorMessage, hwnd, vsFilename);
-		}
-		// 컴파일 오류가 아니라면 셰이더 파일을 찾을 수 없는 경우입니다.
-		else
-		{
-			MessageBox(hwnd, vsFilename, L"Missing Shader File", MB_OK);
-		}
-
-		return false;
-	}
-
-	// 픽셀 쉐이더 코드를 컴파일한다.
-	ID3D10Blob* pixelShaderBuffer = nullptr;
-	result = D3DCompileFromFile(psFilename, NULL, NULL, "ps", "ps_5_0", D3D10_SHADER_ENABLE_STRICTNESS,
-		0, &pixelShaderBuffer, &errorMessage);
-	if (FAILED(result))
-	{
-		// 셰이더 컴파일 실패시 오류메시지를 출력합니다.
-		if (errorMessage)
-		{
-			OutputShaderErrorMessage(errorMessage, hwnd, psFilename);
-		}
-		// 컴파일 오류가 아니라면 셰이더 파일을 찾을 수 없는 경우입니다.
-		else
-		{
-			MessageBox(hwnd, psFilename, L"Missing Shader File", MB_OK);
-		}
-
-		return false;
-	}
-
-
-	// 버퍼로부터 정점 셰이더를 생성한다.
-	result = device->CreateVertexShader(vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), NULL,
-		&m_vertexShader);
-	if (FAILED(result))
-	{
-		return false;
-	}
-
-	// 버퍼에서 픽셀 쉐이더를 생성합니다.
-	result = device->CreatePixelShader(pixelShaderBuffer->GetBufferPointer(), pixelShaderBuffer->GetBufferSize(), NULL,
-		&m_pixelShader);
-	if (FAILED(result))
-	{
-		return false;
-	}
-
-	// 정점 입력 레이아웃 구조체를 설정합니다.
-
-
 	D3D11_INPUT_ELEMENT_DESC polygonLayout[]
 	{
 		{ "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA ,0 },
 		{ "TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT ,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0 },
-		{ "NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0 }
+		{ "NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0 }
 	};
-	if (!CreateVertexLayout(device, vertexShaderBuffer, polygonLayout, ARRAYSIZE(polygonLayout)))
-	{
+	if (!CreateVertexShader(device, hwnd, vsFilename, "vs_5_0", "main", polygonLayout, ARRAYSIZE(polygonLayout)))
 		return false;
-	}
-
-	// 더 이상 사용되지 않는 정점 셰이더 퍼버와 픽셀 셰이더 버퍼를 해제합니다.
-	vertexShaderBuffer->Release();
-	vertexShaderBuffer = 0;
-
-	pixelShaderBuffer->Release();
-	pixelShaderBuffer = 0;
-
+	if(!CreatePixelShader(device, hwnd, vsFilename, "ps_5_0", "ps"))
+		return false;
 	// 정점 셰이더에 있는 행렬 상수 버퍼의 구조체를 작성합니다.
 	if (!CreateConstantBuffer<MatrixBufferType>(device,&m_matrixBuffer))
 		return false;
@@ -107,47 +39,6 @@ bool TriplanarShaderClass::InitializeShader(ID3D11Device * device, HWND hwnd, co
 		return false;
 	if (!CreateConstantBuffer<PSLightBufferType>(device, &psLightBuffer))
 		return false;
-	//D3D11_BUFFER_DESC matrixBufferDesc;
-	//matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	//matrixBufferDesc.ByteWidth = sizeof(MatrixBufferType);
-	//matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	//matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	//matrixBufferDesc.MiscFlags = 0;
-	//matrixBufferDesc.StructureByteStride = 0;
-
-	//// 상수 버퍼 포인터를 만들어 이 클래스에서 정점 셰이더 상수 버퍼에 접근할 수 있게 합니다.
-	//result = device->CreateBuffer(&matrixBufferDesc, NULL, &m_matrixBuffer);
-	//if (FAILED(result))
-	//{
-	//	return false;
-	//}
-
-	//D3D11_BUFFER_DESC lightBufferDesc;
-	//lightBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	//lightBufferDesc.ByteWidth = sizeof(PSLightBufferType);
-	//lightBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	//lightBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	//lightBufferDesc.MiscFlags = 0;
-	//lightBufferDesc.StructureByteStride = 0;
-	//result = device->CreateBuffer(&lightBufferDesc, NULL, &psLightBuffer);
-	//if (FAILED(result))
-	//{
-	//	return false;
-	//}
-	//D3D11_BUFFER_DESC lightBufferDesc2;
-	//lightBufferDesc2.Usage = D3D11_USAGE_DYNAMIC;
-	//lightBufferDesc2.ByteWidth = sizeof(VSLightBufferType);
-	//lightBufferDesc2.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	//lightBufferDesc2.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	//lightBufferDesc2.MiscFlags = 0;
-	//lightBufferDesc2.StructureByteStride = 0;
-	//result = device->CreateBuffer(&lightBufferDesc, NULL, &vsLightBuffer);
-	//if (FAILED(result))
-	//{
-	//	return false;
-	//}
-	
-
 	// 텍스처 샘플러 상태 구조체를 생성 및 설정합니다.
 	D3D11_SAMPLER_DESC samplerDesc;
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -222,7 +113,7 @@ bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRI
 	}
 	VSLightBufferType* dataPtr3 = (VSLightBufferType*)mappedResource.pData;
 	dataPtr3->lightDir = LightComponent::mainLight()->transform()->forward();
-	XMFLOAT3 camPos = CameraComponent::mainCamera()->transform()->GetWorldPosition();
+	XMFLOAT3 camPos = ShaderClass::renderCam->transform()->GetWorldPosition();
 	dataPtr3->cameraPos = XMFLOAT4(camPos.x,camPos.y,camPos.z,1);
 	deviceContext->Unmap(vsLightBuffer, 0);
 

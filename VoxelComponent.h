@@ -97,7 +97,10 @@ public:
 	{
 		Reserve_Deform,Reserve_Load,Reserve_LOD
 	};
-	
+	enum BrushType
+	{
+		Brush_Sphere,Brush_Cube
+	};
 
 	VoxelComponent();
 	~VoxelComponent();
@@ -108,7 +111,7 @@ public:
 	unsigned int GetCellIndex(int x, int y, int z);
 
 	bool SetVoxel(int x, int y, int z, VoxelData, bool isInit=false);
-	bool EditVoxel(XMFLOAT3 pos, float _radius, float _strength);
+	bool EditVoxel(XMFLOAT3 pos, float _radius, float _strength, BrushType _brushType=Brush_Sphere);
 	VoxelData GetVoxel(int x, int y, int z);
 
 	VoxelComponent::VoxelData GetVoxel(XMFLOAT3 pos);

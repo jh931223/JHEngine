@@ -47,6 +47,24 @@ public:
 			}
 		}
 	}
+	void AddTaskList(const std::list<TaskBuffer>& _task)
+	{
+		{
+			std::unique_lock<std::mutex> lock(taskMutex);
+			for(auto i:_task)
+				taskQueue.push_back(i);
+			{
+				std::unique_lock<std::mutex> lock(workerMutex);
+				int count= taskQueue.size();
+				while (waitingQueue.size()&&count--)
+				{
+					int id = waitingQueue.front();
+					ChangeState(id);
+					workerConditions[id]->notify_one();
+				}
+			}
+		}
+	}
 	void AddTaskFront(TaskBuffer _task)
 	{
 		{

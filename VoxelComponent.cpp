@@ -61,7 +61,7 @@ void VoxelComponent::Initialize()
 	//SetLODLevel(2, 256);
 	//SetLODLevel(3, 256);
 
-	int start = 256;
+	int start = 1000000;
 
 	SetLODLevel(0, start);
 	SetLODLevel(1, start + info.partitionSize);
@@ -256,11 +256,6 @@ void VoxelComponent::Update()
 		//threadPool.AddTask([]()->void {for (int i = 0; i < 1000;i++)printf("test %d\n",i); });
 		XMFLOAT3 pos = camera->transform->GetWorldPosition() + camera->transform->forward() * brushRadius;
 		XMFLOAT3 cpos = CovertToChunkPos(pos, false);
-		int cX = (int)cpos.x;
-		int cY = (int)cpos.y;
-		int cZ = (int)cpos.z;
-		float radius = brushRadius;
-		bool isUpdated = false;
 		EditVoxel(pos, brushRadius, -strength);
 	}
 	else if (Input()->GetKey(VK_LBUTTON))
@@ -566,7 +561,7 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 		bool present = (dir&directionMask)==dir;
 		int newIndex = -1;
 		if (cache&&present&&d1 != 7)
-		{//////1016ÀÛ¾÷Áß
+		{
 			auto prevCache = cache->GetReusedCell(offset, dir);
 			if(prevCache)
 				newIndex = prevCache->verts[idx];
@@ -580,6 +575,7 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 			VertexBuffer newVertex;
 			newVertex.position = (lerpSelf(p0, p1, mu));
 			newVertex.normal = XMFLOAT3(0, 0, 0);
+			newVertex.color = XMFLOAT4();
 			vertices.push_back(newVertex);
 			newIndex = vertices.size()-1;
 		}
@@ -699,10 +695,6 @@ void VoxelComponent::PolygonizeTransitionCell(XMFLOAT3 pos,XMINT3 offset, int _u
 				unsigned int d0 = d >> 4;
 				unsigned int d1 = d & 0xF;
 				int reuse = vertDatas[i] >> 8;
-				//if (transitionCornerOrder[basis][d0]<transitionCornerOrder[basis][d1])
-				//{
-				//	swap<unsigned int>(d0, d1);
-				//}
 				p0 = newCorners[d0];
 				p1 = newCorners[d1];
 				float mu = (isoLevel - density[d0]) / (density[d1] - density[d0]);
@@ -1170,7 +1162,7 @@ bool VoxelComponent::SetVoxel(int x, int y, int z, VoxelData value,bool isInit)
 
 
 
-bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength)
+bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength,BrushType _brushType)
 {
 	XMFLOAT3 partitionPos = GetPartitionStartPos(pos);
 	float hUnit = unit * 0.5f;
@@ -1183,50 +1175,30 @@ bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength)
 			for (int k = -_radius-1; k < _radius+1; k++)
 			{
 				float dis = GetDistance(pos, pos + XMFLOAT3(i, j, k));
-				/*if (dis <= _radius)
-				{*/
-					float amount = _radius - dis;//1 -dis / _radius;
-					XMFLOAT3 nPos(pos.x + i - hUnit, pos.y + j - hUnit, pos.z + k - hUnit);
-					VoxelData data = GetVoxel(nPos);
-					float lastValue = data.isoValue;
-					data.isoValue = amount*SIGN(_strength);
-					//data.isoValue += amount*_strength;
-					//data.isoValue = data.isoValue + _strength * amount;
-					if (_strength > 0 && lastValue > data.isoValue)
-						continue;
-					else if (_strength < 0 && lastValue < data.isoValue)
-						continue;
-					else if (lastValue == data.isoValue)
-						continue;
-					if (SetVoxel(nPos.x, nPos.y, nPos.z, data, false))
+				float amount = _radius - dis;
+				XMFLOAT3 nPos(pos.x + i - hUnit, pos.y + j - hUnit, pos.z + k - hUnit);
+				VoxelData data = GetVoxel(nPos);
+				float lastValue = data.isoValue;
+				data.isoValue = amount*SIGN(_strength);
+				if (_strength > 0 && lastValue > data.isoValue)
+					continue;
+				else if (_strength < 0 && lastValue < data.isoValue)
+					continue;
+				else if (lastValue == data.isoValue)
+					continue;
+				if (SetVoxel(nPos.x, nPos.y, nPos.z, data, false))
+				{
+					ReserveUpdate(nPos, Reserve_Deform);
+					XMFLOAT3 pPos = GetPartitionStartPos(nPos);
+					XMFLOAT3 offset[7] = { XMFLOAT3(1,0,0),XMFLOAT3(0,1,0),XMFLOAT3(0,0,1),XMFLOAT3(1,1,0),XMFLOAT3(0,1,1),XMFLOAT3(1,1,1) };
+					for (int o = 0; o < 7; o++)
 					{
-						ReserveUpdate(nPos, Reserve_Deform);
-						XMFLOAT3 pPos = GetPartitionStartPos(nPos);
-						XMFLOAT3 offset[7] = { XMFLOAT3(1,0,0),XMFLOAT3(0,1,0),XMFLOAT3(0,0,1),XMFLOAT3(1,1,0),XMFLOAT3(0,1,1),XMFLOAT3(1,1,1) };
-						for (int o = 0; o < 7; o++)
-						{
-							XMFLOAT3 oPos = GetPartitionStartPos(nPos-offset[o]);
-							if(pPos!=oPos)
-								if(IsPolygonizableCell(nPos-offset[i]))
-									ReserveUpdate(oPos, Reserve_Deform);
-						}
-						//XMFLOAT3 pPos = GetPartitionStartPos(nPos);
-						//if(pPos.x == nPos.x)
-						//	ReserveUpdate(nPos + XMFLOAT3(-1, 0, 0), Reserve_Deform);
-						//if (pPos.y == nPos.y)
-						//	ReserveUpdate(nPos + XMFLOAT3(0, -1, 0), Reserve_Deform);
-						//if (pPos.x == nPos.x&&pPos.y == nPos.y)
-						//	ReserveUpdate(nPos + XMFLOAT3(-1, -1, 0), Reserve_Deform);
-						//if (pPos.x == nPos.x&&pPos.y == nPos.y&&pPos.z==nPos.z)
-						//	ReserveUpdate(nPos + XMFLOAT3(-1, -1, -1), Reserve_Deform);
-						//if (pPos.y == nPos.y&&pPos.z == nPos.z)
-						//	ReserveUpdate(nPos + XMFLOAT3(0, -1, -1), Reserve_Deform);
-						//if (pPos.x == nPos.x&&pPos.z == nPos.z)
-						//	ReserveUpdate(nPos + XMFLOAT3(-1, 0, -1), Reserve_Deform);
-						//if (pPos.z == nPos.z)
-						//	ReserveUpdate(nPos + XMFLOAT3(0, 0, -1), Reserve_Deform);
+						XMFLOAT3 oPos = GetPartitionStartPos(nPos-offset[o]);
+						if(pPos!=oPos)
+							if(IsPolygonizableCell(nPos-offset[i]))
+								ReserveUpdate(oPos, Reserve_Deform);
 					}
-				//}
+				}
 			}
 		}
 	}
@@ -1900,9 +1872,11 @@ void VoxelComponent::ProcessCommandQueue()
 		{
 			while (commandQueue[i].size())
 			{
-				COMMAND_BUFFER _node = commandQueue[i].front();
-				commandQueue[i].pop_front();
-				threadPool[i].AddTask(_node);
+				threadPool[i].AddTaskList(commandQueue[i]);
+				commandQueue[i].clear();
+				//COMMAND_BUFFER _node = commandQueue[i].front();
+				//commandQueue[i].pop_front();
+				//threadPool[i].AddTask(_node);
 			}
 		}
 #else

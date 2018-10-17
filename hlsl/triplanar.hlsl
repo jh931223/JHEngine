@@ -40,6 +40,8 @@ struct v2f
 Texture2D shaderTexture1 : register(t0);
 Texture2D shaderTexture2 : register(t1);
 Texture2D shaderTexture3 : register(t2);
+
+
 Texture2D stn1 : register(t3);
 Texture2D stn2 : register(t4);
 Texture2D stn3 : register(t5);
@@ -102,12 +104,15 @@ float4 ps(v2f input) : SV_TARGET
 		float4 col3 = shaderTexture3.Sample(SampleType, coord3);
 		// Sample bump maps too, and generate bump vectors.
 		// (Note: this uses an oversimplified tangent basis.)
+
 		float2 bumpFetch1 = stn1.Sample(SampleType, coord1).xy - 0.5;
 		float2 bumpFetch2 = stn2.Sample(SampleType, coord2).xy - 0.5;
 		float2 bumpFetch3 = stn3.Sample(SampleType, coord3).xy - 0.5;
+
 		float3 bump1 = float3(0, bumpFetch1.x, bumpFetch1.y);
 		float3 bump2 = float3(bumpFetch2.y, 0, bumpFetch2.x);
 		float3 bump3 = float3(bumpFetch3.x, bumpFetch3.y, 0);
+
 		// Finally, blend the results of the 3 planar projections.
 		blended_color = col1.xyzw * blend_weights.xxxx +
 			col2.xyzw * blend_weights.yyyy +

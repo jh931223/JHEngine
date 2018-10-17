@@ -182,6 +182,7 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 	m_Camera->GetViewMatrix(viewMatrix);
 	m_Camera->GetProjectionMatrix(projectionMatrix);
 	Frustum::ConstructFrustum(m_Camera->m_farPlane, projectionMatrix, viewMatrix);
+	ShaderClass::SetRenderCam(m_Camera);
 	if (useMultiThreadedRendering)
 	{
 		if (!m_Direct3D->GetDeferredContextsSize())

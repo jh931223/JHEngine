@@ -4,7 +4,7 @@
 #include"StructuredBuffer.h"
 #include"TextureClass.h"
 #include"ShaderParameterCollections.h"
-//#include"CameraComponent.h"
+#include"CameraComponent.h"
 class TextureClass;
 class RenderTextureClass;
 class ID3D11ShaderResourceView;
@@ -51,6 +51,10 @@ public:
 
 		// 컴파일 에러가 있음을 팝업 메세지로 알려줍니다.
 		MessageBox(hwnd, L"Error compiling shader.", shaderFilename, MB_OK);
+	}
+	static void SetRenderCam(CameraComponent* _renderCam)
+	{
+		renderCam = _renderCam;
 	}
 protected:
 	virtual bool InitializeShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename, const WCHAR* gsFileName=NULL) = 0;
@@ -126,6 +130,78 @@ protected:
 		}
 		return true;
 	}
+	bool CreateVertexShader(ID3D11Device * device, HWND hwnd,LPCWSTR vsFilename, LPCSTR version,LPCSTR methodName, D3D11_INPUT_ELEMENT_DESC polygonLayout[],int layoutSize)
+	{
+		HRESULT result;
+		ID3D10Blob* errorMessage = nullptr;
+		// 버텍스 쉐이더 코드를 컴파일한다.
+		ID3D10Blob* vertexShaderBuffer = nullptr;
+		result = D3DCompileFromFile(vsFilename, NULL, NULL, methodName, version, D3D10_SHADER_ENABLE_STRICTNESS,
+			0, &vertexShaderBuffer, &errorMessage);
+		if (FAILED(result))
+		{
+			// 셰이더 컴파일 실패시 오류메시지를 출력합니다.
+			if (errorMessage)
+			{
+				OutputShaderErrorMessage(errorMessage, hwnd, vsFilename);
+			}
+			// 컴파일 오류가 아니라면 셰이더 파일을 찾을 수 없는 경우입니다.
+			else
+			{
+				MessageBox(hwnd, vsFilename, L"Missing Shader File", MB_OK);
+			}
+			return false;
+		}
+		result = device->CreateVertexShader(vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), NULL,
+			&m_vertexShader);
+		if (FAILED(result))
+		{
+			return false;
+		}	
+
+		if (!CreateVertexLayout(device, vertexShaderBuffer, polygonLayout, layoutSize))
+		{
+			return false;
+		}
+
+		vertexShaderBuffer->Release();
+		vertexShaderBuffer = 0;
+		return true;
+	}
+	bool CreatePixelShader(ID3D11Device * device, HWND hwnd, LPCWSTR psFilename, LPCSTR version, LPCSTR methodName)
+	{
+		HRESULT result;
+		ID3D10Blob* errorMessage = nullptr;
+		// 버텍스 쉐이더 코드를 컴파일한다.
+		ID3D10Blob* pixelShaderBuffer = nullptr;
+		result = D3DCompileFromFile(psFilename, NULL, NULL, methodName, version, D3D10_SHADER_ENABLE_STRICTNESS,
+			0, &pixelShaderBuffer, &errorMessage);
+		if (FAILED(result))
+		{
+			// 셰이더 컴파일 실패시 오류메시지를 출력합니다.
+			if (errorMessage)
+			{
+				OutputShaderErrorMessage(errorMessage, hwnd, psFilename);
+			}
+			// 컴파일 오류가 아니라면 셰이더 파일을 찾을 수 없는 경우입니다.
+			else
+			{
+				MessageBox(hwnd, psFilename, L"Missing Shader File", MB_OK);
+			}
+			return false;
+		}
+
+		// 버퍼에서 픽셀 쉐이더를 생성합니다.
+		result = device->CreatePixelShader(pixelShaderBuffer->GetBufferPointer(), pixelShaderBuffer->GetBufferSize(), NULL,
+			&m_pixelShader);
+		if (FAILED(result))
+		{
+			return false;
+		}
+		pixelShaderBuffer->Release();
+		pixelShaderBuffer = 0;
+		return true;
+	}
 protected:
 	ID3D11VertexShader * m_vertexShader = nullptr;
 	ID3D11PixelShader* m_pixelShader = nullptr;
@@ -135,4 +211,5 @@ protected:
 	std::map<ID3D11DeviceContext*, ID3D11Buffer*> m_matrixBufferPerDC;// = nullptr;
 	ID3D11Buffer* m_matrixBuffer = nullptr;
 	ID3D11SamplerState* m_sampleState = nullptr;
+	static CameraComponent* renderCam;
 };
