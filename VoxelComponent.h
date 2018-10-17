@@ -13,6 +13,8 @@ class RegularCellCache;
 template<typename T> class Octree;
 template<typename T> class OctreeNode;
 
+#define USE_THREADPOOL
+
 struct COMMAND_BUFFER
 {
 	int x, y, z;

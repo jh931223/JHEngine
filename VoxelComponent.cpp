@@ -268,7 +268,6 @@ void VoxelComponent::Update()
 		XMFLOAT3 pos = camera->transform->GetWorldPosition() + camera->transform->forward() *brushRadius;
 		XMFLOAT3 cpos = CovertToChunkPos(pos, false);
 		EditVoxel(pos, brushRadius, strength);
-		
 	}
 	ProcessCommandQueue();
 #ifdef USE_THREADPOOL

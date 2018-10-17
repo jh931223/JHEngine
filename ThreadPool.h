@@ -82,8 +82,6 @@ public:
 protected :
 	virtual void WaitQueueUpdate()
 	{
-
-
 		while (waitQueue.size())
 		{
 			if (!taskBuffers.size())
