@@ -152,6 +152,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -170,6 +171,7 @@
     <ClInclude Include="D3DClass.h" />
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="DxDefine.h" />
+    <ClInclude Include="InputComponent.h" />
     <ClInclude Include="JobSystem.h" />
     <ClInclude Include="MainScene.h" />
     <ClInclude Include="RWLock.h" />
@@ -182,7 +184,6 @@
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GraphicsClass.h" />
     <ClInclude Include="InputClass.h" />
-    <ClInclude Include="InputComponent.h" />
     <ClInclude Include="JHVector.h" />
     <ClInclude Include="LightComponent.h" />
     <ClInclude Include="SceneClass.h" />
@@ -213,6 +214,7 @@
     <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="InputComponent.cpp" />
     <ClCompile Include="JobSystem.cpp" />
     <ClCompile Include="MainScene.cpp" />
     <ClCompile Include="RWLock.cpp" />
@@ -222,7 +224,6 @@
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="TriplanarShaderClass.cpp" />
     <ClCompile Include="VoxelComponent.cpp" />
-    <ClCompile Include="InputComponent.cpp" />
     <ClCompile Include="JHEngine.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GraphicsClass.cpp" />

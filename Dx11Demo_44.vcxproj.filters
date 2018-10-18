@@ -91,9 +91,6 @@
     <ClInclude Include="RenderTextureClass.h">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClInclude>
-    <ClInclude Include="InputComponent.h">
-      <Filter>Scripts</Filter>
-    </ClInclude>
     <ClInclude Include="BitmapClass.h">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClInclude>
@@ -169,11 +166,11 @@
     <ClInclude Include="Timer.h">
       <Filter>JHEngine\Engine</Filter>
     </ClInclude>
+    <ClInclude Include="InputComponent.h">
+      <Filter>Scripts</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="InputComponent.cpp">
-      <Filter>Scripts</Filter>
-    </ClCompile>
     <ClCompile Include="ResourcesClass.cpp" />
     <ClCompile Include="TextureClass.cpp">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
@@ -279,6 +276,9 @@
     </ClCompile>
     <ClCompile Include="Timer.cpp">
       <Filter>JHEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="InputComponent.cpp">
+      <Filter>Scripts</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
