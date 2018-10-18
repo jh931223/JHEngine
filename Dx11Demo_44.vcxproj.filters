@@ -285,6 +285,9 @@
     <FxCompile Include="hlsl\triplanar.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
+    <FxCompile Include="hlsl\depthMap.hlsl">
+      <Filter>Shaders\HLSL</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="data\cube.txt">
