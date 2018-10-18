@@ -12,7 +12,7 @@ public:
 	Material(const Material& mat);
 	~Material();
 	bool Render(ID3D11DeviceContext*, const int, XMMATRIX, XMMATRIX, XMMATRIX);
-	void SetShader(ShaderClass *_shader,HWND hwnd);
+	void SetShader(ShaderClass *_shader);
 	ShaderClass* GetShader()
 	{
 		return shader;

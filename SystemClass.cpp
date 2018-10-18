@@ -51,6 +51,7 @@ bool SystemClass::Initialize()
 	}
 	// m_Graphics °´Ã¼ ÃÊ±âÈ­.
 	m_Graphics->Initialize(screenWidth, screenHeight, m_hwnd);
+
 	m_Resources = new ResourcesClass;
 	if (!m_Resources)
 		return false;

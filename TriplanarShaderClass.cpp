@@ -3,7 +3,7 @@
 #include"LightComponent.h"
 #include"CameraComponent.h"
 #include"RenderTextureClass.h"
-
+#include"ResourcesClass.h"
 TriplanarShaderClass::TriplanarShaderClass()
 {
 }
@@ -131,7 +131,7 @@ bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRI
 	deviceContext->PSSetShaderResources(3, 1, params.GetTexture("Texture2Normal")->GetResourceView());
 	deviceContext->PSSetShaderResources(4, 1, params.GetTexture("Texture3")->GetResourceView());
 	deviceContext->PSSetShaderResources(5, 1, params.GetTexture("Texture3Normal")->GetResourceView());
-	deviceContext->PSSetShaderResources(6, 1, params.GetRenderTexture("ShadowMap")->GetResourceView());
+	deviceContext->PSSetShaderResources(6, 1, ResourcesClass::GetInstance()->FindRenderTexture("ShadowMap")->GetResourceView());
 	return true;
 }
 

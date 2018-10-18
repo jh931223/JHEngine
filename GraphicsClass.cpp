@@ -28,7 +28,7 @@ GraphicsClass::~GraphicsClass()
 }
 
 
-bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
+bool GraphicsClass::Initialize(int _screenWidth, int _screenHeight, HWND hwnd)
 {
 	// Direct3D 객체 생성
 	m_Direct3D = new D3DClass;
@@ -38,7 +38,7 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	}
 
 	// Direct3D 객체 초기화
-	bool result = m_Direct3D->Initialize(screenWidth, screenHeight, VSYNC_ENABLED, hwnd, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
+	bool result = m_Direct3D->Initialize(_screenWidth, _screenHeight, VSYNC_ENABLED, hwnd, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
 	if(!result)
 	{
 		MessageBox(hwnd, L"Could not initialize Direct3D.", L"Error", MB_OK);
@@ -61,7 +61,7 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	}
 
 	// 비트맵 객체 초기화
-	if (!m_Bitmap->Initialize(m_Direct3D->GetDevice(), screenWidth, screenHeight, L"data/seafloor.dds",
+	if (!m_Bitmap->Initialize(m_Direct3D->GetDevice(), _screenWidth, _screenHeight, L"data/seafloor.dds",
 		256, 256))
 	{
 		MessageBox(hwnd, L"Could not initialize the bitmap object.", L"Error", MB_OK);
@@ -73,8 +73,8 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	//m_ViewPoint->SetProjectionParameters((float)(XM_PI / 2.0f), 1.0f, 0.1f, 100.0f);
 	//m_ViewPoint->GenerateViewMatrix();
 	//m_ViewPoint->GenerateProjectionMatrix();
-
-
+	this->screenWidth = _screenWidth;
+	this->screenHeight = _screenHeight;
 	meshRenderers.clear();
 	lights.clear();
 	cameras.clear();
@@ -106,7 +106,6 @@ void GraphicsClass::Shutdown()
 		delete m_Direct3D;
 		m_Direct3D = 0;
 	}
-
 
 
 }
@@ -173,16 +172,8 @@ CameraComponent * GraphicsClass::GetMainCamera()
 		top = cameras[0];
 	return top;
 }
-bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMaterial = nullptr)
+bool GraphicsClass::RenderScene(XMMATRIX viewMatrix, XMMATRIX projectionMatrix, Material* customMaterial)
 {
-	if (m_Camera != 0)
-		m_Camera->Render();
-	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, orthoMatrix;
-	m_Direct3D->GetWorldMatrix(worldMatrix);
-	m_Camera->GetViewMatrix(viewMatrix);
-	m_Camera->GetProjectionMatrix(projectionMatrix);
-	Frustum::ConstructFrustum(m_Camera->m_farPlane, projectionMatrix, viewMatrix);
-	ShaderClass::SetRenderCam(m_Camera);
 	if (useMultiThreadedRendering)
 	{
 		if (!m_Direct3D->GetDeferredContextsSize())
@@ -190,7 +181,6 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 		RenderTask job;
 		job.m_Direct3D = m_Direct3D;
 		job.renderers = &meshRenderers;
-		job.worldMatrix = worldMatrix;
 		job.projectionMatrix = projectionMatrix;
 		job.viewMatrix = viewMatrix;
 		job.Schedule(meshRenderers.size(), 1);
@@ -201,14 +191,14 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 				m_Direct3D->GetImmDeviceContext()->ExecuteCommandList(m_Direct3D->GetCommandList(i), FALSE);
 		}
 		//m_Direct3D->ReleaseDeferredContex();
-		
+
 	}
 	else
 	{
 		//std::vector<MeshRenderer*> renderers = meshRenderers;
 		for (const auto i : meshRenderers)
 		{
-			if (!i||!i->enabled)
+			if (!i || !i->enabled)
 			{
 				continue;
 			}
@@ -219,12 +209,23 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 				i->Render(m_Direct3D->GetImmDeviceContext(), viewMatrix, projectionMatrix);
 			}
 		}
-		printf("%d vertices \n", Frustum::drawnVertex);
+		//printf("%d vertices \n", Frustum::drawnVertex);
 	}
 	return true;
 }
+bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMaterial)
+{
+	if (m_Camera != 0)
+		m_Camera->Render();
+	XMMATRIX viewMatrix, projectionMatrix;
+	m_Camera->GetViewMatrix(viewMatrix);
+	m_Camera->GetProjectionMatrix(projectionMatrix);
+	Frustum::ConstructFrustum(m_Camera->m_farPlane, projectionMatrix, viewMatrix);
+	ShaderClass::SetRenderCam(m_Camera);
+	return RenderScene(viewMatrix, projectionMatrix, customMaterial);
+}
 
-bool GraphicsClass::RenderCanvas(CameraComponent* m_Camera)
+bool GraphicsClass::RenderCanvas(CameraComponent* m_Camera, Material* customMaterial)
 {
 	XMMATRIX worldMatrix, viewMatrix, projectionMatrix, orthoMatrix;
 	m_Direct3D->GetWorldMatrix(worldMatrix);
@@ -253,26 +254,35 @@ bool GraphicsClass::RenderCanvas(CameraComponent* m_Camera)
 	return true;
 }
 
-bool GraphicsClass::RenderToTexture(CameraComponent * camera)
+bool GraphicsClass::RenderToTexture(RenderTextureClass* m_RenderTexture, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, Material* customMaterial)
 {
-	// 렌더링 대상을 렌더링에 맞게 설정합니다.
-	RenderTextureClass* m_RenderTexture = camera->GetRenderTexture();
-
 	m_RenderTexture->SetRenderTarget(m_Direct3D->GetImmDeviceContext());
 
 	// 렌더링을 텍스처에 지웁니다.
-	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetImmDeviceContext(), 0.0f, 0.0f, 1.0f,1.0f);
+	m_RenderTexture->ClearRenderTarget(m_Direct3D->GetImmDeviceContext(), 0.0f, 0.0f, 1.0f, 1.0f);
 
 	// 이제 장면을 렌더링하면 백 버퍼 대신 텍스처로 렌더링됩니다.
-	if (!RenderScene(camera))
+	if (!RenderScene(viewMatrix,projectionMatrix, customMaterial))
 	{
 		return false;
 	}
 
 	// 렌더링 대상을 원래의 백 버퍼로 다시 설정하고 렌더링에 대한 렌더링을 더 이상 다시 설정하지 않습니다.
 	m_Direct3D->SetBackBufferRenderTarget();
-
 	return true;
+}
+bool GraphicsClass::RenderToTexture(CameraComponent * m_Camera, Material* customMaterial)
+{
+	// 렌더링 대상을 렌더링에 맞게 설정합니다.
+	RenderTextureClass* m_RenderTexture = m_Camera->GetRenderTexture();
+	if (m_Camera != 0)
+		m_Camera->Render();
+	XMMATRIX viewMatrix, projectionMatrix;
+	m_Camera->GetViewMatrix(viewMatrix);
+	m_Camera->GetProjectionMatrix(projectionMatrix);
+	Frustum::ConstructFrustum(m_Camera->m_farPlane, projectionMatrix, viewMatrix);
+	ShaderClass::SetRenderCam(m_Camera);
+	return RenderToTexture(m_RenderTexture, viewMatrix, projectionMatrix);
 }
 
 bool GraphicsClass::Render()
@@ -281,9 +291,33 @@ bool GraphicsClass::Render()
 	CameraComponent* m_Camera = CameraComponent::mainCamera();
 	LightComponent* m_Light = LightComponent::mainLight();
 
-	//if (!RenderToTexture(m_Camera))
-	//	return false;
-
+	////Render ShadowMap
+	{
+		if (!shadowMap)
+		{
+			shadowMap = new RenderTextureClass;
+			if (!shadowMap)
+			{
+				return false;
+			}
+			if (!shadowMap->Initialize(m_Direct3D->GetDevice(), screenWidth, screenHeight, SCREEN_DEPTH, SCREEN_NEAR))
+			{
+				return false;
+			}
+			ResourcesClass::GetInstance()->AddResource("ShadowMap", shadowMap);
+		}
+		if (!shadowMapMaterial)
+		{
+			shadowMapMaterial = new Material;
+			shadowMapMaterial->SetShader(ResourcesClass::GetInstance()->FindShader("DepthMapShader"));
+			ResourcesClass::GetInstance()->AddResource("DepthMaterial", shadowMap);
+		}
+		XMMATRIX viewMatrix, projMatrix;
+		m_Light->GetViewMatrix(viewMatrix);
+		m_Light->GetProjectionMatrix(projMatrix);
+		if (!RenderToTexture(shadowMap,viewMatrix,projMatrix, shadowMapMaterial))
+			return false;
+	}
 	// 씬을 그리기 위해 버퍼를 지웁니다
 	m_Direct3D->BeginScene(0.2f, 0.3f, 0.8f, 1.0f);
 	// 카메라의 위치에 따라 뷰 행렬을 생성합니다

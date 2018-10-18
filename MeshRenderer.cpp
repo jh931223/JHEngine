@@ -68,8 +68,10 @@ void MeshRenderer::Render(ID3D11DeviceContext * _deviceContext, XMMATRIX _view, 
 		// 정점 버퍼로 그릴 기본형을 설정합니다. 여기서는 삼각형으로 설정합니다.
 		_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		material->GetShader()->Render(_deviceContext, mesh->GetIndexCount(), _world, _view, _proj, *material->GetParams());
+#ifdef _DEBUG
 		Frustum::frustumCulled++;
 		Frustum::drawnVertex+=mesh->GetVertexCount();
+#endif
 	}
 }
 

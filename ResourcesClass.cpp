@@ -129,7 +129,7 @@ void ResourcesClass::InitializeTexture(HWND hwnd)
 	textureMap["floor"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/seafloor.dds", false);
 	textureMap["tile"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/tile.dds", false);
 	textureMap["grass"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/grass.dds", false);
-	textureMap["soil"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/soil.dds",false);
+	textureMap["soil"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/soil.dds", false);
 	textureMap["cliff"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Cliff_1.png");
 	textureMap["cliffNormal"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Cliff_1_normal.png");
 	textureMap["rock"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Rock_1.png");
@@ -146,7 +146,7 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 
 	result = new Material;
 	//result->SetShader(FindShader("TriplanarShader"), hwnd);
-	result->SetShader(FindShader("TriplanarShader"), hwnd);
+	result->SetShader(FindShader("TriplanarShader"));
 	result->GetParams()->SetTexture("Texture1", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture1Normal", FindTexture("cliffNormal"));
 	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
@@ -157,3 +157,22 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 }
 
 
+void ResourcesClass::AddResource(std::string name, RenderTextureClass * _resource)
+{
+	rttMap[name] = _resource;
+}
+
+void ResourcesClass::AddResource(std::string name, TextureClass * _resource)
+{
+	textureMap[name] = _resource;
+}
+
+void ResourcesClass::AddResource(std::string name, Mesh * _resource)
+{
+	meshMap[name] = _resource;
+}
+
+void ResourcesClass::AddResource(std::string name, ShaderClass * _resource)
+{
+	shaderMap[name] = _resource;
+}

@@ -21,6 +21,8 @@ class LightComponent;
 class MeshRenderer;
 class BitmapClass;
 class Material;
+class RenderTextureClass;
+
 class GraphicsClass
 {
 public:
@@ -41,11 +43,13 @@ public:
 	void RemoveLights(LightComponent* renderer);
 	void RemoveCameras(CameraComponent* renderer);
 	CameraComponent* GetMainCamera();
+	bool RenderScene(XMMATRIX viewMatrix, XMMATRIX projectionMatrix, Material* customMaterial = NULL);
 private:
 	bool Render();
-	bool RenderScene(CameraComponent* camera,Material* customMaterial);
-	bool RenderCanvas(CameraComponent* camera);
-	bool RenderToTexture(CameraComponent* camera);
+	bool RenderScene(CameraComponent* camera,Material* customMaterial=NULL);
+	bool RenderCanvas(CameraComponent* camera, Material* customMaterial = NULL);
+	bool RenderToTexture(RenderTextureClass * m_RenderTexture, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, Material* customMaterial = NULL);
+	bool RenderToTexture(CameraComponent* camera, Material* customMaterial = NULL);
 
 private:
 	std::mutex renderMutex;
@@ -55,12 +59,19 @@ private:
 	std::vector<LightComponent*> lights;
 	std::vector<CameraComponent*> cameras;
 	bool useMultiThreadedRendering=false;
+
+	RenderTextureClass* shadowMap;
+	Material* shadowMapMaterial;
+
+	float screenWidth, screenHeight;
 };
 struct RenderTask : ITaskParallel
 {
 	std::vector<MeshRenderer*>* renderers;
 	XMMATRIX worldMatrix, viewMatrix, projectionMatrix;
 	D3DClass* m_Direct3D = NULL;
+
+
 	// ITaskParallel을(를) 통해 상속됨
 	virtual bool Excute(int index);
 	virtual void OnFinish(int id)override;

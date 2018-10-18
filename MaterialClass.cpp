@@ -18,11 +18,11 @@ Material::Material(const Material & mat)
 
 Material::~Material()
 {
-	if (shader)
-	{
-		shader->Shutdown();
-		shader = 0;
-	}
+	//if (shader)
+	//{
+	//	shader->Shutdown();
+	//	shader = 0;
+	//}
 }
 
 bool Material::Render(ID3D11DeviceContext * _deviceContext, const int _index, XMMATRIX _world, XMMATRIX _view, XMMATRIX _proj)
@@ -30,7 +30,7 @@ bool Material::Render(ID3D11DeviceContext * _deviceContext, const int _index, XM
 	return shader->Render(_deviceContext, _index, _world, _view, _proj,params);
 }
 
-void Material::SetShader(ShaderClass * _shader,HWND hwnd)
+void Material::SetShader(ShaderClass * _shader)
 {
 	shader = _shader;
 	//shader->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
