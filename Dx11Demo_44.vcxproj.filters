@@ -282,33 +282,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="hlsl\depth_ps.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
-    <FxCompile Include="hlsl\depth_vs.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
-    <FxCompile Include="hlsl\marchingCube.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
-    <FxCompile Include="hlsl\projection_ps.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
-    <FxCompile Include="hlsl\projection_vs.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
-    <FxCompile Include="hlsl\Shadow_ps.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
-    <FxCompile Include="hlsl\Shadow_vs.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
-    <FxCompile Include="hlsl\texture_ps.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
-    <FxCompile Include="hlsl\texture_vs.hlsl">
-      <Filter>Shaders\HLSL</Filter>
-    </FxCompile>
     <FxCompile Include="hlsl\triplanar.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
