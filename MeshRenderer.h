@@ -15,6 +15,7 @@ private:
 	Material* material;
 public:
 	MeshBoundary boundary;
+	bool isCastShadow;
 public:
 	MeshRenderer();
 	~MeshRenderer();
@@ -25,6 +26,14 @@ public:
 	Material* GetMaterial();
 	void SetMaterial(Material* _material);
 	void Render(ID3D11DeviceContext*, XMMATRIX, XMMATRIX);
+	void ToggleShadow(bool _toggle)
+	{
+		isCastShadow = _toggle;
+		if (_toggle)
+		{
+
+		}
+	}
 	// Component을(를) 통해 상속됨
 	void Update();
 

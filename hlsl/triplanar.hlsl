@@ -19,6 +19,12 @@ cbuffer VSLightBufferType
 	float3 lightDir;
 	float padding;
 };
+cbuffer VSLightMatrixBuffer
+{
+	matrix lightViewMatrix;
+	matrix lightProjectionMatrix;
+};
+
 
 struct vInput
 {
@@ -38,13 +44,13 @@ struct v2f
 };
 
 Texture2D shaderTexture1 : register(t0);
-Texture2D shaderTexture2 : register(t1);
-Texture2D shaderTexture3 : register(t2);
+Texture2D shaderNormalTex1 : register(t1);
+Texture2D shaderTexture2 : register(t2);
+Texture2D shaderNormalTex2 : register(t3);
+Texture2D shaderTexture3 : register(t4);
+Texture2D shaderNormalTex3 : register(t5);
+Texture2D shadowMap : register(t6);
 
-
-Texture2D stn1 : register(t3);
-Texture2D stn2 : register(t4);
-Texture2D stn3 : register(t5);
 
 SamplerState SampleType;
 
@@ -105,9 +111,9 @@ float4 ps(v2f input) : SV_TARGET
 		// Sample bump maps too, and generate bump vectors.
 		// (Note: this uses an oversimplified tangent basis.)
 
-		float2 bumpFetch1 = stn1.Sample(SampleType, coord1).xy - 0.5;
-		float2 bumpFetch2 = stn2.Sample(SampleType, coord2).xy - 0.5;
-		float2 bumpFetch3 = stn3.Sample(SampleType, coord3).xy - 0.5;
+		float2 bumpFetch1 = shaderNormalTex1.Sample(SampleType, coord1).xy - 0.5;
+		float2 bumpFetch2 = shaderNormalTex2.Sample(SampleType, coord2).xy - 0.5;
+		float2 bumpFetch3 = shaderNormalTex3.Sample(SampleType, coord3).xy - 0.5;
 
 		float3 bump1 = float3(0, bumpFetch1.x, bumpFetch1.y);
 		float3 bump2 = float3(bumpFetch2.y, 0, bumpFetch2.x);

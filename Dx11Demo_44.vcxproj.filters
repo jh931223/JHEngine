@@ -169,6 +169,9 @@
     <ClInclude Include="InputComponent.h">
       <Filter>Scripts</Filter>
     </ClInclude>
+    <ClInclude Include="DepthMapShaderClass.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ResourcesClass.cpp" />
@@ -279,6 +282,9 @@
     </ClCompile>
     <ClCompile Include="InputComponent.cpp">
       <Filter>Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="DepthMapShaderClass.cpp">
+      <Filter>Shaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -9,8 +9,10 @@ const bool FULL_SCREEN = false;
 const bool VSYNC_ENABLED = false;
 const float SCREEN_DEPTH = 10000.0f;
 const float SCREEN_NEAR = 1.0f;
-const int SHADOWMAP_WIDTH = 1600;
-const int SHADOWMAP_HEIGHT = 900;
+const int SHADOWMAP_WIDTH = 1024;
+const int SHADOWMAP_HEIGHT = 1024;
+const float SHADOWMAP_DEPTH = 1024.0f;
+const float SHADOWMAP_NEAR = 1.0f;
 
 
 class D3DClass;

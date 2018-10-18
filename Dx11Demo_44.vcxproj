@@ -152,7 +152,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);(/l[Scripts])</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -170,6 +170,7 @@
     <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="D3DClass.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="DepthMapShaderClass.h" />
     <ClInclude Include="DxDefine.h" />
     <ClInclude Include="InputComponent.h" />
     <ClInclude Include="JobSystem.h" />
@@ -214,6 +215,7 @@
     <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="D3DClass.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="DepthMapShaderClass.cpp" />
     <ClCompile Include="InputComponent.cpp" />
     <ClCompile Include="JobSystem.cpp" />
     <ClCompile Include="MainScene.cpp" />
@@ -251,7 +253,10 @@
     <ClCompile Include="WICTextureLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="hlsl\depthMap.hlsl" />
+    <FxCompile Include="hlsl\depthMap.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="hlsl\triplanar.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">main</EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Effect</ShaderType>

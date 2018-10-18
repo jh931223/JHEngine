@@ -3,6 +3,12 @@
 class LightComponent : public Component
 {
 public:
+	enum PROJECTION_TYPE
+	{
+		Perspective,
+		Orthographic,
+	};
+public:
 	LightComponent();
 	~LightComponent();
 
@@ -16,7 +22,9 @@ public:
 	XMFLOAT3 GetPosition();
 
 	void GenerateViewMatrix();
-	void GenerateProjectionMatrix(float, float);
+	void GeneratePerspectiveMatrix(float, float);
+
+	void GenerateOrthogrphicMatrix(float width, float depth, float nearPlane);
 
 	void GetViewMatrix(XMMATRIX&);
 	void GetProjectionMatrix(XMMATRIX&);

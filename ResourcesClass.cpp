@@ -11,6 +11,7 @@
 
 #include "RenderTextureClass.h"
 #include "TriplanarShaderClass.h"
+#include "DepthMapShaderClass.h"
 
 #include <map>
 #include <string>
@@ -103,6 +104,9 @@ void ResourcesClass::InitializeShader(HWND hwnd)
 	result = new TriplanarShaderClass;
 	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
 	shaderMap["TriplanarShader"] = result;
+	result = new DepthMapShaderClass;
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
+	shaderMap["DepthMapShader"] = result;
 }
 
 void ResourcesClass::InitializeRenderTexture(HWND hwnd)
@@ -141,6 +145,7 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	Material* result = new Material;
 
 	result = new Material;
+	//result->SetShader(FindShader("TriplanarShader"), hwnd);
 	result->SetShader(FindShader("TriplanarShader"), hwnd);
 	result->GetParams()->SetTexture("Texture1", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture1Normal", FindTexture("cliffNormal"));

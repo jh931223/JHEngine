@@ -60,21 +60,24 @@ XMFLOAT4 LightComponent::GetDiffuseColor()
 
 
 
+
 void LightComponent::GenerateViewMatrix()
 {
 	// 위쪽을 가리키는 벡터를 설정합니다.
 	XMFLOAT3 up = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	XMFLOAT3 axis = transform()->GetWorldPosition();
+	XMFLOAT3 lookAt = transform()->forward() + axis;
 
 	XMVECTOR upVector = XMLoadFloat3(&up);
-	XMVECTOR positionVector = XMLoadFloat3(&(transform()->GetWorldPosition()));
-	XMVECTOR lookAtVector = XMLoadFloat3(&m_lookAt);
+	XMVECTOR positionVector = XMLoadFloat3(&axis);
+	XMVECTOR lookAtVector = XMLoadFloat3(&lookAt);
 
 	// 세 벡터로부터 뷰 행렬을 만듭니다.
 	m_viewMatrix = XMMatrixLookAtLH(positionVector, lookAtVector, upVector);
 }
 
 
-void LightComponent::GenerateProjectionMatrix(float screenDepth, float screenNear)
+void LightComponent::GeneratePerspectiveMatrix(float screenDepth, float screenNear)
 {
 	// 정사각형 광원에 대한 시야 및 화면 비율을 설정합니다.
 	float fieldOfView = (float)XM_PI / 2.0f;
@@ -84,6 +87,10 @@ void LightComponent::GenerateProjectionMatrix(float screenDepth, float screenNea
 	m_projectionMatrix = XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, screenNear, screenDepth);
 }
 
+void LightComponent::GenerateOrthogrphicMatrix(float width, float depth,float nearPlane)
+{
+	m_projectionMatrix = XMMatrixOrthographicLH(width, width, nearPlane, depth);
+}
 
 void LightComponent::GetViewMatrix(XMMATRIX& viewMatrix)
 {

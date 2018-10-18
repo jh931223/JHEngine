@@ -25,8 +25,8 @@ void MainScene::Setup()
 	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
 	m_Light->SetLookAt(0.0f, 0.0f, 0.0f);
 	m_Light->transform()->SetPosition(XMFLOAT3(2.0f, 10.0f, -10.0f));
-	m_Light->GenerateProjectionMatrix(SCREEN_DEPTH, SCREEN_NEAR);
 	m_Light->GenerateViewMatrix();
+	m_Light->GenerateOrthogrphicMatrix(20.0f,SHADOWMAP_DEPTH, SHADOWMAP_NEAR);
 	// light object »ý¼º
 	gobj = new GameObject("mainCamera");
 	CameraComponent* m_Camera = new CameraComponent;

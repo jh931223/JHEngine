@@ -78,11 +78,11 @@ void VoxelComponent::Initialize()
 
 
 	//LoadCube(32, 32, 32);
-	//LoadPerlin(256, 128, 256,128, 0.2f);
+	LoadPerlin(256, 128, 256,128, 0.2f);
 	//LoadPerlin(2048, 256, 2048, 128, 0.07f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
+	//LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
 
 
 #ifndef USE_JOBSYSTEM
@@ -94,9 +94,9 @@ void VoxelComponent::Initialize()
 	threadPool[Reserve_Load].SetTaskFunc(_task);
 	threadPool[Reserve_Load].Initialize(8, false);
 	threadPool[Reserve_Deform].SetTaskFunc(_task);
-	threadPool[Reserve_Deform].Initialize(8, false);
+	threadPool[Reserve_Deform].Initialize(4, false);
 	threadPool[Reserve_LOD].SetTaskFunc(_task);
-	threadPool[Reserve_LOD].Initialize(8, false);
+	threadPool[Reserve_LOD].Initialize(4, false);
 #endif
 
 
@@ -188,6 +188,7 @@ void VoxelComponent::Update()
 	else if (Input()->GetKey(DIK_F3))
 	{
 		LightComponent::mainLight()->transform()->SetRotation(CameraComponent::mainCamera()->transform()->GetWorldRotation());
+		LightComponent::mainLight()->GenerateViewMatrix();
 	}
 	else if (Input()->GetKeyDown(DIK_F4))
 	{

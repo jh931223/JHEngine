@@ -2,6 +2,7 @@
 #include "TriplanarShaderClass.h"
 #include"LightComponent.h"
 #include"CameraComponent.h"
+#include"RenderTextureClass.h"
 
 TriplanarShaderClass::TriplanarShaderClass()
 {
@@ -14,10 +15,10 @@ TriplanarShaderClass::~TriplanarShaderClass()
 
 bool TriplanarShaderClass::Initialize(ID3D11Device * device, HWND hwnd)
 {
-	return InitializeShader(device,hwnd, L"hlsl/triplanar.hlsl", L"hlsl/triplanar.hlsl",NULL);
+	return BuildShader(device,hwnd, L"hlsl/triplanar.hlsl", L"hlsl/triplanar.hlsl",NULL);
 }
 
-bool TriplanarShaderClass::InitializeShader(ID3D11Device * device, HWND hwnd, const WCHAR * vsFilename, const WCHAR * psFilename, const WCHAR * gsFileName)
+bool TriplanarShaderClass::BuildShader(ID3D11Device * device, HWND hwnd, const WCHAR * vsFilename, const WCHAR * psFilename, const WCHAR * gsFileName)
 {
 	HRESULT result;
 	ID3D10Blob* errorMessage = nullptr;
@@ -39,28 +40,12 @@ bool TriplanarShaderClass::InitializeShader(ID3D11Device * device, HWND hwnd, co
 		return false;
 	if (!CreateConstantBuffer<PSLightBufferType>(device, &psLightBuffer))
 		return false;
+	if (!CreateConstantBuffer<LightMatrixBufferType>(device, &lightMatrixBuffer))
+		return false;
 	// 텍스처 샘플러 상태 구조체를 생성 및 설정합니다.
-	D3D11_SAMPLER_DESC samplerDesc;
-	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.MipLODBias = 0.0f;
-	samplerDesc.MaxAnisotropy = 1;
-	samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-	samplerDesc.BorderColor[0] = 0;
-	samplerDesc.BorderColor[1] = 0;
-	samplerDesc.BorderColor[2] = 0;
-	samplerDesc.BorderColor[3] = 0;
-	samplerDesc.MinLOD = 0;
-	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 	// 텍스처 샘플러 상태를 만듭니다.
-	result = device->CreateSamplerState(&samplerDesc, &m_sampleState);
-	if (FAILED(result))
-	{
-		return false;
-	}
+	CreateSampler(device);
 	return true;
 }
 
@@ -76,6 +61,9 @@ void TriplanarShaderClass::ShutdownShaderCustomBuffer()
 		vsLightBuffer->Release();
 	}
 	vsLightBuffer = 0;
+	if (lightMatrixBuffer)
+		lightMatrixBuffer->Release();
+	lightMatrixBuffer = 0;
 }
 
 bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM & params)
@@ -117,19 +105,33 @@ bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRI
 	dataPtr3->cameraPos = XMFLOAT4(camPos.x,camPos.y,camPos.z,1);
 	deviceContext->Unmap(vsLightBuffer, 0);
 
+	if (FAILED(deviceContext->Map(lightMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	{
+		return false;
+	}
+	LightMatrixBufferType* dataPtr4 = (LightMatrixBufferType*)mappedResource.pData;
+	XMMATRIX lightView;
+	LightComponent::mainLight()->GetViewMatrix(lightView);
+	dataPtr4->lightView = XMMatrixTranspose(lightView);
+	XMMATRIX lightProj;
+	LightComponent::mainLight()->GetProjectionMatrix(lightProj);
+	dataPtr4->lightProjection = XMMatrixTranspose(lightProj);
+	deviceContext->Unmap(lightMatrixBuffer, 0);
 
 	// 마지막으로 정점 셰이더의 상수 버퍼를 바뀐 값으로 바꿉니다.
 	deviceContext->VSSetConstantBuffers(0, 1, &m_matrixBuffer);
 	deviceContext->VSSetConstantBuffers(1, 1, &vsLightBuffer);
+	deviceContext->VSSetConstantBuffers(2, 1, &lightMatrixBuffer);
 	deviceContext->PSSetConstantBuffers(0, 1, &psLightBuffer);
 
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
 	deviceContext->PSSetShaderResources(0, 1, params.GetTexture("Texture1")->GetResourceView());
-	deviceContext->PSSetShaderResources(3, 1, params.GetTexture("Texture1Normal")->GetResourceView());
-	deviceContext->PSSetShaderResources(1, 1, params.GetTexture("Texture2")->GetResourceView());
-	deviceContext->PSSetShaderResources(4, 1, params.GetTexture("Texture2Normal")->GetResourceView());
-	deviceContext->PSSetShaderResources(2, 1, params.GetTexture("Texture3")->GetResourceView());
+	deviceContext->PSSetShaderResources(1, 1, params.GetTexture("Texture1Normal")->GetResourceView());
+	deviceContext->PSSetShaderResources(2, 1, params.GetTexture("Texture2")->GetResourceView());
+	deviceContext->PSSetShaderResources(3, 1, params.GetTexture("Texture2Normal")->GetResourceView());
+	deviceContext->PSSetShaderResources(4, 1, params.GetTexture("Texture3")->GetResourceView());
 	deviceContext->PSSetShaderResources(5, 1, params.GetTexture("Texture3Normal")->GetResourceView());
+	deviceContext->PSSetShaderResources(6, 1, params.GetRenderTexture("ShadowMap")->GetResourceView());
 	return true;
 }
 
