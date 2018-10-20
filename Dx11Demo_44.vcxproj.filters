@@ -178,6 +178,9 @@
     <ClInclude Include="TextureShaderClass.h">
       <Filter>Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="BehaviourComponent.h">
+      <Filter>JHEngine\Engine\Components</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ResourcesClass.cpp" />
@@ -297,6 +300,9 @@
     </ClCompile>
     <ClCompile Include="TextureShaderClass.cpp">
       <Filter>Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="BehaviourComponent.cpp">
+      <Filter>JHEngine\Engine\Components</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

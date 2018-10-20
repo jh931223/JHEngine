@@ -170,6 +170,7 @@
   <ItemGroup>
     <ClInclude Include="AlignedAllocationPolicy.h" />
     <ClInclude Include="ArrayedOctree.h" />
+    <ClInclude Include="BehaviourComponent.h" />
     <ClInclude Include="BitmapClass.h" />
     <ClInclude Include="BitmapRenderer.h" />
     <ClInclude Include="CameraComponent.h" />
@@ -217,6 +218,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ArrayedOctree.cpp" />
+    <ClCompile Include="BehaviourComponent.cpp" />
     <ClCompile Include="BitmapClass.cpp" />
     <ClCompile Include="BitmapRenderer.cpp" />
     <ClCompile Include="CameraComponent.cpp" />
