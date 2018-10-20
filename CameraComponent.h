@@ -14,13 +14,14 @@ public:
 	void Render();
 	void GetViewMatrix(XMMATRIX&);
 	void GetProjectionMatrix(XMMATRIX&);
-	static void GetDefaultViewMtrix(XMMATRIX & viewMatrix);
+	void GetViewMtrixForCanvas(XMMATRIX & viewMatrix);
 	void SetProjectionParameters(float FOV, float aspectRatio, float nearPlane, float farPlane);
 	RenderTextureClass* GetRenderTexture();
 	void SetRenderTexture(RenderTextureClass* _bitmap);
 	static CameraComponent* mainCamera();
 private:
 	XMMATRIX m_viewMatrix;
+	XMMATRIX m_viewMatrixForCanvas;
 	RenderTextureClass* renderTexture;
 public:
 	static std::list<CameraComponent*> cameras;

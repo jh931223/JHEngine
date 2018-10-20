@@ -37,6 +37,12 @@ public:
 
 	void ChangeFillMode(bool isSolid=true);
 
+	void TurnZBufferOn();
+	void TurnZBufferOff();
+	void TurnCullOff();
+	void TurnCullBack();
+
+
 
 	std::vector<ID3D11CommandList*> commandLists;
 	std::vector<ID3D11DeviceContext*> deferredContexts;
@@ -53,8 +59,13 @@ private:
 	ID3D11DepthStencilState* m_depthStencilState = nullptr;
 	ID3D11DepthStencilView* m_depthStencilView = nullptr;
 	ID3D11RasterizerState* m_rasterState = nullptr;
+
 	XMMATRIX m_projectionMatrix;
 	XMMATRIX m_worldMatrix;
 	XMMATRIX m_orthoMatrix;
 	D3D11_VIEWPORT m_viewport;
+
+	ID3D11DepthStencilState* m_depthDisabledStencilState = NULL;
+	ID3D11RasterizerState* m_cullOffState = nullptr;
+	bool isRenderWireFrame=false;
 };

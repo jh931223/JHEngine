@@ -271,30 +271,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// 렌더링 대상 뷰와 깊이 스텐실 버퍼를 출력 렌더 파이프 라인에 바인딩합니다
 	m_immDeviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
 
-	// 그려지는 폴리곤과 방법을 결정할 래스터 구조체를 설정합니다
-	D3D11_RASTERIZER_DESC rasterDesc;
-	rasterDesc.AntialiasedLineEnable = false;
-	rasterDesc.DepthBias = 0;
-	rasterDesc.DepthBiasClamp = 0.0f;
-	rasterDesc.DepthClipEnable = true;
-	rasterDesc.CullMode = D3D11_CULL_BACK;
-	rasterDesc.FillMode = D3D11_FILL_SOLID;
-	//rasterDesc.CullMode = D3D11_CULL_NONE;
-	//rasterDesc.FillMode = D3D11_FILL_WIREFRAME;
-	rasterDesc.FrontCounterClockwise = false;
-	rasterDesc.MultisampleEnable = false;
-	rasterDesc.ScissorEnable = false;
-	rasterDesc.SlopeScaledDepthBias = 0.0f;
-
-	// 방금 작성한 구조체에서 래스터 라이저 상태를 만듭니다
-	if (FAILED(m_device->CreateRasterizerState(&rasterDesc, &m_rasterState)))
-	{
-		return false;
-	}
-
-
-	// 이제 래스터 라이저 상태를 설정합니다
-	m_immDeviceContext->RSSetState(m_rasterState);
+	ChangeFillMode(true);
 
 
 
@@ -322,7 +299,52 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	// 2D 렌더링을위한 직교 투영 행렬을 만듭니다
 	m_orthoMatrix = XMMatrixOrthographicLH((float)screenWidth, (float)screenHeight, screenNear, screenDepth);
 
-	//m_deferredContexts.resize(maxDeferredContextNum);
+	// 이제 2D 렌더링을위한 Z 버퍼를 끄는 두 번째 깊이 스텐실 상태를 만듭니다. 유일한 차이점은
+	// DepthEnable을 false로 설정하면 다른 모든 매개 변수는 다른 깊이 스텐실 상태와 동일합니다.
+	D3D11_DEPTH_STENCIL_DESC depthDisabledStencilDesc;
+	ZeroMemory(&depthDisabledStencilDesc, sizeof(depthDisabledStencilDesc));
+
+	depthDisabledStencilDesc.DepthEnable = false;
+	depthDisabledStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	depthDisabledStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	depthDisabledStencilDesc.StencilEnable = true;
+	depthDisabledStencilDesc.StencilReadMask = 0xFF;
+	depthDisabledStencilDesc.StencilWriteMask = 0xFF;
+	depthDisabledStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	depthDisabledStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	depthDisabledStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	depthDisabledStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthDisabledStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// 장치를 사용하여 상태를 만듭니다.
+	if (FAILED(m_device->CreateDepthStencilState(&depthDisabledStencilDesc, &m_depthDisabledStencilState)))
+	{
+		return false;
+	}
+
+	// 그려지는 폴리곤과 방법을 결정할 래스터 구조체를 설정합니다
+	D3D11_RASTERIZER_DESC rasterDesc;
+	rasterDesc.AntialiasedLineEnable = false;
+	rasterDesc.DepthBias = 0;
+	rasterDesc.DepthBiasClamp = 0.0f;
+	rasterDesc.DepthClipEnable = true;
+	rasterDesc.CullMode = D3D11_CULL_NONE;
+	rasterDesc.FillMode = D3D11_FILL_SOLID;
+	//rasterDesc.CullMode = D3D11_CULL_NONE;
+	//rasterDesc.FillMode = D3D11_FILL_WIREFRAME;
+	rasterDesc.FrontCounterClockwise = false;
+	rasterDesc.MultisampleEnable = false;
+	rasterDesc.ScissorEnable = false;
+	rasterDesc.SlopeScaledDepthBias = 0.0f;
+
+	// 방금 작성한 구조체에서 래스터 라이저 상태를 만듭니다
+	if (FAILED(m_device->CreateRasterizerState(&rasterDesc, &m_cullOffState)))
+	{
+		return false;
+	}
 
 	return true;
 }
@@ -359,7 +381,12 @@ void D3DClass::Shutdown()
 		m_depthStencilBuffer->Release();
 		m_depthStencilBuffer = 0;
 	}
-
+	if (m_cullOffState)
+	{
+		m_cullOffState->Release();
+		m_cullOffState = 0;
+	}
+	
 	if (m_renderTargetView)
 	{
 		m_renderTargetView->Release();
@@ -528,7 +555,8 @@ void D3DClass::ChangeFillMode(bool isSolid)
 	rasterDesc.DepthBias = 0;
 	rasterDesc.DepthBiasClamp = 0.0f;
 	rasterDesc.DepthClipEnable = true;
-	if (isSolid)
+	isRenderWireFrame = !isSolid;
+	if (!isRenderWireFrame)
 	{
 		rasterDesc.CullMode = D3D11_CULL_BACK;
 		rasterDesc.FillMode = D3D11_FILL_SOLID;
@@ -550,5 +578,26 @@ void D3DClass::ChangeFillMode(bool isSolid)
 	}
 
 	// 이제 래스터 라이저 상태를 설정합니다
+	m_immDeviceContext->RSSetState(m_rasterState);
+}
+
+void D3DClass::TurnZBufferOn()
+{
+	m_immDeviceContext->OMSetDepthStencilState(m_depthStencilState, 1);
+}
+
+
+void D3DClass::TurnZBufferOff()
+{
+	m_immDeviceContext->OMSetDepthStencilState(m_depthDisabledStencilState, 1);
+}
+
+void D3DClass::TurnCullOff()
+{
+	m_immDeviceContext->RSSetState(m_cullOffState);
+}
+
+void D3DClass::TurnCullBack()
+{
 	m_immDeviceContext->RSSetState(m_rasterState);
 }

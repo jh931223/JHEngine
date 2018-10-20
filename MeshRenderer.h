@@ -1,7 +1,6 @@
 #pragma once
 #include"Component.h"
 class Mesh;
-class TextureClass;
 class Material;
 class MeshRenderer : public Component
 {
@@ -25,7 +24,7 @@ public:
 	void SetMesh(Mesh* _mesh);
 	Material* GetMaterial();
 	void SetMaterial(Material* _material);
-	void Render(ID3D11DeviceContext*, XMMATRIX, XMMATRIX);
+	void Render(ID3D11DeviceContext*, XMMATRIX, XMMATRIX, Material* customMaterial=NULL);
 	void ToggleShadow(bool _toggle)
 	{
 		isCastShadow = _toggle;

@@ -172,6 +172,12 @@
     <ClInclude Include="DepthMapShaderClass.h">
       <Filter>Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="BitmapRenderer.h">
+      <Filter>JHEngine\Engine\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureShaderClass.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ResourcesClass.cpp" />
@@ -286,12 +292,21 @@
     <ClCompile Include="DepthMapShaderClass.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="BitmapRenderer.cpp">
+      <Filter>JHEngine\Engine\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureShaderClass.cpp">
+      <Filter>Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="hlsl\triplanar.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
     <FxCompile Include="hlsl\depthMap.hlsl">
+      <Filter>Shaders\HLSL</Filter>
+    </FxCompile>
+    <FxCompile Include="hlsl\TextureShader.hlsl">
       <Filter>Shaders\HLSL</Filter>
     </FxCompile>
   </ItemGroup>

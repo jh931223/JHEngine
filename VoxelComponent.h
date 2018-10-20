@@ -13,7 +13,7 @@ class RegularCellCache;
 template<typename T> class Octree;
 template<typename T> class OctreeNode;
 
-//#define USE_JOBSYSTEM
+#define USE_JOBSYSTEM
 
 struct COMMAND_BUFFER
 {

@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <vector>
 #include <string>
 #include"StructuredBuffer.h"
 #include"TextureClass.h"
@@ -85,10 +86,11 @@ protected:
 			m_geometryShader->Release();
 			m_geometryShader = 0;
 		}
-		if (m_sampleState)
+		if (m_sampleStateList.size())
 		{
-			m_sampleState->Release();
-			m_sampleState = 0;
+			for(auto i:m_sampleStateList)
+				i->Release();
+			m_sampleStateList.clear();
 		}
 		if (m_matrixBuffer)
 		{
@@ -223,11 +225,18 @@ protected:
 			samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 		}
 		else samplerDesc = *_samplerDesc;
-		result = device->CreateSamplerState(&samplerDesc, &m_sampleState);
+		m_sampleStateList.push_back(NULL);
+		result = device->CreateSamplerState(&samplerDesc, &m_sampleStateList[m_sampleStateList.size()-1]);
 		if (FAILED(result))
 		{
 			return false;
 		}
+	}
+	void SetSampler(ID3D11DeviceContext* _deviceContext)
+	{
+		int count = 0;
+		for (auto i : m_sampleStateList)
+			_deviceContext->PSSetSamplers(count++, 1, &i);
 	}
 protected:
 	ID3D11VertexShader * m_vertexShader = nullptr;
@@ -237,6 +246,6 @@ protected:
 	
 	std::map<ID3D11DeviceContext*, ID3D11Buffer*> m_matrixBufferPerDC;// = nullptr;
 	ID3D11Buffer* m_matrixBuffer = nullptr;
-	ID3D11SamplerState* m_sampleState = nullptr;
+	std::vector<ID3D11SamplerState*> m_sampleStateList;
 	static CameraComponent* renderCam;
 };

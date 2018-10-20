@@ -22,7 +22,7 @@ public:
 	XMFLOAT3 GetPosition();
 
 	void GenerateViewMatrix();
-	void GeneratePerspectiveMatrix(float, float);
+	void GeneratePerspectiveMatrix(float screenDepth, float screenNear);
 
 	void GenerateOrthogrphicMatrix(float width, float depth, float nearPlane);
 

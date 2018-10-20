@@ -2,7 +2,8 @@
 #include "TextureClass.h"
 #include "meshclass.h"
 #include<vector>
-
+#include<algorithm>
+#include<iterator>
 #include <fstream>
 using namespace std;
 
@@ -117,7 +118,7 @@ bool Mesh::InitializeBuffers(ID3D11Device* device)
 		return false;
 	}
 
-	vertices = 0;
+	//vertices = 0;
 
 	if (indices == 0||m_indexCount==0)
 	{
@@ -145,7 +146,7 @@ bool Mesh::InitializeBuffers(ID3D11Device* device)
 		return false;
 	}
 
-	indices = 0;
+	//indices = 0;
 	
 	return true;
 }
@@ -260,7 +261,12 @@ bool Mesh::SetVertices(VertexBuffer* _vertices,int _size)
 {
 	if (_size == 0)
 		return false;
-	vertices = _vertices;
+	if (vertices)
+		delete[] vertices;
+	vertices = new VertexBuffer[_size];
+	std::copy<VertexBuffer*>(_vertices, _vertices + _size,  stdext::checked_array_iterator<VertexBuffer*>(vertices, _size));
+	//for(int i=0;i<_size;i++)
+	//	vertices[i] = _vertices[i];
 	m_vertexCount = _size;
 	return true;
 }
@@ -270,7 +276,13 @@ bool Mesh::SetIndices(unsigned long* _indices, int _size)
 {
 	if (_size == 0)
 		return false;
-	indices = _indices;
+	if (indices)
+		delete[] indices;
+	indices = new unsigned long[_size];
+	std::copy< unsigned long*>(_indices, _indices + _size, stdext::checked_array_iterator<unsigned long*>(indices, _size));
+	//for (int i = 0; i<_size; i++)
+	//	indices[i] = _indices[i];
+	//indices = _indices;
 	m_indexCount = _size;
 	return true;
 }

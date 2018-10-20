@@ -123,6 +123,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <StackReserveSize>10485760</StackReserveSize>
     </Link>
+    <FxCompile>
+      <ShaderType>Effect</ShaderType>
+    </FxCompile>
+    <FxCompile>
+      <ShaderModel>4.0</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -165,6 +171,7 @@
     <ClInclude Include="AlignedAllocationPolicy.h" />
     <ClInclude Include="ArrayedOctree.h" />
     <ClInclude Include="BitmapClass.h" />
+    <ClInclude Include="BitmapRenderer.h" />
     <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="ComputeShader.h" />
@@ -177,6 +184,7 @@
     <ClInclude Include="MainScene.h" />
     <ClInclude Include="RWLock.h" />
     <ClInclude Include="ShaderParameterCollections.h" />
+    <ClInclude Include="TextureShaderClass.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="ThreadPool2.h" />
     <ClInclude Include="Timer.h" />
@@ -210,6 +218,7 @@
   <ItemGroup>
     <ClCompile Include="ArrayedOctree.cpp" />
     <ClCompile Include="BitmapClass.cpp" />
+    <ClCompile Include="BitmapRenderer.cpp" />
     <ClCompile Include="CameraComponent.cpp" />
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="ComputeShader.cpp" />
@@ -221,6 +230,7 @@
     <ClCompile Include="MainScene.cpp" />
     <ClCompile Include="RWLock.cpp" />
     <ClCompile Include="ShaderParameterCollections.cpp" />
+    <ClCompile Include="TextureShaderClass.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="ThreadPool2.cpp" />
     <ClCompile Include="Timer.cpp" />
@@ -256,6 +266,12 @@
     <FxCompile Include="hlsl\depthMap.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Effect</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="hlsl\TextureShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Effect</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="hlsl\triplanar.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">main</EntryPointName>

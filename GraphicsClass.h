@@ -19,7 +19,7 @@ class D3DClass;
 class CameraComponent;
 class LightComponent;
 class MeshRenderer;
-class BitmapClass;
+class BitmapRenderer;
 class Material;
 class RenderTextureClass;
 
@@ -36,26 +36,30 @@ public:
 	D3DClass* GetD3D();
 
 	void PushRenderer(MeshRenderer* renderer);
+	void PushBitmapRenderer(BitmapRenderer * renderer);
 	void PushLights(LightComponent* renderer);
 	void PushCameras(CameraComponent* renderer);
 	void SortCameras();
 	void RemoveRenderer(MeshRenderer* renderer);
+	void RemoveBitmapRenderer(BitmapRenderer * renderer);
 	void RemoveLights(LightComponent* renderer);
 	void RemoveCameras(CameraComponent* renderer);
 	CameraComponent* GetMainCamera();
 	bool RenderScene(XMMATRIX viewMatrix, XMMATRIX projectionMatrix, Material* customMaterial = NULL);
+	XMFLOAT2 GetScreenSize();
+	ID3D11Device* GetDevice();
 private:
 	bool Render();
 	bool RenderScene(CameraComponent* camera,Material* customMaterial=NULL);
-	bool RenderCanvas(CameraComponent* camera, Material* customMaterial = NULL);
+	bool RenderCanvas(CameraComponent* m_Camera, Material* customMaterial = NULL);
 	bool RenderToTexture(RenderTextureClass * m_RenderTexture, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, Material* customMaterial = NULL);
 	bool RenderToTexture(CameraComponent* camera, Material* customMaterial = NULL);
 
 private:
 	std::mutex renderMutex;
 	D3DClass* m_Direct3D = nullptr;
-	BitmapClass* m_Bitmap = nullptr;
 	std::vector<MeshRenderer*> meshRenderers;
+	std::vector<BitmapRenderer*> bitmapRenderers;
 	std::vector<LightComponent*> lights;
 	std::vector<CameraComponent*> cameras;
 	bool useMultiThreadedRendering=false;

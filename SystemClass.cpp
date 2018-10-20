@@ -165,11 +165,11 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 
 int SystemClass::GetScreenWidth()
 {
-	return screenWidth;
+	return m_Graphics->GetScreenSize().x;
 }
 int SystemClass::GetScreenHeight()
 {
-	return screenHeight;
+	return m_Graphics->GetScreenSize().y;
 }
 
 void SystemClass::InitializeWindows(int& _screenWidth, int& _screenHeight)

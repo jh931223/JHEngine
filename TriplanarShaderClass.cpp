@@ -42,10 +42,23 @@ bool TriplanarShaderClass::BuildShader(ID3D11Device * device, HWND hwnd, const W
 		return false;
 	if (!CreateConstantBuffer<LightMatrixBufferType>(device, &lightMatrixBuffer))
 		return false;
-	// 텍스처 샘플러 상태 구조체를 생성 및 설정합니다.
-
 	// 텍스처 샘플러 상태를 만듭니다.
 	CreateSampler(device);
+	D3D11_SAMPLER_DESC samplerDesc; samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.MipLODBias = 0.0f;
+	samplerDesc.MaxAnisotropy = 1;
+	samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	samplerDesc.BorderColor[0] = 0;
+	samplerDesc.BorderColor[1] = 0;
+	samplerDesc.BorderColor[2] = 0;
+	samplerDesc.BorderColor[3] = 0;
+	samplerDesc.MinLOD = 0;
+	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	CreateSampler(device,&samplerDesc);
+
 	return true;
 }
 
@@ -145,8 +158,7 @@ void TriplanarShaderClass::RenderShader(ID3D11DeviceContext * deviceContext, int
 	deviceContext->PSSetShader(m_pixelShader, NULL, 0);
 
 	// 픽셀 쉐이더에서 샘플러 상태를 설정합니다.
-	deviceContext->PSSetSamplers(0, 1, &m_sampleState);
-
+	SetSampler(deviceContext);
 	// 삼각형을 그립니다.
 	deviceContext->DrawIndexed(indexCount, 0, 0);
 }

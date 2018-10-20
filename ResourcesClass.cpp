@@ -12,6 +12,7 @@
 #include "RenderTextureClass.h"
 #include "TriplanarShaderClass.h"
 #include "DepthMapShaderClass.h"
+#include "TextureShaderClass.h"
 
 #include <map>
 #include <string>
@@ -107,20 +108,23 @@ void ResourcesClass::InitializeShader(HWND hwnd)
 	result = new DepthMapShaderClass;
 	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
 	shaderMap["DepthMapShader"] = result;
+	result = new TextureShaderClass;
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
+	shaderMap["TextureShader"] = result;
 }
 
 void ResourcesClass::InitializeRenderTexture(HWND hwnd)
 {
 	RenderTextureClass* result;
 	result = new RenderTextureClass;
-	result->Initialize(SystemClass::GetInstance()->GetDevice(), SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, SCREEN_DEPTH, SCREEN_NEAR);
-	rttMap["rt_Shadow"] = result;
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), SystemClass::GetInstance()->GetScreenWidth(), SystemClass::GetInstance()->GetScreenHeight(), SCREEN_DEPTH, SCREEN_NEAR);
+	rttMap["ShadowMap"] = result;
 }
 
 void ResourcesClass::InitializeMesh(HWND hwnd)
 {
 	//meshMap["floor"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/floor.txt");
-	//meshMap["cube"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/cube.txt");
+	meshMap["cube"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/cube.txt");
 }
 
 void ResourcesClass::InitializeTexture(HWND hwnd)
@@ -145,7 +149,6 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	Material* result = new Material;
 
 	result = new Material;
-	//result->SetShader(FindShader("TriplanarShader"), hwnd);
 	result->SetShader(FindShader("TriplanarShader"));
 	result->GetParams()->SetTexture("Texture1", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture1Normal", FindTexture("cliffNormal"));
@@ -154,6 +157,20 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	result->GetParams()->SetTexture("Texture3", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture3Normal", FindTexture("cliffNormal"));
 	materialMap["m_triplanar"] = result;
+
+	result = new Material;
+	result->SetShader(FindShader("TextureShader"));
+	result->GetParams()->SetRenderTexture("_MainRenderTex", FindRenderTexture("ShadowMap"));
+	materialMap["m_texture"] = result;
+
+	result = new Material;
+	result->SetShader(ResourcesClass::GetInstance()->FindShader("DepthMapShader"));
+	materialMap["m_depthMap"] = result;
+
+	result = new Material;
+	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShader"));
+	result->GetParams()->SetTexture("_MainTex", FindTexture("cliff"));
+	materialMap["m_cube"] = result;
 }
 
 

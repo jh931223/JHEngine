@@ -122,7 +122,7 @@ bool RenderTextureClass::Initialize(ID3D11Device* device, int textureWidth, int 
 	m_viewport.TopLeftY = 0.0f;
 
 	// 투영 행렬을 설정합니다.
-	m_projectionMatrix = XMMatrixPerspectiveFovLH(((float)XM_PI / 4.0f), ((float)textureWidth / (float)textureHeight), screenNear, screenDepth);
+	m_projectionMatrix = XMMatrixPerspectiveFovLH(((float)XM_PI / 2.0f), ((float)textureWidth / (float)textureHeight), screenNear, screenDepth);
 
 	// 2D 렌더링을 위한 직교 투영 행렬을 만듭니다.
 	m_orthoMatrix = XMMatrixOrthographicLH((float)textureWidth, (float)textureHeight, screenNear, screenDepth);

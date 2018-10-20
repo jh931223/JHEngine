@@ -52,7 +52,7 @@ void VoxelComponent::Initialize()
 	tUnit = 0.25f;
 	tAmount = 4;
 
-	info.partitionSize = 32;
+	info.partitionSize = 16;
 	//SetLODLevel(0, 100000);
 
 
@@ -61,7 +61,7 @@ void VoxelComponent::Initialize()
 	//SetLODLevel(2, 256);
 	//SetLODLevel(3, 256);
 
-	int start = 1000000;
+	int start = 128;
 
 	SetLODLevel(0, start);
 	SetLODLevel(1, start + info.partitionSize);
@@ -82,7 +82,7 @@ void VoxelComponent::Initialize()
 	//LoadPerlin(2048, 256, 2048, 128, 0.07f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	//LoadHeightMapFromRaw(1024, 256, 1024,128, "data/terrain.raw");// , 0, 0, 255, 255);
+	//LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");// , 0, 0, 255, 255);
 
 
 #ifndef USE_JOBSYSTEM
@@ -96,7 +96,7 @@ void VoxelComponent::Initialize()
 	threadPool[Reserve_Deform].SetTaskFunc(_task);
 	threadPool[Reserve_Deform].Initialize(4, false);
 	threadPool[Reserve_LOD].SetTaskFunc(_task);
-	threadPool[Reserve_LOD].Initialize(4, false);
+	threadPool[Reserve_LOD].Initialize(8, false);
 #endif
 
 
@@ -124,6 +124,7 @@ void VoxelComponent::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel
 		{
 			GameObject* gobj = new GameObject("voxel partition");
 			MeshRenderer* newRenderer = new MeshRenderer;
+			//newRenderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_triplanar"));
 			newRenderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_triplanar"));
 			gobj->AddComponent(newRenderer);
 			if(chunk->GetDepth())
@@ -188,6 +189,7 @@ void VoxelComponent::Update()
 	else if (Input()->GetKey(DIK_F3))
 	{
 		LightComponent::mainLight()->transform()->SetRotation(CameraComponent::mainCamera()->transform()->GetWorldRotation());
+		LightComponent::mainLight()->transform()->SetPosition(CameraComponent::mainCamera()->transform()->GetWorldPosition());
 		LightComponent::mainLight()->GenerateViewMatrix();
 	}
 	else if (Input()->GetKeyDown(DIK_F4))
@@ -586,12 +588,12 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 		}
 		localIndices.push_back(newIndex);
 	}
-	//int minX = pos.x;
-	//int maxX = pos.x + info.partitionSize;
-	////int minY = pos.x + offset.x*_unit;
-	////int maxY = pos.x + offset.x*_unit;
-	//int minZ = pos.z;
-	//int maxZ = pos.z + info.partitionSize;
+	int minX = pos.x;
+	int maxX = pos.x + info.partitionSize-_unit;
+	//int minY = pos.x + offset.x*_unit;
+	//int maxY = pos.x + offset.x*_unit;
+	int minZ = pos.z;
+	int maxZ = pos.z + info.partitionSize - _unit;
 	for (int i = 0; i < triCount; i++)
 	{
 		int triBegin = i * 3;
@@ -600,6 +602,7 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 		int index_2 = localIndices[regularCell.Indices()[triBegin + 2]];
 		XMFLOAT3 n = CalcNormal(vertices[index_0].position, vertices[index_1].position, vertices[index_2].position);
 		//float ndotu = Dot(n, BasicVector::up);
+		//if(ndotu)
 		//XMFLOAT3 nUp(0, ndotu >= 0?1:-1, 0);
 		//std::function<bool(int)> normalCheck = [&](int _index) {
 

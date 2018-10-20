@@ -1,11 +1,11 @@
 #pragma once
 #include "ShaderClass.h"
-class DepthMapShaderClass :
+class TextureShaderClass :
 	public ShaderClass
 {
 public:
-	DepthMapShaderClass();
-	~DepthMapShaderClass();
+	TextureShaderClass();
+	~TextureShaderClass();
 
 	// ShaderClass을(를) 통해 상속됨
 	virtual bool Initialize(ID3D11Device * device, HWND hwnd) override;
@@ -13,7 +13,5 @@ public:
 	virtual void ShutdownShaderCustomBuffer() override;
 	virtual bool DrawCall(ID3D11DeviceContext * deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM & params) override;
 	virtual void RenderShader(ID3D11DeviceContext * deviceContext, int indexCount) override;
-private:
-
 };
 

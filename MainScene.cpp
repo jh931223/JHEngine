@@ -7,6 +7,8 @@
 #include "InputComponent.h"
 #include "VoxelComponent.h"
 #include "MeshClass.h"
+#include "BitmapRenderer.h"
+#include "SystemClass.h"
 using namespace std;
 
 
@@ -23,10 +25,12 @@ void MainScene::Setup()
 	gobj->AddComponent(m_Light);
 	m_Light->SetAmbientColor(0.1f, 0.1f, 0.1f, 1.0f);
 	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
-	m_Light->SetLookAt(0.0f, 0.0f, 0.0f);
-	m_Light->transform()->SetPosition(XMFLOAT3(2.0f, 10.0f, -10.0f));
+	m_Light->SetLookAt(238.3861f, 409.3519f, 524.0f);
+	m_Light->transform()->SetPosition(XMFLOAT3(0.0f, 600.0f, 524.0f));
+	m_Light->transform()->SetRotation(XMFLOAT3(38.0f, 90.0f, 0.0f));
 	m_Light->GenerateViewMatrix();
-	m_Light->GenerateOrthogrphicMatrix(20.0f,SHADOWMAP_DEPTH, SHADOWMAP_NEAR);
+	m_Light->GeneratePerspectiveMatrix(1024, 1.0f);
+	//m_Light->GenerateOrthogrphicMatrix(661.0f,1643, SHADOWMAP_NEAR);
 	// light object 생성
 	gobj = new GameObject("mainCamera");
 	CameraComponent* m_Camera = new CameraComponent;
@@ -49,6 +53,26 @@ void MainScene::Setup()
 	gobj->AddComponent(voxel);
 	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));
 	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
+
+	gobj = new GameObject("큐브");
+	//r->AddChild(gobj);
+	renderer = new MeshRenderer;
+	gobj->AddComponent(renderer);
+	renderer->SetMesh(ResourcesClass::GetInstance()->FindMesh("cube"));
+	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_cube"));
+	gobj->transform->SetPosition(XMFLOAT3(100, 100, 100));
+
+	//CANVAS
+	//{
+	//	gobj = new GameObject("UI01");
+	//	//r->AddChild(gobj);
+	//	BitmapRenderer* bRenderer = new BitmapRenderer;
+	//	gobj->AddComponent(bRenderer);
+	//	bRenderer->SetBitmap(255, 255);
+	//	bRenderer->SetMaterial(SystemClass::GetInstance()->GetResources()->FindMaterial("m_texture"));
+	//	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));
+	//}
+
 }
 
 

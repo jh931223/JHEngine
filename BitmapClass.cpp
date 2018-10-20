@@ -18,8 +18,7 @@ BitmapClass::~BitmapClass()
 }
 
 
-bool BitmapClass::Initialize(ID3D11Device* device, int screenWidth, int screenHeight, const WCHAR* textureFilename,
-	int bitmapWidth, int bitmapHeight)
+bool BitmapClass::Initialize(ID3D11Device* device, int screenWidth, int screenHeight,int bitmapWidth, int bitmapHeight)
 {
 	// 화면 크기를 멤버변수에 저장
 	m_screenWidth = screenWidth;
@@ -40,14 +39,12 @@ bool BitmapClass::Initialize(ID3D11Device* device, int screenWidth, int screenHe
 	}
 
 	// 이 모델의 텍스처를 로드합니다.
-	return LoadTexture(device, textureFilename);
+	return true;
 }
 
 
 void BitmapClass::Shutdown()
 {
-	// 모델 텍스쳐를 반환합니다.
-	ReleaseTexture();
 
 	// 버텍스 및 인덱스 버퍼를 종료합니다.
 	ShutdownBuffers();
@@ -74,11 +71,6 @@ int BitmapClass::GetIndexCount()
 	return m_indexCount;
 }
 
-
-ID3D11ShaderResourceView* const*BitmapClass::GetResourceView()
-{
-	return m_Texture->GetResourceView();
-}
 
 
 bool BitmapClass::InitializeBuffers(ID3D11Device* device)
@@ -276,30 +268,4 @@ void BitmapClass::RenderBuffers(ID3D11DeviceContext* deviceContext)
 
 	// 정점 버퍼로 그릴 기본형을 설정합니다. 여기서는 삼각형으로 설정합니다.
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-}
-
-
-bool BitmapClass::LoadTexture(ID3D11Device* device, const WCHAR* filename)
-{
-	// 텍스처 오브젝트를 생성한다.
-	m_Texture = new TextureClass;
-	if (!m_Texture)
-	{
-		return false;
-	}
-
-	// 텍스처 오브젝트를 초기화한다.
-	return m_Texture->Initialize(device, filename);
-}
-
-
-void BitmapClass::ReleaseTexture()
-{
-	// 텍스처 오브젝트를 릴리즈한다.
-	if (m_Texture)
-	{
-		m_Texture->Shutdown();
-		delete m_Texture;
-		m_Texture = 0;
-	}
 }
