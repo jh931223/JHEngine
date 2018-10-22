@@ -136,10 +136,10 @@ void SystemClass::Run()
 bool SystemClass::Frame()
 {
 	Timer::TimerUpdate();
+	m_Input->Frame();
 	for(auto i:sceneList)
 		i->Update();
 	// 그래픽 객체의 Frame을 처리합니다
-	m_Input->Frame();
 	m_Graphics->Frame();
 	if(printFrame)
 		printf("Frame : %f fps\n",1.0f / Timer::DeltaTime());
