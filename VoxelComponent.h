@@ -6,14 +6,13 @@
 #include "ThreadPool.h"
 #include"JobSystem.h"
 #include"MeshClass.h"
+#include"Octree.h"
 class MeshRenderer;
 class Material;
-class VoxelComponent;
 class RegularCellCache;
-template<typename T> class Octree;
-template<typename T> class OctreeNode;
-
-#define USE_JOBSYSTEM
+class VoxelCollider;
+class VoxelComponent;
+//#define USE_JOBSYSTEM
 
 struct COMMAND_BUFFER
 {
@@ -59,7 +58,7 @@ protected:
 };
 
 
-class VoxelComponent : public Component
+class VoxelComponent : public BehaviourComponent
 {
 public:
 	//#pragma pack(push, 1)
@@ -99,7 +98,7 @@ public:
 	};
 	enum BrushType
 	{
-		Brush_Sphere,Brush_Cube
+		Brush_Default,Brush_Sphere,Brush_Cube
 	};
 
 	VoxelComponent();
@@ -130,7 +129,6 @@ public:
 	bool ReadVoxelData(XMFLOAT3 pos, const char* _path = 0);
 	void WriteVoxelData(XMFLOAT3 pos);
 private:
-	XMFLOAT3 CalcNormal(const XMFLOAT3& v1, const XMFLOAT3& v2, const XMFLOAT3& v3);
 	
 
 	// 복셀큐브 face 생성 메소드
@@ -237,14 +235,11 @@ private:
 	char dataPath[256];
 	const char* pathRoot = "MapData";
 	//Octree< std::vector<VoxelData> >* tempChunks;
-	Octree< ChunkData >* tempChunks;
-	Octree<MeshRenderer*>* meshRendererOctree;
 
 	
 
 	int LODDistance[maxLODLevel+1]{ 0, };
 
-	OctreeNode<MeshRenderer*>* currentLODNode;
 
 	std::unordered_map<int, LODGroupData> lodGropups;
 
@@ -259,7 +254,6 @@ private:
 
 
 
-
 #ifndef USE_JOBSYSTEM
 	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool[3];
 #endif
@@ -269,7 +263,8 @@ private:
 	std::vector<RESULT_BUFFER> meshBuildResult;
 	GameObject* camera;
 
-
-	//frustum
-	//
+public:
+	Octree< ChunkData >* tempChunks;
+	Octree<MeshRenderer*>* meshRendererOctree;
+	BrushType brushType=BrushType::Brush_Sphere;
 };

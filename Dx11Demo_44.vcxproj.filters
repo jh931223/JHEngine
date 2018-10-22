@@ -38,42 +38,21 @@
     <Filter Include="Scenes">
       <UniqueIdentifier>{655ab85f-00d6-4940-a371-d44ad109c349}</UniqueIdentifier>
     </Filter>
+    <Filter Include="JHEngine\Engine\Source">
+      <UniqueIdentifier>{def9b17a-8d04-4e77-9c8f-e55ee16a71f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JHEngine\Engine\Components\Renderer">
+      <UniqueIdentifier>{d2847f4b-972e-482e-8968-deb656f48ba1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JHEngine\Engine\Physics">
+      <UniqueIdentifier>{da7681b6-97c8-4787-8b57-f9493ea8b742}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="JHEngine\Engine\Components\Physics">
+      <UniqueIdentifier>{83fd614a-9163-49a4-8433-23ff4624e1f5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MeshRenderer.h">
-      <Filter>JHEngine\Engine\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="D3DClass.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="DxDefine.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="GraphicsClass.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="InputClass.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="SystemClass.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="AlignedAllocationPolicy.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="ResourcesClass.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
     <ClInclude Include="LightComponent.h">
-      <Filter>JHEngine\Engine\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="GameObject.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="Component.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="CameraComponent.h">
       <Filter>JHEngine\Engine\Components</Filter>
     </ClInclude>
     <ClInclude Include="MeshClass.h">
@@ -94,9 +73,6 @@
     <ClInclude Include="BitmapClass.h">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClInclude>
-    <ClInclude Include="Transform.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
     <ClInclude Include="ComputeShader.h">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClInclude>
@@ -115,17 +91,8 @@
     <ClInclude Include="JHVector.h">
       <Filter>JHEngine\Core</Filter>
     </ClInclude>
-    <ClInclude Include="SceneClass.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
     <ClInclude Include="MainScene.h">
       <Filter>Scenes</Filter>
-    </ClInclude>
-    <ClInclude Include="DDSTextureLoader.h">
-      <Filter>JHEngine\ETC</Filter>
-    </ClInclude>
-    <ClInclude Include="WICTextureLoader.h">
-      <Filter>JHEngine\ETC</Filter>
     </ClInclude>
     <ClInclude Include="JobSystem.h">
       <Filter>JHEngine\ETC</Filter>
@@ -138,15 +105,6 @@
     </ClInclude>
     <ClInclude Include="VoxelComponent.h">
       <Filter>Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>JHEngine</Filter>
-    </ClInclude>
-    <ClInclude Include="stdafx.h">
-      <Filter>JHEngine</Filter>
-    </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>JHEngine</Filter>
     </ClInclude>
     <ClInclude Include="Octree.h">
       <Filter>JHEngine\ETC</Filter>
@@ -163,27 +121,98 @@
     <ClInclude Include="Singleton.h">
       <Filter>JHEngine\ETC</Filter>
     </ClInclude>
-    <ClInclude Include="Timer.h">
-      <Filter>JHEngine\Engine</Filter>
-    </ClInclude>
     <ClInclude Include="InputComponent.h">
       <Filter>Scripts</Filter>
     </ClInclude>
     <ClInclude Include="DepthMapShaderClass.h">
       <Filter>Shaders</Filter>
     </ClInclude>
-    <ClInclude Include="BitmapRenderer.h">
-      <Filter>JHEngine\Engine\Components</Filter>
-    </ClInclude>
     <ClInclude Include="TextureShaderClass.h">
       <Filter>Shaders</Filter>
     </ClInclude>
+    <ClInclude Include="Component.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DClass.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="DxDefine.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsClass.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="InputClass.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourcesClass.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneClass.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemClass.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="AlignedAllocationPolicy.h">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="DDSTextureLoader.h">
+      <Filter>JHEngine\Engine\ResourceClass</Filter>
+    </ClInclude>
+    <ClInclude Include="WICTextureLoader.h">
+      <Filter>JHEngine\Engine\ResourceClass</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>JHEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>JHEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>JHEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="BitmapRenderer.h">
+      <Filter>JHEngine\Engine\Components\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshRenderer.h">
+      <Filter>JHEngine\Engine\Components\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraComponent.h">
+      <Filter>JHEngine\Engine\Components\Renderer</Filter>
+    </ClInclude>
     <ClInclude Include="BehaviourComponent.h">
-      <Filter>JHEngine\Engine\Components</Filter>
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicsClass.h">
+      <Filter>JHEngine\Engine\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Collider.h">
+      <Filter>JHEngine\Engine\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="BoxCollider.h">
+      <Filter>JHEngine\Engine\Components\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshCollider.h">
+      <Filter>JHEngine\Engine\Components\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="SphereCollider.h">
+      <Filter>JHEngine\Engine\Components\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="VoxelCollider.h">
+      <Filter>Scripts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ResourcesClass.cpp" />
     <ClCompile Include="TextureClass.cpp">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClCompile>
@@ -199,38 +228,11 @@
     <ClCompile Include="ShaderClass.cpp">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClCompile>
-    <ClCompile Include="D3DClass.cpp">
-      <Filter>JHEngine\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="GameObject.cpp">
-      <Filter>JHEngine\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="GraphicsClass.cpp">
-      <Filter>JHEngine\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="InputClass.cpp">
-      <Filter>JHEngine\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="SystemClass.cpp">
-      <Filter>JHEngine\Engine</Filter>
-    </ClCompile>
     <ClCompile Include="BitmapClass.cpp">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClCompile>
-    <ClCompile Include="CameraComponent.cpp">
-      <Filter>JHEngine\Engine\Components</Filter>
-    </ClCompile>
     <ClCompile Include="LightComponent.cpp">
       <Filter>JHEngine\Engine\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="MeshRenderer.cpp">
-      <Filter>JHEngine\Engine\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="Transform.cpp">
-      <Filter>JHEngine\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Component.cpp">
-      <Filter>JHEngine\Engine</Filter>
     </ClCompile>
     <ClCompile Include="ComputeShader.cpp">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
@@ -244,17 +246,8 @@
     <ClCompile Include="ShaderParameterCollections.cpp">
       <Filter>JHEngine\Engine\ResourceClass</Filter>
     </ClCompile>
-    <ClCompile Include="SceneClass.cpp">
-      <Filter>JHEngine\Engine</Filter>
-    </ClCompile>
     <ClCompile Include="MainScene.cpp">
       <Filter>Scenes</Filter>
-    </ClCompile>
-    <ClCompile Include="DDSTextureLoader.cpp">
-      <Filter>JHEngine\ETC</Filter>
-    </ClCompile>
-    <ClCompile Include="WICTextureLoader.cpp">
-      <Filter>JHEngine\ETC</Filter>
     </ClCompile>
     <ClCompile Include="JobSystem.cpp">
       <Filter>JHEngine\ETC</Filter>
@@ -268,9 +261,6 @@
     <ClCompile Include="VoxelComponent.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>JHEngine</Filter>
-    </ClCompile>
     <ClCompile Include="Octree.cpp">
       <Filter>JHEngine\ETC</Filter>
     </ClCompile>
@@ -283,26 +273,86 @@
     <ClCompile Include="RWLock.cpp">
       <Filter>JHEngine\ETC</Filter>
     </ClCompile>
-    <ClCompile Include="JHEngine.cpp">
-      <Filter>JHEngine\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Timer.cpp">
-      <Filter>JHEngine\Engine</Filter>
-    </ClCompile>
     <ClCompile Include="InputComponent.cpp">
       <Filter>Scripts</Filter>
     </ClCompile>
     <ClCompile Include="DepthMapShaderClass.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="BitmapRenderer.cpp">
-      <Filter>JHEngine\Engine\Components</Filter>
-    </ClCompile>
     <ClCompile Include="TextureShaderClass.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="Component.cpp">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="D3DClass.cpp">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicsClass.cpp">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="InputClass.cpp">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="JHEngine.cpp">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneClass.cpp">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemClass.cpp">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="DDSTextureLoader.cpp">
+      <Filter>JHEngine\Engine\ResourceClass</Filter>
+    </ClCompile>
+    <ClCompile Include="WICTextureLoader.cpp">
+      <Filter>JHEngine\Engine\ResourceClass</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>JHEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="BitmapRenderer.cpp">
+      <Filter>JHEngine\Engine\Components\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshRenderer.cpp">
+      <Filter>JHEngine\Engine\Components\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="CameraComponent.cpp">
+      <Filter>JHEngine\Engine\Components\Renderer</Filter>
+    </ClCompile>
     <ClCompile Include="BehaviourComponent.cpp">
-      <Filter>JHEngine\Engine\Components</Filter>
+      <Filter>JHEngine\Engine\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicsClass.cpp">
+      <Filter>JHEngine\Engine\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Collider.cpp">
+      <Filter>JHEngine\Engine\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="BoxCollider.cpp">
+      <Filter>JHEngine\Engine\Components\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshCollider.cpp">
+      <Filter>JHEngine\Engine\Components\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="SphereCollider.cpp">
+      <Filter>JHEngine\Engine\Components\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourcesClass.cpp">
+      <Filter>JHEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="VoxelCollider.cpp">
+      <Filter>Scripts</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

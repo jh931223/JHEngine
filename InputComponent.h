@@ -1,12 +1,15 @@
 #pragma once
-#include "Component.h"
+#include "BehaviourComponent.h"
 class InputComponent :
-	public Component
+	public BehaviourComponent
 {
+public:
+	GameObject * box;
 public:
 
 	InputComponent();
 	virtual ~InputComponent();
 	void Update() override;
+
 };
 

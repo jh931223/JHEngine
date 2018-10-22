@@ -76,6 +76,16 @@ int Mesh::GetVertexCount()
 	return m_vertexCount;
 }
 
+VertexBuffer * Mesh::GetVertices()
+{
+	return vertices;
+}
+
+unsigned long * Mesh::GetIndices()
+{
+	return indices;
+}
+
 ID3D11Buffer * const* Mesh::GetVertexBuffer()
 {
 	return &m_vertexBuffer;

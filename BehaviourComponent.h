@@ -6,5 +6,8 @@ class BehaviourComponent :
 public:
 	BehaviourComponent();
 	~BehaviourComponent();
+	virtual void Update() {}
+	virtual void LateUpdate() {}
+	const int ComponentType() override;
 };
 

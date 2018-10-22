@@ -32,7 +32,10 @@ public:
 
 	int GetIndexCount();
 	int GetVertexCount();
-	VertexBuffer* vertices;
+	VertexBuffer* GetVertices();
+	unsigned long* GetIndices();
+
+
 	ID3D11Buffer* const* GetVertexBuffer();
 	ID3D11Buffer* GetIndexBuffer();
 
@@ -47,5 +50,6 @@ private:
 	int m_vertexCount = 0;
 	int m_indexCount = 0;
 	unsigned long* indices;
+	VertexBuffer* vertices;
 
 };

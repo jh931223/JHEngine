@@ -19,6 +19,18 @@ void InputComponent::Update()
 	{
 		Input()->ToggleMouseCursor(!Input()->GetMouseCursorToggle());
 	}
+
+	if (Input()->GetKeyDown(DIK_SPACE))
+	{
+		XMFLOAT3 origin = CameraComponent::mainCamera()->transform()->GetWorldPosition();
+		XMFLOAT3 dir = CameraComponent::mainCamera()->transform()->forward();
+		RaycastHit hit;
+		if (PhysicsClass::Raycast(origin, dir, 100000, hit))
+		{
+			box->transform->SetPosition(hit.point);
+		}	
+	}
+
 	float deltaTime=Timer::DeltaTime();
 
 	XMFLOAT3 euler = transform()->GetWorldRotation();

@@ -52,7 +52,7 @@ void VoxelComponent::Initialize()
 	tUnit = 0.25f;
 	tAmount = 4;
 
-	info.partitionSize = 16;
+	info.partitionSize = 32;
 	//SetLODLevel(0, 100000);
 
 
@@ -61,7 +61,7 @@ void VoxelComponent::Initialize()
 	//SetLODLevel(2, 256);
 	//SetLODLevel(3, 256);
 
-	int start = 128;
+	int start = 50000;
 
 	SetLODLevel(0, start);
 	SetLODLevel(1, start + info.partitionSize);
@@ -78,11 +78,11 @@ void VoxelComponent::Initialize()
 
 
 	//LoadCube(32, 32, 32);
-	LoadPerlin(256, 128, 256,128, 0.2f);
+	//LoadPerlin(256, 128, 256,128, 0.2f);
 	//LoadPerlin(2048, 256, 2048, 128, 0.07f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	//LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");// , 0, 0, 255, 255);
+	LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");// , 0, 0, 255, 255);
 
 
 #ifndef USE_JOBSYSTEM
@@ -94,7 +94,7 @@ void VoxelComponent::Initialize()
 	threadPool[Reserve_Load].SetTaskFunc(_task);
 	threadPool[Reserve_Load].Initialize(8, false);
 	threadPool[Reserve_Deform].SetTaskFunc(_task);
-	threadPool[Reserve_Deform].Initialize(4, false);
+	threadPool[Reserve_Deform].Initialize(8, false);
 	threadPool[Reserve_LOD].SetTaskFunc(_task);
 	threadPool[Reserve_LOD].Initialize(8, false);
 #endif
@@ -114,24 +114,23 @@ void VoxelComponent::Initialize()
 
 
 }
-void VoxelComponent::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos,int lodLevel)
+void VoxelComponent::UpdateMeshRenderer(Mesh* newMesh, XMFLOAT3 pos, int lodLevel)
 {
 
-	auto chunk = meshRendererOctree->Subdivide(pos, 0, newMesh!=NULL);
+	auto chunk = meshRendererOctree->Subdivide(pos, 0, newMesh != NULL);
 	if (newMesh)
 	{
 		if (chunk->GetValue() == NULL)
 		{
 			GameObject* gobj = new GameObject("voxel partition");
-			MeshRenderer* newRenderer = new MeshRenderer;
+			MeshRenderer* newRenderer = gobj->AddComponent<MeshRenderer>();
 			//newRenderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_triplanar"));
 			newRenderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_triplanar"));
-			gobj->AddComponent(newRenderer);
-			if(chunk->GetDepth())
+			if (chunk->GetDepth())
 				chunk = meshRendererOctree->Insert(pos, newRenderer, 0);
 			else chunk->SetValue(newRenderer);
 			float hSize = (float)info.partitionSize*0.5f;
-			newRenderer->boundary.centerOffset = chunk->GetPosition()+XMFLOAT3(hSize, hSize, hSize);
+			newRenderer->boundary.centerOffset = chunk->GetPosition() + XMFLOAT3(hSize, hSize, hSize);
 			newRenderer->boundary.size = hSize;
 		}
 		else if (chunk->GetValue()->GetMesh())
@@ -220,29 +219,15 @@ void VoxelComponent::Update()
 	}
 	if (Input()->GetKeyDown(DIK_1))
 	{
-		if (!useAsyncBuild)
-		{
-			UpdateMesh(0);
-		}
-		else UpdateMeshAsync(0);
+		brushType = BrushType::Brush_Sphere;
 	}
 	else if (Input()->GetKeyDown(DIK_2))
 	{
-
-		if (!useAsyncBuild)
-		{
-			UpdateMesh(1);
-		}
-		else UpdateMeshAsync(0);
+		brushType = BrushType::Brush_Cube;
 	}
 	else if (Input()->GetKeyDown(DIK_3))
 	{
-
-		if (!useAsyncBuild)
-		{
-			UpdateMesh(2);
-		}
-		else UpdateMeshAsync(0);
+		brushType = BrushType::Brush_Default;
 	}
 	else if (Input()->GetKeyDown(DIK_4))
 	{
@@ -256,23 +241,34 @@ void VoxelComponent::Update()
 
 	if (Input()->GetKey(VK_RBUTTON))
 	{
-		//threadPool.AddTask([]()->void {for (int i = 0; i < 1000;i++)printf("test %d\n",i); });
-		XMFLOAT3 pos = camera->transform->GetWorldPosition() + camera->transform->forward() * brushRadius;
-		XMFLOAT3 cpos = CovertToChunkPos(pos, false);
-		EditVoxel(pos, brushRadius, -strength);
+		XMFLOAT3 origin = CameraComponent::mainCamera()->transform()->GetWorldPosition();
+		XMFLOAT3 dir = CameraComponent::mainCamera()->transform()->forward();
+		RaycastHit hit;
+		if (PhysicsClass::Raycast(origin, dir, 100, hit))
+		{
+			XMFLOAT3 pos = hit.point;
+			XMFLOAT3 cpos = CovertToChunkPos(pos, false);
+			EditVoxel(pos, brushRadius, -strength, brushType);
+		}
+
 	}
 	else if (Input()->GetKey(VK_LBUTTON))
 	{
-		XMFLOAT3 pos = camera->transform->GetWorldPosition() + camera->transform->forward() *brushRadius;
-		XMFLOAT3 cpos = CovertToChunkPos(pos, false);
-		EditVoxel(pos, brushRadius, strength);
+		XMFLOAT3 origin = CameraComponent::mainCamera()->transform()->GetWorldPosition();
+		XMFLOAT3 dir = CameraComponent::mainCamera()->transform()->forward();
+		RaycastHit hit;
+		if (PhysicsClass::Raycast(origin, dir, 100, hit))
+		{
+			XMFLOAT3 pos = hit.point;
+			XMFLOAT3 cpos = CovertToChunkPos(pos, false);
+			EditVoxel(pos, brushRadius, strength, brushType);
+		}
 	}
 	ProcessCommandQueue();
 }
 
 void VoxelComponent::OnStart()
 {
-	//transform()->SetPosition(XMFLOAT3(0, 0, 0));
 	Initialize();
 }
 template<> OctreeNode<MeshRenderer*>::~OctreeNode()
@@ -1086,23 +1082,6 @@ RESULT_BUFFER VoxelComponent::GenerateCubeFaces(XMFLOAT3 pos)
 	return CreatePartialMesh(pos, node, vertices, indices);*/
 }
 
-XMFLOAT3 VoxelComponent::CalcNormal(const XMFLOAT3& v1, const XMFLOAT3& v2, const XMFLOAT3& v3)
-{
-	XMFLOAT3 f1 = v1 - v2;
-	//f1 = Normalize3(f1);
-	XMFLOAT3 f2 = v3 - v2;
-	//f2 = Normalize3(f2);
-	XMVECTOR V1 = XMLoadFloat3(&f1);
-	V1 = XMVector3Normalize(V1);
-	XMVECTOR V2 = XMLoadFloat3(&f2);
-	V2 = XMVector3Normalize(V2);
-	XMVECTOR UP = XMVector3Cross(V2, V1);
-	UP = XMVector3Normalize(UP);
-	XMFLOAT3 n;
-	XMStoreFloat3(&n, UP);
-	return n;
-}
-
 XMFLOAT2 VoxelComponent::GetUV(BYTE type)
 {
 	if (type == -1)
@@ -1171,24 +1150,45 @@ bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength,Brus
 	XMFLOAT3 partitionPos = GetPartitionStartPos(pos);
 	float hUnit = unit * 0.5f;
 	pos = XMFLOAT3((int)pos.x + hUnit, (int)pos.y + hUnit, (int)pos.z + hUnit);
-	std::unordered_set<int> reservedSet;
 	for (int i = -_radius-1; i < _radius+1; i++)
 	{
 		for (int j = -_radius-1; j < _radius+1; j++)
 		{
 			for (int k = -_radius-1; k < _radius+1; k++)
 			{
-				float dis = GetDistance(pos, pos + XMFLOAT3(i, j, k));
-				float amount = _radius - dis;
+				
 				XMFLOAT3 nPos(pos.x + i - hUnit, pos.y + j - hUnit, pos.z + k - hUnit);
+				float amount;
 				VoxelData data = GetVoxel(nPos);
+				switch (_brushType)
+				{
+				case VoxelComponent::Brush_Sphere:
+				{
+					float dis = GetDistance(pos, pos + XMFLOAT3(i, j, k));
+					amount = _radius - dis;
+					amount *= SIGN(_strength);
+					break;
+				}
+				case VoxelComponent::Brush_Cube:
+					amount = SIGN(_strength);
+					break;
+				default:
+					float dis = GetDistance(pos, pos + XMFLOAT3(i, j, k));
+					if (dis > _radius)
+						continue;
+					amount = data.isoValue+_strength* dis/ _radius;
+					break;
+				}
 				float lastValue = data.isoValue;
-				data.isoValue = amount*SIGN(_strength);
-				if (_strength > 0 && lastValue > data.isoValue)
-					continue;
-				else if (_strength < 0 && lastValue < data.isoValue)
-					continue;
-				else if (lastValue == data.isoValue)
+				data.isoValue = amount;
+				if (_brushType != Brush_Default)
+				{
+					if (_strength > 0 && lastValue > data.isoValue)
+						continue;
+					else if (_strength < 0 && lastValue < data.isoValue)
+						continue;
+				}
+				if (lastValue == data.isoValue)
 					continue;
 				if (SetVoxel(nPos.x, nPos.y, nPos.z, data, false))
 				{
@@ -1199,7 +1199,7 @@ bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength,Brus
 					{
 						XMFLOAT3 oPos = GetPartitionStartPos(nPos-offset[o]);
 						if(pPos!=oPos)
-							if(IsPolygonizableCell(nPos-offset[i]))
+							//if(IsPolygonizableCell(nPos-offset[i]))
 								ReserveUpdate(oPos, Reserve_Deform);
 					}
 				}

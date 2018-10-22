@@ -1,14 +1,16 @@
 #include "stdafx.h"
 #include "MainScene.h"
 
+#include "MeshClass.h"
+#include "SystemClass.h"
+
 #include "MeshRenderer.h"
 #include "LightComponent.h"
 #include "CameraComponent.h"
 #include "InputComponent.h"
 #include "VoxelComponent.h"
-#include "MeshClass.h"
 #include "BitmapRenderer.h"
-#include "SystemClass.h"
+#include "VoxelCollider.h"
 using namespace std;
 
 
@@ -21,8 +23,7 @@ void MainScene::Setup()
 	GameObject* gobj;
 	MeshRenderer* renderer;
 	gobj = new GameObject("라이트");
-	LightComponent* m_Light = new LightComponent;
-	gobj->AddComponent(m_Light);
+	LightComponent* m_Light = gobj->AddComponent<LightComponent>();
 	m_Light->SetAmbientColor(0.1f, 0.1f, 0.1f, 1.0f);
 	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
 	m_Light->SetLookAt(238.3861f, 409.3519f, 524.0f);
@@ -33,13 +34,12 @@ void MainScene::Setup()
 	//m_Light->GenerateOrthogrphicMatrix(661.0f,1643, SHADOWMAP_NEAR);
 	// light object 생성
 	gobj = new GameObject("mainCamera");
-	CameraComponent* m_Camera = new CameraComponent;
-	gobj->AddComponent(m_Camera);
+	CameraComponent* m_Camera = gobj->AddComponent<CameraComponent>();
 	m_Camera->transform()->SetPosition(XMFLOAT3(25.0f, 0.0f, -50.0f));
 	m_Camera->transform()->SetRotation(XMFLOAT3(0.0f, 0.0f, 0.0f));
 	float screenAspect = (float)SystemClass::GetInstance()->GetScreenWidth() / (float)SystemClass::GetInstance()->GetScreenHeight();
 	m_Camera->SetProjectionParameters((float)(XM_PI / 4.0f), screenAspect, 0.1f, 1500.0f);
-	gobj->AddComponent(new InputComponent);
+	auto input=gobj->AddComponent<InputComponent>();
 	// 복셀 생성
 	gobj = new GameObject("복셀루트");
 	GameObject* r = gobj;
@@ -47,20 +47,22 @@ void MainScene::Setup()
 
 	gobj = new GameObject("복셀");
 	//r->AddChild(gobj);
-	renderer = new MeshRenderer;
-	gobj->AddComponent(renderer);
-	VoxelComponent* voxel = new VoxelComponent;
-	gobj->AddComponent(voxel);
+	VoxelComponent* voxel = gobj->AddComponent<VoxelComponent>();
+	voxel->brushType = VoxelComponent::BrushType::Brush_Sphere;
+	/*VoxelComponent* voxel = new VoxelComponent;
+	gobj->AddComponent(voxel);*/
 	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));
 	gobj->transform->SetRotation(XMFLOAT3(0, 0, 0));
+	auto voxelCol = gobj->AddComponent<VoxelCollider>();
+	voxelCol->voxel = voxel;
 
 	gobj = new GameObject("큐브");
 	//r->AddChild(gobj);
-	renderer = new MeshRenderer;
-	gobj->AddComponent(renderer);
+	renderer = gobj->AddComponent<MeshRenderer>();
 	renderer->SetMesh(ResourcesClass::GetInstance()->FindMesh("cube"));
 	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_cube"));
 	gobj->transform->SetPosition(XMFLOAT3(100, 100, 100));
+	input->box = gobj;
 
 	//CANVAS
 	//{

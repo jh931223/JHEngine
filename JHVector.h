@@ -160,5 +160,21 @@ namespace JHDev
 		else
 			return (f < x) ? x : f;
 	}
+	inline XMFLOAT3 CalcNormal(const XMFLOAT3& v1, const XMFLOAT3& v2, const XMFLOAT3& v3)
+	{
+		XMFLOAT3 f1 = v1 - v2;
+		//f1 = Normalize3(f1);
+		XMFLOAT3 f2 = v3 - v2;
+		//f2 = Normalize3(f2);
+		XMVECTOR V1 = XMLoadFloat3(&f1);
+		V1 = XMVector3Normalize(V1);
+		XMVECTOR V2 = XMLoadFloat3(&f2);
+		V2 = XMVector3Normalize(V2);
+		XMVECTOR UP = XMVector3Cross(V2, V1);
+		UP = XMVector3Normalize(UP);
+		XMFLOAT3 n;
+		XMStoreFloat3(&n, UP);
+		return n;
+	}
 }
 

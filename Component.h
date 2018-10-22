@@ -11,8 +11,10 @@ public:
 	Component(GameObject* _parent) :gameObject(_parent) {}
 	virtual ~Component() {}
 	virtual void OnStart() {};
-	virtual void Update() {};
-	virtual void LateUpdate() {};
+	virtual const int ComponentType()
+	{
+		return 0;
+	}
 	CTransform* transform();
 };
 

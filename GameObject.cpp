@@ -84,6 +84,8 @@ bool GameObject::AddComponent(Component* _newComponent)
 		if (i == _newComponent)
 			return false;
 	}
+	if (_newComponent->ComponentType())
+		behaviours.push_back((BehaviourComponent*)_newComponent);
 	components.push_back(_newComponent);
 	_newComponent->gameObject = this;
 	return true;
@@ -96,9 +98,9 @@ void GameObject::Destroy(GameObject * _gameObject)
 
 void GameObject::Update()
 {
-	if (components.size())
+	if (behaviours.size())
 	{
-		for (auto i : components)
+		for (auto i : behaviours)
 		{
 			if(i&&i->enabled)
 				i->Update();
@@ -110,9 +112,9 @@ void GameObject::Update()
 
 void GameObject::LateUpdate()
 {
-	if (components.size())
+	if (behaviours.size())
 	{
-		for (auto i : components)
+		for (auto i : behaviours)
 			i->LateUpdate();
 	}
 }
