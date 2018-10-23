@@ -97,7 +97,7 @@ float4 ps(v2f input) : SV_TARGET
 	float4 blended_color;
 	float3 blended_bump_vec;
 	{
-		float tex_scale = 0.3f;
+		float tex_scale = 0.1f;
 		float2 coord1 = input.worldPos.yz * tex_scale;
 		float2 coord2 = input.worldPos.zx * tex_scale;
 		float2 coord3 = input.worldPos.xy * tex_scale;
@@ -151,7 +151,7 @@ float4 ps(v2f input) : SV_TARGET
 	}
 
 
-	float3 d = blended_color*diffuseColor*saturate(diffuse+0.5f);
+	float3 d = blended_color*diffuseColor*diffuse;
 	
 	float3 ambient = ambientColor;
 

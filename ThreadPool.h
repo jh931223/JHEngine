@@ -72,9 +72,9 @@ public:
 			taskQueue.push_front(_task);
 			{
 				std::unique_lock<std::mutex> lock(workerMutex);
-				if (waitingThreads.size())
+				if (waitingQueue.size())
 				{
-					int id = waitingThreads.front();
+					int id = waitingQueue.front();
 					ChangeState(id);
 					workerConditions[id]->notify_one();
 				}

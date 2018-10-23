@@ -152,8 +152,8 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	result->SetShader(FindShader("TriplanarShader"));
 	result->GetParams()->SetTexture("Texture1", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture1Normal", FindTexture("cliffNormal"));
-	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
-	result->GetParams()->SetTexture("Texture2Normal", FindTexture("rockNormal"));
+	result->GetParams()->SetTexture("Texture2", FindTexture("cliff"));
+	result->GetParams()->SetTexture("Texture2Normal", FindTexture("cliffNormal"));
 	result->GetParams()->SetTexture("Texture3", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture3Normal", FindTexture("cliffNormal"));
 	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1,1,1,1));
