@@ -156,6 +156,7 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	result->GetParams()->SetTexture("Texture2Normal", FindTexture("rockNormal"));
 	result->GetParams()->SetTexture("Texture3", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture3Normal", FindTexture("cliffNormal"));
+	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1,1,1,1));
 	materialMap["m_triplanar"] = result;
 
 	result = new Material;

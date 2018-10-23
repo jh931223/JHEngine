@@ -24,7 +24,7 @@ void MainScene::Setup()
 	MeshRenderer* renderer;
 	gobj = new GameObject("¶óÀÌÆ®");
 	LightComponent* m_Light = gobj->AddComponent<LightComponent>();
-	m_Light->SetAmbientColor(0.1f, 0.1f, 0.1f, 1.0f);
+	m_Light->SetAmbientColor(0.1f, 0.1f, 0.15f, 1.0f);
 	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
 	m_Light->SetLookAt(238.3861f, 409.3519f, 524.0f);
 	m_Light->transform()->SetPosition(XMFLOAT3(0.0f, 600.0f, 524.0f));

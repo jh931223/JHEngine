@@ -104,7 +104,7 @@ bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRI
 	}
 	PSLightBufferType* dataPtr2 = (PSLightBufferType*)mappedResource.pData;
 	dataPtr2->ambientColor = LightComponent::mainLight()->GetAmbientColor();
-	dataPtr2->diffuseColor = LightComponent::mainLight()->GetDiffuseColor();
+	dataPtr2->diffuseColor = params.GetFloat4("_MainColor");
 	deviceContext->Unmap(psLightBuffer, 0);
 
 

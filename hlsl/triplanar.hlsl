@@ -5,26 +5,26 @@ cbuffer MatrixBuffer
 	matrix projectionMatrix;
 };
 
-
-
 cbuffer PSLightBufferType
 {
 	float4 ambientColor;
 	float4 diffuseColor;
+	float metallic;
+	float roughness;
+	float2 padding_psLB;
 };
 
 cbuffer VSLightBufferType
 {
 	float4 cameraPos;
 	float3 lightDir;
-	float padding;
+	float padding_vsLB;
 };
 cbuffer VSLightMatrixBuffer
 {
 	matrix lightViewMatrix;
 	matrix lightProjectionMatrix;
 };
-
 
 struct vInput
 {
@@ -135,7 +135,7 @@ float4 ps(v2f input) : SV_TARGET
 	if (diffuse > 0)
 	{
 		specular = saturate(dot(reflection, -viewDir));
-		specular = pow(specular, 1.3f);
+		specular = pow(specular, 10.0f);
 	}
 
 	float lightDepth = input.lightClipPosition.z / input.lightClipPosition.w;
@@ -147,15 +147,15 @@ float4 ps(v2f input) : SV_TARGET
 	lightDepth -= 0.0025f;
 	if (lightDepth > shadowMapDepth)
 	{
-		diffuse *= 0.3f;
+		//diffuse *= 0.3f;
 	}
 
 
-	float3 d = blended_color * diffuse*diffuseColor;
+	float3 d = blended_color*diffuseColor*saturate(diffuse+0.5f);
 	
 	float3 ambient = ambientColor;
 
-	float specularPower = 0.2f;
+	float specularPower = 1.0f;
 	return float4(d+ ambient +specular* specularPower,1);
 }
 
