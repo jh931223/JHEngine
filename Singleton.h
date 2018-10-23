@@ -17,7 +17,7 @@ public:
 	};
 
 private:
-	//static T * ms_Instance;
+	static T * ms_Instance;
 };
 
-//template<typename T> T* Singleton<T>::ms_Instance = 0;
+template<typename T> T* Singleton<T>::ms_Instance = 0;
