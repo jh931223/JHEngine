@@ -30,7 +30,7 @@ public:
 	{
 		ShutdownShader();
 	}
-	bool Render(ID3D11DeviceContext* deviceContext, int indexCount, XMMATRIX worldMatrix,
+	bool Render(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix,
 		XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM& params)
 	{
 		// 렌더링에 사용할 셰이더 매개 변수를 설정합니다.
@@ -39,7 +39,7 @@ public:
 			return false;
 		}
 		// 설정된 버퍼를 셰이더로 렌더링한다.
-		RenderShader(deviceContext, indexCount);
+		RenderShader(deviceContext);
 	}
 	void OutputShaderErrorMessage(ID3D10Blob* errorMessage, HWND hwnd, const WCHAR* shaderFilename)
 	{
@@ -56,6 +56,10 @@ public:
 	static void SetRenderCam(CameraComponent* _renderCam)
 	{
 		renderCam = _renderCam;
+	}	
+	static CameraComponent* GetRenderCam()
+	{
+		return renderCam;
 	}
 protected:
 	virtual bool BuildShader(ID3D11Device* device, HWND hwnd, const WCHAR* vsFilename, const WCHAR* psFilename, const WCHAR* gsFileName=NULL) = 0;
@@ -101,7 +105,7 @@ protected:
 	};
 	virtual bool DrawCall(ID3D11DeviceContext* deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix,
 		XMMATRIX projectionMatrix, PARAM& params) = 0;
-	virtual void RenderShader(ID3D11DeviceContext* deviceContext, int indexCount) =0;
+	virtual void RenderShader(ID3D11DeviceContext* deviceContext) =0;
 	bool CreateVertexLayout(ID3D11Device* device, ID3D10Blob* vertexShaderBuffer, const D3D11_INPUT_ELEMENT_DESC* polygonLayout, UINT numElements)
 	{
 		HRESULT result;

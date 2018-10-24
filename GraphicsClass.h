@@ -21,6 +21,7 @@ class LightComponent;
 class MeshRenderer;
 class BitmapRenderer;
 class Material;
+class Mesh;
 class RenderTextureClass;
 
 class GraphicsClass
@@ -66,6 +67,8 @@ private:
 
 	RenderTextureClass* shadowMap;
 	Material* shadowMapMaterial;
+
+	Mesh* skyMesh;
 
 	float screenWidth, screenHeight;
 };

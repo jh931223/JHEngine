@@ -9,9 +9,8 @@ cbuffer PSLightBufferType
 {
 	float4 ambientColor;
 	float4 diffuseColor;
-	float metallic;
-	float roughness;
-	float2 padding_psLB;
+	float shadowBias;
+	float3 padding_PSLB;
 };
 
 cbuffer VSLightBufferType
@@ -144,18 +143,19 @@ float4 ps(v2f input) : SV_TARGET
 	shadowUV = shadowUV * 0.5f + 0.5f;
 
 	float shadowMapDepth = shadowMap.Sample(SampleTypeClamp, shadowUV).r;
-	lightDepth -= 0.0025f;
+	lightDepth -= 0.0002f;//shadowBias;//0.00002f;//
+
 	if (lightDepth > shadowMapDepth)
 	{
-		//diffuse *= 0.3f;
+		diffuse *= 0.3f;
+		//specular *= 0.3f;
 	}
 
-
 	float3 d = blended_color*diffuseColor*diffuse;
-	
+
 	float3 ambient = ambientColor;
 
-	float specularPower = 1.0f;
+	float specularPower = 0.3f;
 	return float4(d+ ambient +specular* specularPower,1);
 }
 

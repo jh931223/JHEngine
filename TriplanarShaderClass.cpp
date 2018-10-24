@@ -105,6 +105,7 @@ bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRI
 	PSLightBufferType* dataPtr2 = (PSLightBufferType*)mappedResource.pData;
 	dataPtr2->ambientColor = LightComponent::mainLight()->GetAmbientColor();
 	dataPtr2->diffuseColor = params.GetFloat4("_MainColor");
+	dataPtr2->shadowBias = params.GetFloat("_ShadowBias");
 	deviceContext->Unmap(psLightBuffer, 0);
 
 
@@ -148,7 +149,7 @@ bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRI
 	return true;
 }
 
-void TriplanarShaderClass::RenderShader(ID3D11DeviceContext * deviceContext, int indexCount)
+void TriplanarShaderClass::RenderShader(ID3D11DeviceContext * deviceContext)
 {
 	// 정점 입력 레이아웃을 설정합니다.
 	deviceContext->IASetInputLayout(m_layout);
@@ -160,5 +161,4 @@ void TriplanarShaderClass::RenderShader(ID3D11DeviceContext * deviceContext, int
 	// 픽셀 쉐이더에서 샘플러 상태를 설정합니다.
 	SetSampler(deviceContext);
 	// 삼각형을 그립니다.
-	deviceContext->DrawIndexed(indexCount, 0, 0);
 }

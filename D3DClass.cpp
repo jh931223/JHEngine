@@ -291,7 +291,7 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	float screenAspect = (float)screenWidth / (float)screenHeight;
 
 	// 3D 렌더링을위한 투영 행렬을 만듭니다
-	m_projectionMatrix = XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, screenNear, screenDepth);
+	m_projectionMatrix = XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, screenNear, 100000);
 
 	// 세계 행렬을 항등 행렬로 초기화합니다
 	m_worldMatrix = XMMatrixIdentity();
@@ -345,6 +345,24 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	{
 		return false;
 	}
+	rasterDesc.AntialiasedLineEnable = false;
+	rasterDesc.DepthBias = 0;
+	rasterDesc.DepthBiasClamp = 0.0f;
+	rasterDesc.DepthClipEnable = true;
+	rasterDesc.CullMode = D3D11_CULL_FRONT;
+	rasterDesc.FillMode = D3D11_FILL_SOLID;
+	//rasterDesc.CullMode = D3D11_CULL_NONE;
+	//rasterDesc.FillMode = D3D11_FILL_WIREFRAME;
+	rasterDesc.FrontCounterClockwise = false;
+	rasterDesc.MultisampleEnable = false;
+	rasterDesc.ScissorEnable = false;
+	rasterDesc.SlopeScaledDepthBias = 0.0f;
+
+	// 방금 작성한 구조체에서 래스터 라이저 상태를 만듭니다
+	if (FAILED(m_device->CreateRasterizerState(&rasterDesc, &m_cullFrontState)))
+	{
+		return false;
+	}
 
 	return true;
 }
@@ -386,7 +404,11 @@ void D3DClass::Shutdown()
 		m_cullOffState->Release();
 		m_cullOffState = 0;
 	}
-	
+	if (m_cullFrontState)
+	{
+		m_cullFrontState->Release();
+		m_cullFrontState = 0;
+	}
 	if (m_renderTargetView)
 	{
 		m_renderTargetView->Release();
@@ -531,6 +553,7 @@ void D3DClass::SetBackBufferRenderTarget()
 {
 	// 렌더 타겟 뷰와 깊이 스텐실 버퍼를 출력 렌더 파이프 라인에 바인딩합니다.
 	m_immDeviceContext->OMSetRenderTargets(1, &m_renderTargetView, m_depthStencilView);
+	ResetViewport();
 }
 
 
@@ -600,4 +623,9 @@ void D3DClass::TurnCullOff()
 void D3DClass::TurnCullBack()
 {
 	m_immDeviceContext->RSSetState(m_rasterState);
+}
+
+void D3DClass::TurnCullFront()
+{
+	m_immDeviceContext->RSSetState(m_cullFrontState);
 }

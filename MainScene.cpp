@@ -24,19 +24,21 @@ void MainScene::Setup()
 	MeshRenderer* renderer;
 	gobj = new GameObject("라이트");
 	LightComponent* m_Light = gobj->AddComponent<LightComponent>();
-	m_Light->SetAmbientColor(0.1f, 0.1f, 0.15f, 1.0f);
+	m_Light->SetAmbientColor(0.2f, 0.1f, 0.1f, 1.0f);
 	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
 	m_Light->SetLookAt(238.3861f, 409.3519f, 524.0f);
 	m_Light->transform()->SetPosition(XMFLOAT3(0.0f, 600.0f, 524.0f));
 	m_Light->transform()->SetRotation(XMFLOAT3(38.0f, 90.0f, 0.0f));
 	m_Light->GenerateViewMatrix();
-	m_Light->GeneratePerspectiveMatrix(1024, 1.0f);
-	//m_Light->GenerateOrthogrphicMatrix(661.0f,1643, SHADOWMAP_NEAR);
+	//m_Light->GeneratePerspectiveMatrix(1500, 1.0f);
+	m_Light->GenerateOrthogrphicMatrix(1000.0f,2000, SHADOWMAP_NEAR);
 	// light object 생성
 	gobj = new GameObject("mainCamera");
 	CameraComponent* m_Camera = gobj->AddComponent<CameraComponent>();
 	m_Camera->transform()->SetPosition(XMFLOAT3(25.0f, 0.0f, -50.0f));
 	m_Camera->transform()->SetRotation(XMFLOAT3(0.0f, 0.0f, 0.0f));
+	m_Camera->background = CameraComponent::SkySphere;
+	m_Camera->skyMaterial = ResourcesClass::GetInstance()->FindMaterial("m_skySphere");
 	float screenAspect = (float)SystemClass::GetInstance()->GetScreenWidth() / (float)SystemClass::GetInstance()->GetScreenHeight();
 	m_Camera->SetProjectionParameters((float)(XM_PI / 4.0f), screenAspect, 0.1f, 1500.0f);
 	auto input=gobj->AddComponent<InputComponent>();
@@ -64,12 +66,11 @@ void MainScene::Setup()
 	gobj->transform->SetPosition(XMFLOAT3(100, 100, 100));
 	input->box = gobj;
 
-	//CANVAS
+	/////CANVAS
 	//{
 	//	gobj = new GameObject("UI01");
 	//	//r->AddChild(gobj);
-	//	BitmapRenderer* bRenderer = new BitmapRenderer;
-	//	gobj->AddComponent(bRenderer);
+	//	auto bRenderer=gobj->AddComponent<BitmapRenderer>();
 	//	bRenderer->SetBitmap(255, 255);
 	//	bRenderer->SetMaterial(SystemClass::GetInstance()->GetResources()->FindMaterial("m_texture"));
 	//	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));

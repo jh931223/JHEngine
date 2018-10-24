@@ -45,11 +45,13 @@ class Frustum
 	static XMVECTOR m_planes[6];
 public:
 	static bool isLockFrustum;
+	static bool useFrustumCulling;
 	static int frustumCulled;
 	static int drawnVertex;
 public:
 	static void ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, XMMATRIX viewMatrix);
 	static bool FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius);
 	static bool FrustumCheckSphere(float xCenter, float yCenter, float zCenter, float radius);
+	static void ToggleFrustumCulling(bool _toggle);
 };
 

@@ -2,7 +2,7 @@
 #include<list>
 
 class RenderTextureClass;
-
+class Material;
 class CameraComponent : public Component
 {
 public:
@@ -25,6 +25,14 @@ private:
 	RenderTextureClass* renderTexture;
 public:
 	static std::list<CameraComponent*> cameras;
+	enum BackGroundType
+	{
+		SolidColor,
+		SkySphere
+	};
+	BackGroundType background;
+	Material* skyMaterial;
+	XMFLOAT4 backGroundColor=XMFLOAT4(0.4f,0.4f,0.8f,1);
 	float m_fieldOfView = 0;
 	float m_aspectRatio = 0;
 	float m_nearPlane = 0;

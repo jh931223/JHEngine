@@ -64,7 +64,7 @@ bool DepthMapShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRIX
 	return true;
 }
 
-void DepthMapShaderClass::RenderShader(ID3D11DeviceContext * deviceContext, int indexCount)
+void DepthMapShaderClass::RenderShader(ID3D11DeviceContext * deviceContext)
 {
 	// 정점 입력 레이아웃을 설정합니다.
 	deviceContext->IASetInputLayout(m_layout);
@@ -77,5 +77,4 @@ void DepthMapShaderClass::RenderShader(ID3D11DeviceContext * deviceContext, int 
 	SetSampler(deviceContext);
 
 	// 삼각형을 그립니다.
-	deviceContext->DrawIndexed(indexCount, 0, 0);
 }

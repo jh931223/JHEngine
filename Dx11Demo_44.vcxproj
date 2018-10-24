@@ -300,6 +300,7 @@
   <ItemGroup>
     <Text Include="data\cube.txt" />
     <Text Include="data\floor.txt" />
+    <Text Include="data\sphere.txt" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="data\soil.dds" />
@@ -312,11 +313,6 @@
     <Image Include="data\tilesheet.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="data\1x1-island.raw" />
-    <None Include="data\brilliant_terrain.raw" />
-    <None Include="data\heightmap.r16" />
-    <None Include="data\lena(512x512).raw" />
-    <None Include="data\teasdrrain.raw" />
     <None Include="dds1.bin" />
     <None Include="dds2.bin" />
   </ItemGroup>

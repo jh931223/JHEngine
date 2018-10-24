@@ -78,11 +78,11 @@ void VoxelComponent::Initialize()
 
 
 	//LoadCube(32, 32, 32);
-	LoadPerlin(256, 128, 256,128, 0.2f);
+	//LoadPerlin(256, 128, 256,128, 0.2f);
 	//LoadPerlin(2048, 256, 2048, 128, 0.07f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	//LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");// , 0, 0, 255, 255);
+	LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");// , 0, 0, 255, 255);
 
 
 #ifndef USE_JOBSYSTEM
@@ -159,24 +159,54 @@ void VoxelComponent::Update()
 {
 	ProcessLOD();
 	ProcessResultQueue();
-	if (Input()->GetKey(DIK_UP))
+	if (Input()->GetKey(DIK_LCONTROL))
 	{
-		strength += 0.1f;
+		if (Input()->GetKey(DIK_UP))
+		{
+			strength += 0.01f;
+			printf("strength : %f\n", strength);
+		}
+		else if (Input()->GetKey(DIK_DOWN))
+		{
+			strength = (strength <= 0) ? 0 : strength - 0.01f;
+			printf("strength : %f\n", strength);
+		}
+		if (Input()->GetKey(DIK_RIGHT))
+		{
+			brushRadius += 0.01f;
+			printf("brushRadius : %f\n", brushRadius);
+		}
+		else if (Input()->GetKey(DIK_LEFT))
+		{
+			brushRadius = (brushRadius <= 0) ? 0 : brushRadius - 0.01f;
+			printf("brushRadius : %f\n", brushRadius);
+		}
 	}
-	else if (Input()->GetKey(DIK_DOWN))
+	if (Input()->GetKey(DIK_LALT))
 	{
-		strength = (strength <= 0) ? 0 : strength-0.1f;
+		auto mat = ResourcesClass::GetInstance()->FindMaterial("m_triplanar");
+		float bias = mat->GetParams()->GetFloat("_ShadowBias");
+		if (Input()->GetKey(DIK_UP))
+		{
+			bias += 0.0000001f;
+			mat->GetParams()->SetFloat("_ShadowBias", bias);
+			printf("bias : %f\n", bias);
+		}
+		else if (Input()->GetKey(DIK_DOWN))
+		{
+			bias = (bias <= 0) ? 0 : bias - 0.0000001f;
+			mat->GetParams()->SetFloat("_ShadowBias", bias);
+			printf("bias : %f\n", bias);
+		}
+		if (Input()->GetKey(DIK_RIGHT))
+		{
+			brushRadius += 0.01f;
+		}
+		else if (Input()->GetKey(DIK_LEFT))
+		{
+			brushRadius = (brushRadius <= 0) ? 0 : brushRadius - 0.01f;
+		}
 	}
-
-	if (Input()->GetKey(DIK_RIGHT))
-	{
-		brushRadius += 0.01f;
-	}
-	else if (Input()->GetKey(DIK_LEFT))
-	{
-		brushRadius = (brushRadius <= 0) ? 0 : brushRadius - 0.01f;
-	}
-
 	if (Input()->GetKeyDown(DIK_F1))
 	{
 		SystemClass::GetInstance()->GetD3D()->ChangeFillMode(true);
@@ -187,8 +217,9 @@ void VoxelComponent::Update()
 	}
 	else if (Input()->GetKey(DIK_F3))
 	{
-		LightComponent::mainLight()->transform()->SetRotation(CameraComponent::mainCamera()->transform()->GetWorldRotation());
-		LightComponent::mainLight()->transform()->SetPosition(CameraComponent::mainCamera()->transform()->GetWorldPosition());
+		auto lightTransform = LightComponent::mainLight()->transform();
+		lightTransform->SetRotation(CameraComponent::mainCamera()->transform()->GetWorldRotation());
+		lightTransform->SetPosition(/*XMFLOAT3(0,-100,0)+*/XMFLOAT3(info.width, info.height, info.depth)*0.5f+lightTransform->forward()*-1000);
 		LightComponent::mainLight()->GenerateViewMatrix();
 	}
 	else if (Input()->GetKeyDown(DIK_F4))

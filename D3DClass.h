@@ -42,6 +42,8 @@ public:
 	void TurnCullOff();
 	void TurnCullBack();
 
+	void TurnCullFront();
+
 
 
 	std::vector<ID3D11CommandList*> commandLists;
@@ -67,5 +69,6 @@ private:
 
 	ID3D11DepthStencilState* m_depthDisabledStencilState = NULL;
 	ID3D11RasterizerState* m_cullOffState = nullptr;
+	ID3D11RasterizerState* m_cullFrontState = nullptr;
 	bool isRenderWireFrame=false;
 };

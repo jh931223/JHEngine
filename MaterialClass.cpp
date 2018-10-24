@@ -25,9 +25,9 @@ Material::~Material()
 	//}
 }
 
-bool Material::Render(ID3D11DeviceContext * _deviceContext, const int _index, XMMATRIX _world, XMMATRIX _view, XMMATRIX _proj)
+bool Material::Render(ID3D11DeviceContext * _deviceContext, XMMATRIX _world, XMMATRIX _view, XMMATRIX _proj)
 {
-	return shader->Render(_deviceContext, _index, _world, _view, _proj,params);
+	return shader->Render(_deviceContext, _world, _view, _proj,params);
 }
 
 void Material::SetShader(ShaderClass * _shader)

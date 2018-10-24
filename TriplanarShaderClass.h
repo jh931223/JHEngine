@@ -17,7 +17,7 @@ public:
 
 	virtual bool DrawCall(ID3D11DeviceContext * deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM & params) override;
 
-	virtual void RenderShader(ID3D11DeviceContext * deviceContext, int indexCount) override;
+	virtual void RenderShader(ID3D11DeviceContext * deviceContext) override;
 
 	// ShaderClass을(를) 통해 상속됨
 
@@ -25,6 +25,8 @@ public:
 	{
 		XMFLOAT4 ambientColor;
 		XMFLOAT4 diffuseColor;
+		float shadowBias;
+		XMFLOAT3 padding;
 	};
 	struct VSLightBufferType
 	{

@@ -175,6 +175,27 @@ ID3D11Device * GraphicsClass::GetDevice()
 }
 bool GraphicsClass::RenderScene(XMMATRIX viewMatrix, XMMATRIX projectionMatrix, Material* customMaterial)
 {
+
+	// 하늘 출력
+	auto renderCam = ShaderClass::GetRenderCam();
+	if (customMaterial==NULL&&renderCam->background==CameraComponent::BackGroundType::SkySphere&&renderCam->skyMaterial)
+	{
+		m_Direct3D->TurnCullFront();
+		m_Direct3D->TurnZBufferOff();
+		XMMATRIX worldMatrix, skyProjectionMatrix;
+		m_Direct3D->GetWorldMatrix(worldMatrix);
+		m_Direct3D->GetProjectionMatrix(skyProjectionMatrix);
+		float size = 4000.0f;
+		worldMatrix = worldMatrix *XMMatrixScaling(size, size, size);
+		auto _deviceContext = m_Direct3D->GetImmDeviceContext();
+		if (!skyMesh)
+			skyMesh = ResourcesClass::GetInstance()->FindMesh("sphere");
+		skyMesh->Render(_deviceContext);
+		renderCam->skyMaterial->Render(_deviceContext, worldMatrix, viewMatrix, skyProjectionMatrix);
+		_deviceContext->DrawIndexed(skyMesh->GetIndexCount(), 0, 0);
+		m_Direct3D->TurnCullBack();
+		m_Direct3D->TurnZBufferOn();
+	}
 	if (useMultiThreadedRendering)
 	{
 		if (!m_Direct3D->GetDeferredContextsSize())
@@ -196,6 +217,7 @@ bool GraphicsClass::RenderScene(XMMATRIX viewMatrix, XMMATRIX projectionMatrix, 
 	}
 	else
 	{
+
 		//std::vector<MeshRenderer*> renderers = meshRenderers;
 		for (const auto i : meshRenderers)
 		{
@@ -222,6 +244,7 @@ bool GraphicsClass::RenderScene(CameraComponent* m_Camera,Material* customMateri
 	XMMATRIX viewMatrix, projectionMatrix;
 	m_Camera->GetViewMatrix(viewMatrix);
 	m_Camera->GetProjectionMatrix(projectionMatrix);
+
 	Frustum::ConstructFrustum(m_Camera->m_farPlane, projectionMatrix, viewMatrix);
 	ShaderClass::SetRenderCam(m_Camera);
 	return RenderScene(viewMatrix, projectionMatrix, customMaterial);
@@ -293,6 +316,7 @@ bool GraphicsClass::Render()
 
 	/// 그림자패스
 	{
+		Frustum::ToggleFrustumCulling(false);
 		if (!shadowMap)
 			shadowMap = ResourcesClass::GetInstance()->FindRenderTexture("ShadowMap");
 		if (!shadowMapMaterial)
@@ -305,10 +329,11 @@ bool GraphicsClass::Render()
 		if (!RenderToTexture(shadowMap,viewMatrix,projMatrix, shadowMapMaterial))
 			return false;
 		m_Direct3D->TurnCullBack();
+		Frustum::ToggleFrustumCulling(true);
 	}
 
-
-	m_Direct3D->BeginScene(0.2f, 0.3f, 0.8f, 1.0f);
+	XMFLOAT4 backgroundColor = m_Camera->backGroundColor;
+	m_Direct3D->BeginScene(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);
 
 	for (auto i : cameras)
 	{

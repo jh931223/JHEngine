@@ -68,12 +68,14 @@ void MeshRenderer::Render(ID3D11DeviceContext * _deviceContext, XMMATRIX _view, 
 		// 정점 버퍼로 그릴 기본형을 설정합니다. 여기서는 삼각형으로 설정합니다.
 		_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		if(customMaterial)
-			customMaterial->GetShader()->Render(_deviceContext, mesh->GetIndexCount(), _world, _view, _proj, *customMaterial->GetParams());
-		else material->GetShader()->Render(_deviceContext, mesh->GetIndexCount(), _world, _view, _proj, *material->GetParams());
+			customMaterial->GetShader()->Render(_deviceContext, _world, _view, _proj, *customMaterial->GetParams());
+		else material->GetShader()->Render(_deviceContext, _world, _view, _proj, *material->GetParams());
 #ifdef _DEBUG
 		Frustum::frustumCulled++;
 		Frustum::drawnVertex+=mesh->GetVertexCount();
 #endif
+
+		_deviceContext->DrawIndexed(mesh->GetIndexCount(), 0, 0);
 	}
 }
 
@@ -87,6 +89,8 @@ void MeshRenderer::OnStart()
 
 bool Frustum::FrustumCheckCube(float xCenter, float yCenter, float zCenter, float radius)
 {
+	if (!useFrustumCulling)
+		return true;
 	for (int i = 0; i<6; i++)
 	{
 		if (XMVectorGetX(XMPlaneDotCoord(m_planes[i], XMVectorSet((xCenter - radius), (yCenter - radius), (zCenter - radius),
@@ -137,6 +141,11 @@ bool Frustum::FrustumCheckSphere(float xCenter, float yCenter, float zCenter, fl
 	}
 
 	return true;
+}
+
+void Frustum::ToggleFrustumCulling(bool _toggle)
+{
+	useFrustumCulling = _toggle;
 }
 
 
@@ -218,5 +227,6 @@ void Frustum::ConstructFrustum(float screenDepth, XMMATRIX projectionMatrix, XMM
 
 XMVECTOR Frustum::m_planes[6];
 bool Frustum::isLockFrustum=false;
+bool Frustum::useFrustumCulling = true;
 int Frustum::frustumCulled = 0;
 int Frustum::drawnVertex = 0;

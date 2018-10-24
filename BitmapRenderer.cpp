@@ -59,5 +59,6 @@ void BitmapRenderer::Render(ID3D11DeviceContext * _deviceContext, XMMATRIX _view
 	XMMATRIX _world;
 	SystemClass::GetInstance()->GetD3D()->GetWorldMatrix(_world);
 	bitmap->Render(_deviceContext, transform()->GetWorldPosition().x, transform()->GetWorldPosition().y);
-	material->GetShader()->Render(_deviceContext, bitmap->GetIndexCount(), _world, _view, _proj, *material->GetParams());
+	material->GetShader()->Render(_deviceContext, _world, _view, _proj, *material->GetParams());
+	_deviceContext->DrawIndexed(bitmap->GetIndexCount(), 0, 0);
 }

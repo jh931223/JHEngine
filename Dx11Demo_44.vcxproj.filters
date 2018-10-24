@@ -373,6 +373,9 @@
     <Text Include="data\floor.txt">
       <Filter>data</Filter>
     </Text>
+    <Text Include="data\sphere.txt">
+      <Filter>data</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <Image Include="data\seafloor.dds">
@@ -401,21 +404,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="data\lena(512x512).raw">
-      <Filter>data</Filter>
-    </None>
-    <None Include="data\brilliant_terrain.raw">
-      <Filter>data</Filter>
-    </None>
-    <None Include="data\1x1-island.raw">
-      <Filter>data</Filter>
-    </None>
-    <None Include="data\heightmap.r16">
-      <Filter>data</Filter>
-    </None>
-    <None Include="data\teasdrrain.raw">
-      <Filter>data</Filter>
-    </None>
     <None Include="dds1.bin">
       <Filter>리소스 파일</Filter>
     </None>

@@ -117,14 +117,15 @@ void ResourcesClass::InitializeRenderTexture(HWND hwnd)
 {
 	RenderTextureClass* result;
 	result = new RenderTextureClass;
-	result->Initialize(SystemClass::GetInstance()->GetDevice(), SystemClass::GetInstance()->GetScreenWidth(), SystemClass::GetInstance()->GetScreenHeight(), SCREEN_DEPTH, SCREEN_NEAR);
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), 2048,1152, 2000, 10);
 	rttMap["ShadowMap"] = result;
 }
 
 void ResourcesClass::InitializeMesh(HWND hwnd)
 {
-	//meshMap["floor"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/floor.txt");
+	meshMap["floor"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/floor.txt");
 	meshMap["cube"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/cube.txt");
+	meshMap["sphere"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/sphere.txt");
 }
 
 void ResourcesClass::InitializeTexture(HWND hwnd)
@@ -142,6 +143,7 @@ void ResourcesClass::InitializeTexture(HWND hwnd)
 	textureMap["rock2Normal"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Rock_2_normal.png");
 	textureMap["snow"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Snow_1.png");
 	textureMap["snowNormal"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/SplatTexture/Snow_1_normal.png");
+	textureMap["sky02"] = new TextureClass(SystemClass::GetInstance()->GetDevice(), L"data/Sky_02.png");
 }
 
 void ResourcesClass::InitializeMaterial(HWND hwnd)
@@ -152,8 +154,8 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	result->SetShader(FindShader("TriplanarShader"));
 	result->GetParams()->SetTexture("Texture1", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture1Normal", FindTexture("cliffNormal"));
-	result->GetParams()->SetTexture("Texture2", FindTexture("cliff"));
-	result->GetParams()->SetTexture("Texture2Normal", FindTexture("cliffNormal"));
+	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
+	result->GetParams()->SetTexture("Texture2Normal", FindTexture("snowNormal"));
 	result->GetParams()->SetTexture("Texture3", FindTexture("cliff"));
 	result->GetParams()->SetTexture("Texture3Normal", FindTexture("cliffNormal"));
 	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1,1,1,1));
@@ -172,6 +174,11 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShader"));
 	result->GetParams()->SetTexture("_MainTex", FindTexture("cliff"));
 	materialMap["m_cube"] = result;
+
+	result = new Material;
+	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShader"));
+	result->GetParams()->SetTexture("_MainTex", FindTexture("sky02"));
+	materialMap["m_skySphere"] = result;
 }
 
 
