@@ -89,10 +89,10 @@ float4 ps(v2f input) : SV_TARGET
 
 	float3 blend_weights = abs(input.worldNormal.xyz);
 	float tex_sharpness = 2.0f;
-	blend_weights = (blend_weights - 0.2) * tex_sharpness;
-	blend_weights = max(blend_weights, 0);
-	blend_weights /= (blend_weights.x + blend_weights.y + blend_weights.z).xxx;
-
+	//blend_weights = (blend_weights - 0.2) * tex_sharpness;
+	//blend_weights = max(blend_weights, 0);
+	//blend_weights /= (blend_weights.x + blend_weights.y + blend_weights.z).xxx;
+	blend_weights /= dot(blend_weights, (float3)2);
 	float4 blended_color;
 	float3 blended_bump_vec;
 	{
@@ -145,14 +145,14 @@ float4 ps(v2f input) : SV_TARGET
 	float shadowMapDepth = shadowMap.Sample(SampleTypeClamp, shadowUV).r;
 	lightDepth -= 0.0002f;//shadowBias;//0.00002f;//
 
-	if (lightDepth > shadowMapDepth)
-	{
-		diffuse *= 0.3f;
-		//specular *= 0.3f;
-	}
+
 
 	float3 d = blended_color*diffuseColor*diffuse;
-
+	if (lightDepth > shadowMapDepth)
+	{
+		d *= 0.3f;
+		specular *= 0.3f;
+	}
 	float3 ambient = ambientColor;
 
 	float specularPower = 0.3f;

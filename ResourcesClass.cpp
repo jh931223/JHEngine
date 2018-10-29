@@ -8,6 +8,7 @@
 #include "MaterialClass.h"
 
 // ½¦ÀÌ´õµé
+#include "ShaderClass.h"
 
 #include "RenderTextureClass.h"
 #include "TriplanarShaderClass.h"
@@ -111,14 +112,21 @@ void ResourcesClass::InitializeShader(HWND hwnd)
 	result = new TextureShaderClass;
 	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
 	shaderMap["TextureShader"] = result;
+	result = new TextureShaderClass;
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
+	shaderMap["TextureShaderTransparent"] = result;
+	result->Queue = QueueState::Transparent;
 }
 
 void ResourcesClass::InitializeRenderTexture(HWND hwnd)
 {
 	RenderTextureClass* result;
 	result = new RenderTextureClass;
-	result->Initialize(SystemClass::GetInstance()->GetDevice(), 2048,1152, 2000, 10);
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), SystemClass::GetInstance()->GetScreenWidth()*5, SystemClass::GetInstance()->GetScreenHeight()*5, 2000, 10);
 	rttMap["ShadowMap"] = result;
+	result = new RenderTextureClass;
+	result->Initialize(SystemClass::GetInstance()->GetDevice(), SystemClass::GetInstance()->GetScreenWidth() * 4, SystemClass::GetInstance()->GetScreenHeight() * 4, 2000, 10);
+	rttMap["BlurredShadowMap"] = result;
 }
 
 void ResourcesClass::InitializeMesh(HWND hwnd)
@@ -126,6 +134,7 @@ void ResourcesClass::InitializeMesh(HWND hwnd)
 	meshMap["floor"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/floor.txt");
 	meshMap["cube"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/cube.txt");
 	meshMap["sphere"] = new Mesh(SystemClass::GetInstance()->GetDevice(), "../JHEngine/data/sphere.txt");
+	meshMap["windowOrtho"] = new Mesh(SystemClass::GetInstance()->GetDevice(), SystemClass::GetInstance()->GetScreenWidth(), SystemClass::GetInstance()->GetScreenHeight());
 }
 
 void ResourcesClass::InitializeTexture(HWND hwnd)
@@ -171,14 +180,23 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	materialMap["m_depthMap"] = result;
 
 	result = new Material;
-	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShader"));
+	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShaderTransparent"));
 	result->GetParams()->SetTexture("_MainTex", FindTexture("cliff"));
+	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1,1,1,0.5f));
 	materialMap["m_cube"] = result;
 
 	result = new Material;
 	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShader"));
 	result->GetParams()->SetTexture("_MainTex", FindTexture("sky02"));
+	result->GetParams()->SetTexture("_MainTex", FindTexture("sky02"));
+	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1, 1, 1, 1));
 	materialMap["m_skySphere"] = result;
+
+	result = new Material;
+	result->SetShader(ResourcesClass::GetInstance()->FindShader("Blur_DepthMap"));
+	result->GetParams()->SetRenderTexture("_ShadowMap", FindRenderTexture("ShadowMap"));
+	materialMap["m_Blur_DepthMap"] = result;
+
 }
 
 

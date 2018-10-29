@@ -3,6 +3,13 @@
 class TextureShaderClass :
 	public ShaderClass
 {
+	struct PSLightBuffer
+	{
+		XMFLOAT4 mainColor;
+	};
+
+	ID3D11Buffer* psLightBuffer;
+
 public:
 	TextureShaderClass();
 	~TextureShaderClass();
@@ -13,5 +20,6 @@ public:
 	virtual void ShutdownShaderCustomBuffer() override;
 	virtual bool DrawCall(ID3D11DeviceContext * deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM & params) override;
 	virtual void RenderShader(ID3D11DeviceContext * deviceContext) override;
+	
 };
 

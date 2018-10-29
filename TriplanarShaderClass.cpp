@@ -44,7 +44,8 @@ bool TriplanarShaderClass::BuildShader(ID3D11Device * device, HWND hwnd, const W
 		return false;
 	// 텍스처 샘플러 상태를 만듭니다.
 	CreateSampler(device);
-	D3D11_SAMPLER_DESC samplerDesc; samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	D3D11_SAMPLER_DESC samplerDesc; 
+	samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
 	samplerDesc.MipLODBias = 0.0f;
 	samplerDesc.MaxAnisotropy = 1;
 	samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;

@@ -14,7 +14,12 @@ Mesh::Mesh()
 
 Mesh::Mesh(ID3D11Device* device, const char* modelFilename)
 {
-	Initialize(device, modelFilename);
+	InitializeModel(device, modelFilename);
+}
+
+Mesh::Mesh(ID3D11Device * device, int _width, int _height)
+{
+	InitializeWindow(device, _width,_height);
 }
 
 
@@ -31,7 +36,7 @@ Mesh::~Mesh()
 }
 
 
-bool Mesh::Initialize(ID3D11Device* device, const char* modelFilename)
+bool Mesh::InitializeModel(ID3D11Device* device, const char* modelFilename)
 {
 	// 모델 데이터를 로드합니다.
 	if (!LoadModel(modelFilename))
@@ -46,7 +51,78 @@ bool Mesh::Initialize(ID3D11Device* device, const char* modelFilename)
 	}
 	return true;
 }
+bool Mesh::InitializeWindow(ID3D11Device* device, int windowWidth,int windowHeight)
+{
+	// 윈도우 왼쪽의 화면 좌표를 계산합니다.
+	float left = (float)((windowWidth / 2) * -1);
 
+	// 윈도우 오른쪽의 화면 좌표를 계산합니다.
+	float right = left + (float)windowWidth;
+
+	// 윈도우 상단의 화면 좌표를 계산합니다.
+	float top = (float)(windowHeight / 2);
+
+	// 윈도우 하단의 화면 좌표를 계산합니다.
+	float bottom = top - (float)windowHeight;
+
+	// 정점 배열의 정점 수를 설정합니다.
+	m_vertexCount = 6;
+
+	// 인덱스 배열의 인덱스 수를 설정합니다.
+	m_indexCount = m_vertexCount;
+
+	// 정점 배열을 만듭니다.
+	VertexBuffer* vertices = new VertexBuffer[m_vertexCount];
+	if (!vertices)
+	{
+		return false;
+	}
+
+	// 인덱스 배열을 만듭니다.
+	unsigned long* indices = new unsigned long[m_indexCount];
+	if (!indices)
+	{
+		return false;
+	}
+
+	// 정점 배열에 데이터를로드합니다.
+	// 첫 번째 삼각형.
+	vertices[0].position = XMFLOAT3(left, top, 0.0f);  // 왼쪽 위
+	vertices[0].uv = XMFLOAT2(0.0f, 0.0f);
+
+	vertices[1].position = XMFLOAT3(right, bottom, 0.0f);  // 오른쪽 아래
+	vertices[1].uv = XMFLOAT2(1.0f, 1.0f);
+
+	vertices[2].position = XMFLOAT3(left, bottom, 0.0f);  // 왼쪽 아래
+	vertices[2].uv = XMFLOAT2(0.0f, 1.0f);
+
+	// 두 번째 삼각형.
+	vertices[3].position = XMFLOAT3(left, top, 0.0f);  // 왼쪽 위
+	vertices[3].uv = XMFLOAT2(0.0f, 0.0f);
+
+	vertices[4].position = XMFLOAT3(right, top, 0.0f);  // 오른쪽 위
+	vertices[4].uv = XMFLOAT2(1.0f, 0.0f);
+
+	vertices[5].position = XMFLOAT3(right, bottom, 0.0f);  // 오른쪽 아래
+	vertices[5].uv = XMFLOAT2(1.0f, 1.0f);
+
+	// 데이터로 인덱스 배열을로드합니다.
+	for (int i = 0; i<m_indexCount; i++)
+	{
+		indices[i] = i;
+	}
+	// 정점 및 인덱스 버퍼를 초기화합니다.
+	if (!InitializeBuffers(device))
+	{
+		return false;
+	}    
+	delete[] vertices;
+	vertices = 0;
+
+	delete[] indices;
+	indices = 0;
+	return true;
+}
 
 void Mesh::Shutdown()
 {

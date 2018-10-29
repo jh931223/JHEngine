@@ -17,10 +17,12 @@ public:
 public:
 	Mesh();
 	Mesh(ID3D11Device*, const char*);
+	Mesh(ID3D11Device*, int _width,int _height);
 	Mesh(const Mesh&);
 	~Mesh();
 
-	bool Initialize(ID3D11Device*, const char*);
+	bool InitializeModel(ID3D11Device*, const char*);
+	bool InitializeWindow(ID3D11Device * device, int _width, int _height);
 	bool InitializeBuffers(ID3D11Device*);
 	void Shutdown();
 	void ShutdownBuffers();

@@ -2,6 +2,7 @@
 #include<vector>
 #include<mutex>
 #include"JobSystem.h"
+#include<map>
 /////////////
 // GLOBALS //
 /////////////
@@ -37,10 +38,13 @@ public:
 	D3DClass* GetD3D();
 
 	void PushRenderer(MeshRenderer* renderer);
+	void RegisterMeshRenderer(MeshRenderer * renderer);
 	void PushBitmapRenderer(BitmapRenderer * renderer);
 	void PushLights(LightComponent* renderer);
 	void PushCameras(CameraComponent* renderer);
 	void SortCameras();
+	void SortMeshRenderer();
+	void SortBitmapRenderer();
 	void RemoveRenderer(MeshRenderer* renderer);
 	void RemoveBitmapRenderer(BitmapRenderer * renderer);
 	void RemoveLights(LightComponent* renderer);
@@ -59,7 +63,7 @@ private:
 private:
 	std::mutex renderMutex;
 	D3DClass* m_Direct3D = nullptr;
-	std::vector<MeshRenderer*> meshRenderers;
+	std::map<int,std::vector<MeshRenderer*>> meshRenderers;
 	std::vector<BitmapRenderer*> bitmapRenderers;
 	std::vector<LightComponent*> lights;
 	std::vector<CameraComponent*> cameras;

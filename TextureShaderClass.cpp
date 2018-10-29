@@ -31,6 +31,8 @@ bool TextureShaderClass::BuildShader(ID3D11Device * device, HWND hwnd, const WCH
 		return false;
 	if (!CreateConstantBuffer<MatrixBufferType>(device, &m_matrixBuffer))
 		return false;
+	if (!CreateConstantBuffer<PSLightBuffer>(device, &psLightBuffer))
+		return false;
 
 	CreateSampler(device);
 	return true;
@@ -38,6 +40,9 @@ bool TextureShaderClass::BuildShader(ID3D11Device * device, HWND hwnd, const WCH
 
 void TextureShaderClass::ShutdownShaderCustomBuffer()
 {
+	if (psLightBuffer)
+		delete psLightBuffer;
+	psLightBuffer = 0;
 }
 
 bool TextureShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, PARAM & params)
@@ -57,8 +62,20 @@ bool TextureShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRIX 
 	dataPtr->projection = projectionMatrix;
 	deviceContext->Unmap(m_matrixBuffer, 0);
 
+	if (FAILED(deviceContext->Map(psLightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
+	{
+		return false;
+	}
+
+	PSLightBuffer* dataPtr2 = (PSLightBuffer*)mappedResource.pData;
+	dataPtr2->mainColor = params.GetFloat4("_MainColor");
+	deviceContext->Unmap(psLightBuffer, 0);
+
 
 	deviceContext->VSSetConstantBuffers(0, 1, &m_matrixBuffer);
+	deviceContext->PSSetConstantBuffers(0, 1, &psLightBuffer);
+
+
 	auto tex = params.GetTexture("_MainTex");
 	if(tex)
 		deviceContext->PSSetShaderResources(0, 1, params.GetTexture("_MainTex")->GetResourceView());

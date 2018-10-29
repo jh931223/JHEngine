@@ -94,7 +94,7 @@ public:
 //#pragma pack(pop) 
 	enum ReserveType
 	{
-		Reserve_Deform,Reserve_Load,Reserve_LOD
+		Reserve_Deform,Reserve_Load
 	};
 	enum BrushType
 	{
@@ -255,7 +255,7 @@ private:
 
 
 #ifndef USE_JOBSYSTEM
-	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool[3];
+	ThreadPool<COMMAND_BUFFER,RESULT_BUFFER> threadPool[2];
 #endif
 	std::list<COMMAND_BUFFER> commandQueue[3];
 
@@ -264,7 +264,9 @@ private:
 	GameObject* camera;
 
 public:
+	bool useOctree = true;
 	Octree< ChunkData >* tempChunks;
+	std::vector< ChunkData > chunkArray;
 	Octree<MeshRenderer*>* meshRendererOctree;
 	BrushType brushType=BrushType::Brush_Sphere;
 };

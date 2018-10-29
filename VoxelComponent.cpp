@@ -61,12 +61,12 @@ void VoxelComponent::Initialize()
 	//SetLODLevel(2, 256);
 	//SetLODLevel(3, 256);
 
-	int start = 50000;
+	int start = 128;
 
 	SetLODLevel(0, start);
-	SetLODLevel(1, start + info.partitionSize);
-	SetLODLevel(2, start + info.partitionSize + info.partitionSize);
-	SetLODLevel(3, start + info.partitionSize + info.partitionSize+ info.partitionSize);
+	SetLODLevel(1, start + info.partitionSize + info.partitionSize);
+	SetLODLevel(2, start + info.partitionSize + info.partitionSize + info.partitionSize);
+	SetLODLevel(3, start + info.partitionSize + info.partitionSize+ info.partitionSize + info.partitionSize);
 	SetLODLevel(4, start + info.partitionSize + info.partitionSize + info.partitionSize+ info.partitionSize);
 	//SetLODLevel(3, 256);
 
@@ -78,11 +78,11 @@ void VoxelComponent::Initialize()
 
 
 	//LoadCube(32, 32, 32);
-	//LoadPerlin(256, 128, 256,128, 0.2f);
+	LoadPerlin(256, 128, 256,128, 0.2f);
 	//LoadPerlin(2048, 256, 2048, 128, 0.07f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");// , 0, 0, 255, 255);
+	//LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");// , 0, 0, 255, 255);
 
 
 #ifndef USE_JOBSYSTEM
@@ -95,8 +95,6 @@ void VoxelComponent::Initialize()
 	threadPool[Reserve_Load].Initialize(8, false);
 	threadPool[Reserve_Deform].SetTaskFunc(_task);
 	threadPool[Reserve_Deform].Initialize(8, false);
-	threadPool[Reserve_LOD].SetTaskFunc(_task);
-	threadPool[Reserve_LOD].Initialize(8, false);
 #endif
 
 
@@ -219,7 +217,8 @@ void VoxelComponent::Update()
 	{
 		auto lightTransform = LightComponent::mainLight()->transform();
 		lightTransform->SetRotation(CameraComponent::mainCamera()->transform()->GetWorldRotation());
-		lightTransform->SetPosition(/*XMFLOAT3(0,-100,0)+*/XMFLOAT3(info.width, info.height, info.depth)*0.5f+lightTransform->forward()*-1000);
+		lightTransform->SetPosition(/*XMFLOAT3(0,-100,0)+*/XMFLOAT3(info.width, info.height, info.depth)*0.5f+lightTransform->forward()*-info.width);
+		LightComponent::mainLight()->GenerateOrthogrphicMatrix(info.width*2, 2000, SHADOWMAP_NEAR);
 		LightComponent::mainLight()->GenerateViewMatrix();
 	}
 	else if (Input()->GetKeyDown(DIK_F4))
@@ -273,6 +272,15 @@ void VoxelComponent::Update()
 	if (Input()->GetKey(VK_RBUTTON))
 	{
 		XMFLOAT3 origin = CameraComponent::mainCamera()->transform()->GetWorldPosition();
+		if (Input()->GetKey(DIK_LCONTROL))
+		{
+			int mouseX, mouseY;
+			Input()->GetMouseLocation(mouseX, mouseY);
+			XMFLOAT2 mPos(mouseX, mouseY);
+			mPos -= SystemClass::GetInstance()->GetWindowPos();
+			origin = CameraComponent::ScreenToPoint(mPos);
+			printf("mouse : %f %f origin : %f %f %f\n", mPos.x, mPos.y, origin.x, origin.y, origin.z);
+		}
 		XMFLOAT3 dir = CameraComponent::mainCamera()->transform()->forward();
 		RaycastHit hit;
 		if (PhysicsClass::Raycast(origin, dir, 100, hit))
@@ -321,6 +329,8 @@ void VoxelComponent::ReleaseChunks()
 	if (meshRendererOctree)
 		delete meshRendererOctree;
 	meshRendererOctree = 0;
+
+	chunkArray.clear();
 }
 void VoxelComponent::CreateCubeFace_Up(float x, float y, float z, float _unit, BYTE type, int& faceCount, std::vector<VertexBuffer>& vertices, std::vector<unsigned long>& indices)
 {
@@ -1046,6 +1056,7 @@ RESULT_BUFFER VoxelComponent::GeneratePartitionFaces(XMFLOAT3 pos, int lodLevel,
 					if (lodLevel>0&&basis)
 					{
 						transitionCellBasis = transitionCellBasis;
+						//PolygonizeRegularCell(pos, XMINT3(i, j, k), _cellUnit, vertices, indices, &cache);
 						PolygonizeTransitionCell(pos, XMINT3(i, j, k), _cellUnit, basis, vertices, indices);
 					}
 					else
@@ -1129,10 +1140,26 @@ VoxelComponent::VoxelData VoxelComponent::GetVoxel(int x, int y, int z)
 		return v;
 	int index = GetCellIndex(x, y, z);
 	XMFLOAT3 pos = XMFLOAT3(x, y, z);
+	if (!useOctree)
+	{
+		float divideSize = 1.0f / info.partitionSize;
+		int x = pos.x * divideSize;
+		int y = pos.y * divideSize;
+		int z = pos.z * divideSize;
+		auto chunk = &chunkArray[x + y * info.width*divideSize + z * info.width*divideSize*info.height*divideSize];
+		XMFLOAT3 sPos = GetPartitionStartPos(pos);
+		if (chunk->IsHaveChunk())
+		{
+			x = pos.x - sPos.x;
+			y = pos.y - sPos.y;
+			z = pos.z - sPos.z;
+			v= chunk->chunk[x + y * info.partitionSize + z * info.partitionSize*info.partitionSize];
+		}
+		return v;
+	}
 	auto node = tempChunks->GetNodeAtPosition(pos, 0);
 	if (node->GetDepth() == 0&&node->GetValue().IsHaveChunk())
 	{
-		//node=tempChunks->Insert(pos, new std::vector<VoxelData>(info.partitionSize*info.partitionSize*info.partitionSize), 0);
 		x = x - (int)node->GetPosition().x;
 		y = y - (int)node->GetPosition().y;
 		z = z - (int)node->GetPosition().z;
@@ -1160,7 +1187,25 @@ bool VoxelComponent::SetVoxel(int x, int y, int z, VoxelData value,bool isInit)
 	XMFLOAT3 pos(x, y, z);
 	VoxelData vox = value;
 	int index = GetCellIndex(x, y, z);
-
+	if (!useOctree)
+	{
+		float divideSize = 1.0f / info.partitionSize;
+		int x = pos.x * divideSize;
+		int y = pos.y * divideSize;
+		int z = pos.z * divideSize;
+		auto chunk = &chunkArray[x + y * info.width*divideSize + z * info.width*divideSize*info.height*divideSize];
+		XMFLOAT3 sPos = GetPartitionStartPos(pos);
+		if (!chunk->IsHaveChunk())
+		{
+			chunk->MakeChunk(GetPartitionSize());
+		}
+		x = pos.x - sPos.x;
+		y = pos.y - sPos.y;
+		z = pos.z - sPos.z;
+		chunk->chunk[x + y * info.partitionSize + z * info.partitionSize*info.partitionSize]=value;
+		
+		return true;
+	}
 	auto node = tempChunks->GetNodeAtPosition(pos, 0);
 	if (node->GetDepth() != 0)
 		node = tempChunks->Insert(pos,ChunkData(), 0);
@@ -1230,7 +1275,7 @@ bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength,Brus
 					{
 						XMFLOAT3 oPos = GetPartitionStartPos(nPos-offset[o]);
 						if(pPos!=oPos)
-							//if(IsPolygonizableCell(nPos-offset[i]))
+							if(IsPolygonizableCell(nPos-offset[i]))
 								ReserveUpdate(oPos, Reserve_Deform);
 					}
 				}
@@ -1400,13 +1445,7 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 		for (auto j : newLODGroupIndex[i])
 		{
 			LODGroupData data = newLODGroup[j];
-			auto result=ReserveUpdate(GetPositionFromIndex(j), data.transitionBasis, data.level,
-//#ifdef USE_THREADPOOL
-//				Reserve_Load
-//#else 
-				Reserve_LOD
-//#endif
-				, true);
+			auto result=ReserveUpdate(GetPositionFromIndex(j), data.transitionBasis, data.level,Reserve_Load, true);
 			lodGropups[j] = data;
 		}
 	}
@@ -1417,13 +1456,7 @@ void VoxelComponent::RefreshLODNodes(XMFLOAT3 basePos)
 	//}
 	for (auto i : oldLODGroups)
 	{
-		ReserveUpdate(GetPositionFromIndex(i.first),
-//#ifdef USE_THREADPOOL
-//			Reserve_Load
-//#else 
-			Reserve_LOD
-//#endif
-			, true);
+		ReserveUpdate(GetPositionFromIndex(i.first), Reserve_Load, true);
 	}
 	oldLODGroups.clear();
 	//printf("LOD Update %dms\n", clock() - t);
@@ -1754,7 +1787,25 @@ void VoxelComponent::NewChunks(int _w, int _h, int _d)
 	info.width = _w;
 	info.height = _h;
 	info.depth = _d;
-	tempChunks = new Octree<ChunkData>(_w,info.partitionSize);
+	if(useOctree)
+		tempChunks = new Octree<ChunkData>(_w,info.partitionSize);
+	else
+	{
+		float w = info.width / info.partitionSize;
+		int ww = (int)w;
+		float h = info.width / info.partitionSize;
+		int hh = (int)h;
+		float d = info.width / info.partitionSize;
+		int dd = (int)d;
+		if (w - ww > 0)
+			ww++;
+		if (h - hh > 0)
+			hh++;
+		if (d - dd > 0)
+			dd++;
+
+		chunkArray.resize(ww*hh*dd);
+	}
 	meshRendererOctree = new Octree<MeshRenderer*>(_w, info.partitionSize);
 }
 
@@ -1903,7 +1954,7 @@ void VoxelComponent::ProcessCommandQueue()
 		
 
 #ifndef USE_JOBSYSTEM
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < 2; i++)
 		{
 			while (commandQueue[i].size())
 			{
@@ -1915,17 +1966,17 @@ void VoxelComponent::ProcessCommandQueue()
 			}
 		}
 #else
-		int length = 16, batch = 1;
+		int length = 8, batch = 1;
 		int handle = -1;
 		int lastJob = -1;
-		PolygonizeTask job[3];
+		PolygonizeTask job[2];
 
-		for (int t = 0; t < 3; t++)
+		for (int t = 0; t < 2; t++)
 		{
 		if (commandQueue[t].size())
 		{
 		job[t].component = this;
-		int _l = (t == Reserve_LOD) ? 4 : length;
+		int _l = length;
 		for (int i = 0; i < _l; i++)
 		{
 		if (!commandQueue[t].size())
@@ -1941,7 +1992,7 @@ void VoxelComponent::ProcessCommandQueue()
 		if (lastJob == -1)
 		return;
 		job[lastJob].Dispatch();
-		for (int t = 0; t < 3; t++)
+		for (int t = 0; t < 2; t++)
 		{
 		for (auto i : job[t].resultBuffers)
 		UpdateMeshRenderer(i.newMesh, i.pos, i.lodLevel);
@@ -1953,7 +2004,7 @@ void VoxelComponent::ProcessCommandQueue()
 void VoxelComponent::ProcessResultQueue()
 {
 #ifndef USE_JOBSYSTEM
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 2; i++)
 	{
 		if (threadPool[i].IsInitialized())
 		{
@@ -2007,6 +2058,36 @@ COMMAND_BUFFER VoxelComponent::ReserveUpdate(XMFLOAT3 pos, short _basis, short _
 			iter->transitionCellBasis = input.transitionCellBasis;
 			return input;
 		}
+	}
+	if (!useOctree)
+	{
+		float divideSize = 1.0f / info.partitionSize;
+		int x = targetPos.x * divideSize;
+		int y = targetPos.y * divideSize;
+		int z = targetPos.z * divideSize;
+		auto chunk = &chunkArray[x + y * info.width*divideSize + z * info.width*divideSize*info.height*divideSize];
+
+		auto node2 = meshRendererOctree->GetNodeAtPosition(targetPos, 0);
+		if (!chunk->IsHaveChunk() && node2->GetValue() == NULL)
+		{
+			int size = info.partitionSize;
+			XMFLOAT3 offset[7] = { XMFLOAT3(size,0,0),XMFLOAT3(0,size,0),XMFLOAT3(0,0,size),XMFLOAT3(size,size,0),XMFLOAT3(size,0,size),XMFLOAT3(0,size,size),XMFLOAT3(size,size,size) };
+			bool reserve = false;
+			for (int i = 0; i < 7; i++)
+			{
+				auto chunk2 = &chunkArray[x+offset[i].x + (y+ offset[i].y) * info.width*divideSize + (z+ offset[i].z) * info.width*divideSize*info.height*divideSize];
+				if (chunk2->IsHaveChunk())
+				{
+					reserve = true;
+					break;
+				}
+			}
+			if (!reserve)
+				return COMMAND_BUFFER();
+		}
+		if (autoPush)
+			commandQueue[_reserveType].push_back(input);
+		return input;
 	}
 	auto node = tempChunks->GetNodeAtPosition(targetPos, 0);
 	auto node2 = meshRendererOctree->GetNodeAtPosition(targetPos, 0);

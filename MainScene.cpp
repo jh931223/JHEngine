@@ -66,7 +66,7 @@ void MainScene::Setup()
 	gobj->transform->SetPosition(XMFLOAT3(100, 100, 100));
 	input->box = gobj;
 
-	/////CANVAS
+	///CANVAS
 	//{
 	//	gobj = new GameObject("UI01");
 	//	//r->AddChild(gobj);

@@ -21,6 +21,7 @@ public:
 	LRESULT CALLBACK MessageHandler(HWND, UINT, WPARAM, LPARAM);
 	int GetScreenWidth();
 	int GetScreenHeight();
+	XMFLOAT2 GetWindowPos();
 	GraphicsClass* GetGraphics();
 	D3DClass* GetD3D();
 	ResourcesClass* GetResources();
@@ -37,6 +38,8 @@ private:
 	HINSTANCE m_hinstance;
 	HWND m_hwnd;
 
+	int posX = 0;
+	int posY = 0;
 	InputClass* m_Input = nullptr;
 	GraphicsClass* m_Graphics = nullptr;
 	std::vector<SceneClass*> sceneList;

@@ -364,6 +364,8 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 		return false;
 	}
 
+	//SetBlendState(false, D3D11_BLEND_ONE, D3D11_BLEND_SRC_ALPHA);
+
 	return true;
 }
 
@@ -433,6 +435,8 @@ void D3DClass::Shutdown()
 		m_swapChain = 0;
 	}
 
+	if (m_blendState)
+		m_blendState->Release();
 	ReleaseDeferredContex();
 }
 
@@ -628,4 +632,20 @@ void D3DClass::TurnCullBack()
 void D3DClass::TurnCullFront()
 {
 	m_immDeviceContext->RSSetState(m_cullFrontState);
+}
+
+void D3DClass::SetBlendState(bool _blendEnable, D3D11_BLEND _Src, D3D11_BLEND _Dest)
+{
+	D3D11_BLEND_DESC blendDesc;
+	blendDesc.RenderTarget[0].BlendEnable = _blendEnable;
+	blendDesc.RenderTarget[0].SrcBlend = _Src;
+	blendDesc.RenderTarget[0].DestBlend = _Dest;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = 0x0f;
+	if (m_blendState)
+		m_blendState->Release();
+	m_device->CreateBlendState(&blendDesc, &m_blendState);
 }

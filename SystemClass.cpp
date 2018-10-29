@@ -172,6 +172,11 @@ int SystemClass::GetScreenHeight()
 	return m_Graphics->GetScreenSize().y;
 }
 
+XMFLOAT2 SystemClass::GetWindowPos()
+{
+	return XMFLOAT2(posX,posY);
+}
+
 void SystemClass::InitializeWindows(int& _screenWidth, int& _screenHeight)
 {
 	// 외부 포인터를 이 객체로 지정합니다
@@ -205,8 +210,6 @@ void SystemClass::InitializeWindows(int& _screenWidth, int& _screenHeight)
 	_screenWidth = GetSystemMetrics(SM_CXSCREEN);
 	_screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-	int posX = 0;
-	int posY = 0;
 
 	// FULL_SCREEN 변수 값에 따라 화면을 설정합니다.
 	if (FULL_SCREEN)
@@ -226,8 +229,8 @@ void SystemClass::InitializeWindows(int& _screenWidth, int& _screenHeight)
 	else
 	{
 		// 윈도우 모드의 경우 800 * 600 크기를 지정합니다.
-		_screenWidth *= 0.8333;
-		_screenHeight *= 0.8333;
+		_screenWidth= 800;
+		_screenHeight = 600;
 
 		// 윈도우 창을 가로, 세로의 정 가운데 오도록 합니다.
 		posX = (GetSystemMetrics(SM_CXSCREEN) - _screenWidth) / 2;

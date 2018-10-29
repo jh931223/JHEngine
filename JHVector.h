@@ -50,6 +50,16 @@ namespace JHDev
 	{
 		one = XMFLOAT3(one.x - other.x, one.y - other.y, one.z - other.z);
 		return one;
+	}	
+	inline XMFLOAT2 operator-=(XMFLOAT2& one, const XMFLOAT2&other)
+	{
+		one = XMFLOAT2(one.x - other.x, one.y - other.y);
+		return one;
+	}	
+	inline XMFLOAT2 operator+=(XMFLOAT2& one, const XMFLOAT2&other)
+	{
+		one = XMFLOAT2(one.x + other.x, one.y + other.y);
+		return one;
 	}
 	inline XMFLOAT3 operator*=(XMFLOAT3& one, Scalar num)
 	{

@@ -2,6 +2,7 @@
 #include "d3dclass.h"
 #include "CameraComponent.h"
 #include "meshclass.h"
+#include "ShaderClass.h"
 #include "MaterialClass.h"
 #include "LightComponent.h"
 #include "textureclass.h"
@@ -103,11 +104,21 @@ D3DClass * GraphicsClass::GetD3D()
 }
 void GraphicsClass::PushRenderer(MeshRenderer * renderer)
 {
-	meshRenderers.push_back(renderer);
+	int queue = (renderer->GetMaterial()) ? renderer->GetMaterial()->GetShader()->Queue : 0;
+	meshRenderers[queue].push_back(renderer);
+	//SortMeshRenderer();
+}
+void GraphicsClass::RegisterMeshRenderer(MeshRenderer * renderer)
+{
+	RemoveRenderer(renderer);
+	int queue = (renderer->GetMaterial()) ? renderer->GetMaterial()->GetShader()->Queue : 0;
+	meshRenderers[queue].push_back(renderer);
+	//SortMeshRenderer();
 }
 void GraphicsClass::PushBitmapRenderer(BitmapRenderer* renderer)
 {
 	bitmapRenderers.push_back(renderer);
+	//SortBitmapRenderer();
 }
 void GraphicsClass::PushLights(LightComponent * light)
 {
@@ -122,14 +133,26 @@ void GraphicsClass::SortCameras()
 {
 	std::sort(cameras.begin(), cameras.end(), [](CameraComponent* lhs, CameraComponent* rhs) {return lhs->depth<rhs->depth; });
 }
+void GraphicsClass::SortMeshRenderer()
+{
+	//std::sort(meshRenderers.begin(), meshRenderers.end(), [](MeshRenderer* lhs, MeshRenderer* rhs) {return lhs->GetMaterial()->GetShader()->Queue<rhs->GetMaterial()->GetShader()->Queue; });
+}
+void GraphicsClass::SortBitmapRenderer()
+{
+	//std::sort(bitmapRenderers.begin(), bitmapRenderers.end(), [](BitmapRenderer* lhs, BitmapRenderer* rhs) {return lhs->GetMaterial()->GetShader()->Queue<rhs->GetMaterial()->GetShader()->Queue; });
+}
 void GraphicsClass::RemoveRenderer(MeshRenderer * renderer)
 {
-	for(int i=0;i<meshRenderers.size();i++)
-		if (meshRenderers[i] == renderer)
-		{
-			meshRenderers.erase(meshRenderers.begin() + i);
-			break;
-		}
+	int queue = (renderer->GetMaterial()) ? renderer->GetMaterial()->GetShader()->Queue : 0;
+	auto result=std::find(meshRenderers[queue].begin(), meshRenderers[queue].end(), renderer);
+	if(result!= meshRenderers[queue].end())
+		meshRenderers[queue].erase(result);
+	//for (int i = 0; i<meshRenderers[queue].size(); i++)
+	//	if (meshRenderers[queue][i] == renderer)
+	//	{
+	//		meshRenderers[queue].erase(meshRenderers[queue].begin() + i);
+	//		break;
+	//	}
 }
 void GraphicsClass::RemoveBitmapRenderer(BitmapRenderer * renderer)
 {
@@ -198,20 +221,20 @@ bool GraphicsClass::RenderScene(XMMATRIX viewMatrix, XMMATRIX projectionMatrix, 
 	}
 	if (useMultiThreadedRendering)
 	{
-		if (!m_Direct3D->GetDeferredContextsSize())
-			m_Direct3D->CreateDeferredContext(ITaskParallel::threadNums);
-		RenderTask job;
-		job.m_Direct3D = m_Direct3D;
-		job.renderers = &meshRenderers;
-		job.projectionMatrix = projectionMatrix;
-		job.viewMatrix = viewMatrix;
-		job.Schedule(meshRenderers.size(), 1);
-		job.Dispatch();
-		for (int i = 0; i < m_Direct3D->GetDeferredContextsSize(); i++)
-		{
-			if (m_Direct3D->GetCommandList(i))
-				m_Direct3D->GetImmDeviceContext()->ExecuteCommandList(m_Direct3D->GetCommandList(i), FALSE);
-		}
+		//if (!m_Direct3D->GetDeferredContextsSize())
+		//	m_Direct3D->CreateDeferredContext(ITaskParallel::threadNums);
+		//RenderTask job;
+		//job.m_Direct3D = m_Direct3D;
+		//job.renderers = &meshRenderers;
+		//job.projectionMatrix = projectionMatrix;
+		//job.viewMatrix = viewMatrix;
+		//job.Schedule(meshRenderers.size(), 1);
+		//job.Dispatch();
+		//for (int i = 0; i < m_Direct3D->GetDeferredContextsSize(); i++)
+		//{
+		//	if (m_Direct3D->GetCommandList(i))
+		//		m_Direct3D->GetImmDeviceContext()->ExecuteCommandList(m_Direct3D->GetCommandList(i), FALSE);
+		//}
 		//m_Direct3D->ReleaseDeferredContex();
 
 	}
@@ -219,17 +242,27 @@ bool GraphicsClass::RenderScene(XMMATRIX viewMatrix, XMMATRIX projectionMatrix, 
 	{
 
 		//std::vector<MeshRenderer*> renderers = meshRenderers;
-		for (const auto i : meshRenderers)
+		m_Direct3D->SetBlendState(false, D3D11_BLEND_ONE, D3D11_BLEND_SRC_ALPHA);
+		QueueState queueState = QueueState::Geometry;
+		for (const auto j : meshRenderers)
 		{
-			if (!i || !i->enabled)
+			if (queueState == QueueState::Geometry&&j.first >= QueueState::Transparent)
 			{
-				continue;
+				queueState = QueueState::Transparent;
+				m_Direct3D->SetBlendState(true, D3D11_BLEND_ONE, D3D11_BLEND_SRC_ALPHA);
 			}
-			//m_Direct3D->GetWorldMatrix(worldMatrix);
-			GameObject* gameObject = i->gameObject;
-			if (gameObject)
+			for (const auto i : j.second)
 			{
-				i->Render(m_Direct3D->GetImmDeviceContext(), viewMatrix, projectionMatrix, customMaterial);
+				if (!i || !i->enabled)
+				{
+					continue;
+				}
+				//m_Direct3D->GetWorldMatrix(worldMatrix);
+				GameObject* gameObject = i->gameObject;
+				if (gameObject)
+				{
+					i->Render(m_Direct3D->GetImmDeviceContext(), viewMatrix, projectionMatrix, customMaterial);
+				}
 			}
 		}
 		//printf("%d vertices \n", Frustum::drawnVertex);
@@ -329,6 +362,8 @@ bool GraphicsClass::Render()
 		if (!RenderToTexture(shadowMap,viewMatrix,projMatrix, shadowMapMaterial))
 			return false;
 		m_Direct3D->TurnCullBack();
+		auto blurShadowTex = ResourcesClass::GetInstance()->FindRenderTexture("BlurredShadowMap");
+		auto blurShadowMapMaterial = ResourcesClass::GetInstance()->FindMaterial("m_Blur_DepthMap");
 		Frustum::ToggleFrustumCulling(true);
 	}
 
