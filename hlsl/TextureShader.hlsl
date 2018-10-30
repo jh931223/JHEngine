@@ -22,7 +22,7 @@ struct v2f
 	float2 uv : TEXCOORD0;
 };
 
-Texture2D MainTex : register(t0);;
+Texture2D MainTex : register(t0);
 SamplerState SampleType;
 
 v2f main(vInput input)
@@ -35,7 +35,7 @@ v2f main(vInput input)
 	return output;
 }
 
-float4 ps(v2f input) : SV_TARGET
+float4 ps(v2f input) : SV_TARGET0
 {
 	float4 rgb= MainTex.Sample(SampleType, input.uv)*mainColor;
 	return float4(rgb.r,rgb.g,rgb.b,mainColor.a);
