@@ -44,7 +44,6 @@ Material * MeshRenderer::GetMaterial()
 void MeshRenderer::SetMaterial(Material * _material)
 {
 	material = _material;
-	SystemClass::GetInstance()->GetGraphics()->RegisterMeshRenderer(this);
 }
 
 void MeshRenderer::Render(ID3D11DeviceContext * _deviceContext, XMMATRIX _view, XMMATRIX _proj,Material* customMaterial)

@@ -104,17 +104,10 @@ D3DClass * GraphicsClass::GetD3D()
 }
 void GraphicsClass::PushRenderer(MeshRenderer * renderer)
 {
-	int queue = (renderer->GetMaterial()) ? renderer->GetMaterial()->GetShader()->Queue : 0;
-	meshRenderers[queue].push_back(renderer);
+	meshRenderers.push_back(renderer);
 	//SortMeshRenderer();
 }
-void GraphicsClass::RegisterMeshRenderer(MeshRenderer * renderer)
-{
-	RemoveRenderer(renderer);
-	int queue = (renderer->GetMaterial()) ? renderer->GetMaterial()->GetShader()->Queue : 0;
-	meshRenderers[queue].push_back(renderer);
-	//SortMeshRenderer();
-}
+
 void GraphicsClass::PushBitmapRenderer(BitmapRenderer* renderer)
 {
 	bitmapRenderers.push_back(renderer);
@@ -143,10 +136,9 @@ void GraphicsClass::SortBitmapRenderer()
 }
 void GraphicsClass::RemoveRenderer(MeshRenderer * renderer)
 {
-	int queue = (renderer->GetMaterial()) ? renderer->GetMaterial()->GetShader()->Queue : 0;
-	auto result=std::find(meshRenderers[queue].begin(), meshRenderers[queue].end(), renderer);
-	if(result!= meshRenderers[queue].end())
-		meshRenderers[queue].erase(result);
+	auto result=std::find(meshRenderers.begin(), meshRenderers.end(), renderer);
+	if(result!= meshRenderers.end())
+		meshRenderers.erase(result);
 	//for (int i = 0; i<meshRenderers[queue].size(); i++)
 	//	if (meshRenderers[queue][i] == renderer)
 	//	{
@@ -242,29 +234,41 @@ bool GraphicsClass::RenderScene(XMMATRIX viewMatrix, XMMATRIX projectionMatrix, 
 	{
 
 		//std::vector<MeshRenderer*> renderers = meshRenderers;
-		m_Direct3D->SetBlendState(false, D3D11_BLEND_ONE, D3D11_BLEND_SRC_ALPHA);
-		QueueState queueState = QueueState::Geometry;
-		for (const auto j : meshRenderers)
+		std::vector<MeshRenderer*> alphaSortingList;
+		m_Direct3D->TurnOffAlphaBlending();
+		for (const auto i : meshRenderers)
 		{
-			if (queueState == QueueState::Geometry&&j.first >= QueueState::Transparent)
+			if (!i || !i->enabled)
 			{
-				queueState = QueueState::Transparent;
-				m_Direct3D->SetBlendState(true, D3D11_BLEND_ONE, D3D11_BLEND_SRC_ALPHA);
+				continue;
 			}
-			for (const auto i : j.second)
+			if (i->GetMaterial()->Queue >= QueueState::Transparent)
 			{
-				if (!i || !i->enabled)
-				{
-					continue;
-				}
-				//m_Direct3D->GetWorldMatrix(worldMatrix);
-				GameObject* gameObject = i->gameObject;
-				if (gameObject)
-				{
-					i->Render(m_Direct3D->GetImmDeviceContext(), viewMatrix, projectionMatrix, customMaterial);
-				}
+				alphaSortingList.push_back(i);
+				continue;
+			}
+			//m_Direct3D->GetWorldMatrix(worldMatrix);
+			GameObject* gameObject = i->gameObject;
+			if (gameObject)
+			{
+				i->Render(m_Direct3D->GetImmDeviceContext(), viewMatrix, projectionMatrix, customMaterial);
 			}
 		}
+		m_Direct3D->TurnOnAlphaBlending();
+		std::sort(alphaSortingList.begin(), alphaSortingList.end(), [](MeshRenderer* a, MeshRenderer* b)->bool {return (a->GetMaterial()->Queue < b->GetMaterial()->Queue); });
+		for (const auto i : alphaSortingList)
+		{
+			if (!i || !i->enabled)
+			{
+				continue;
+			}
+			GameObject* gameObject = i->gameObject;
+			if (gameObject)
+			{
+				i->Render(m_Direct3D->GetImmDeviceContext(), viewMatrix, projectionMatrix, customMaterial);
+			}
+		}
+		m_Direct3D->TurnOffAlphaBlending();
 		//printf("%d vertices \n", Frustum::drawnVertex);
 	}
 	return true;

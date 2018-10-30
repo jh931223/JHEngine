@@ -44,8 +44,9 @@ public:
 
 	void TurnCullFront();
 
-	void SetBlendState(bool _blendEnable, D3D11_BLEND _Src, D3D11_BLEND _Dest);
+	void TurnOnAlphaBlending();
 
+	void TurnOffAlphaBlending();
 
 
 	std::vector<ID3D11CommandList*> commandLists;
@@ -62,7 +63,6 @@ private:
 	ID3D11Texture2D* m_depthStencilBuffer = nullptr;
 	ID3D11DepthStencilState* m_depthStencilState = nullptr;
 	ID3D11DepthStencilView* m_depthStencilView = nullptr;
-	ID3D11BlendState* m_blendState = NULL;
 	ID3D11RasterizerState* m_rasterState = nullptr;
 
 	XMMATRIX m_projectionMatrix;
@@ -73,5 +73,8 @@ private:
 	ID3D11DepthStencilState* m_depthDisabledStencilState = NULL;
 	ID3D11RasterizerState* m_cullOffState = nullptr;
 	ID3D11RasterizerState* m_cullFrontState = nullptr;
+
+	ID3D11BlendState* m_blendState = NULL;
+	ID3D11BlendState* m_blendDisableState = NULL;
 	bool isRenderWireFrame=false;
 };

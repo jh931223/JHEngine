@@ -10,10 +10,6 @@ class TextureClass;
 class RenderTextureClass;
 class ID3D11ShaderResourceView;
 typedef ShaderParameterCollections PARAM;
-enum QueueState
-{
-	Geometry, Transparent=3000, AlphaTest=3500
-};
 class ShaderClass : public AlignedAllocationPolicy<16>
 {
 protected:
@@ -256,6 +252,4 @@ protected:
 	ID3D11Buffer* m_matrixBuffer = nullptr;
 	std::vector<ID3D11SamplerState*> m_sampleStateList;
 	static CameraComponent* renderCam;
-public:
-	int Queue= QueueState::Geometry;
 };

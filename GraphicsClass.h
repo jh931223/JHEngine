@@ -63,7 +63,7 @@ private:
 private:
 	std::mutex renderMutex;
 	D3DClass* m_Direct3D = nullptr;
-	std::map<int,std::vector<MeshRenderer*>> meshRenderers;
+	std::vector<MeshRenderer*> meshRenderers;
 	std::vector<BitmapRenderer*> bitmapRenderers;
 	std::vector<LightComponent*> lights;
 	std::vector<CameraComponent*> cameras;

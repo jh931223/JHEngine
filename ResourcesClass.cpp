@@ -115,7 +115,6 @@ void ResourcesClass::InitializeShader(HWND hwnd)
 	result = new TextureShaderClass;
 	result->Initialize(SystemClass::GetInstance()->GetDevice(), hwnd);
 	shaderMap["TextureShaderTransparent"] = result;
-	result->Queue = QueueState::Transparent;
 }
 
 void ResourcesClass::InitializeRenderTexture(HWND hwnd)
@@ -183,7 +182,14 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShaderTransparent"));
 	result->GetParams()->SetTexture("_MainTex", FindTexture("cliff"));
 	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1,1,1,0.5f));
+	result->Queue = QueueState::Transparent;
 	materialMap["m_cube"] = result;
+
+	result = new Material;
+	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShader"));
+	result->GetParams()->SetTexture("_MainTex", FindTexture("grass"));
+	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1, 1, 1, 0.0f));
+	materialMap["m_cube2"] = result;
 
 	result = new Material;
 	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShader"));

@@ -4,6 +4,10 @@
 class ShaderClass;
 class ShaderParameterCollections;
 
+enum QueueState
+{
+	Geometry, Transparent = 3000, AlphaTest = 3500
+};
 class Material
 {
 
@@ -18,6 +22,8 @@ public:
 		return shader;
 	}
 	ShaderParameterCollections* GetParams();
+public:
+	int Queue= QueueState::Geometry;
 private:
 	ShaderClass * shader;
 	ShaderParameterCollections params;

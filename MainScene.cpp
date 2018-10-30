@@ -63,7 +63,14 @@ void MainScene::Setup()
 	renderer = gobj->AddComponent<MeshRenderer>();
 	renderer->SetMesh(ResourcesClass::GetInstance()->FindMesh("cube"));
 	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_cube"));
-	gobj->transform->SetPosition(XMFLOAT3(100, 100, 100));
+	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));
+	input->box = gobj;
+	gobj = new GameObject("Å¥ºê2");
+	//r->AddChild(gobj);
+	renderer = gobj->AddComponent<MeshRenderer>();
+	renderer->SetMesh(ResourcesClass::GetInstance()->FindMesh("cube"));
+	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_cube2"));
+	gobj->transform->SetPosition(XMFLOAT3(1, 0.5, 0.5));
 	input->box = gobj;
 
 	///CANVAS

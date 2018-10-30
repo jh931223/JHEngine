@@ -364,7 +364,29 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 		return false;
 	}
 
-	//SetBlendState(false, D3D11_BLEND_ONE, D3D11_BLEND_SRC_ALPHA);
+	D3D11_BLEND_DESC blendDesc;
+	ZeroMemory(&blendDesc, sizeof(D3D11_BLEND_DESC));
+	blendDesc.RenderTarget[0].BlendEnable = TRUE;
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	m_device->CreateBlendState(&blendDesc, &m_blendState);
+
+	D3D11_BLEND_DESC blendDesc2;
+	ZeroMemory(&blendDesc2, sizeof(D3D11_BLEND_DESC));
+	blendDesc2.RenderTarget[0].BlendEnable = FALSE;
+	blendDesc2.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc2.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc2.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendDesc2.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc2.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendDesc2.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendDesc2.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	m_device->CreateBlendState(&blendDesc2, &m_blendDisableState);
 
 	return true;
 }
@@ -437,6 +459,8 @@ void D3DClass::Shutdown()
 
 	if (m_blendState)
 		m_blendState->Release();
+	if (m_blendDisableState)
+		m_blendDisableState->Release();
 	ReleaseDeferredContex();
 }
 
@@ -606,6 +630,8 @@ void D3DClass::ChangeFillMode(bool isSolid)
 
 	// 이제 래스터 라이저 상태를 설정합니다
 	m_immDeviceContext->RSSetState(m_rasterState);
+
+	
 }
 
 void D3DClass::TurnZBufferOn()
@@ -634,18 +660,16 @@ void D3DClass::TurnCullFront()
 	m_immDeviceContext->RSSetState(m_cullFrontState);
 }
 
-void D3DClass::SetBlendState(bool _blendEnable, D3D11_BLEND _Src, D3D11_BLEND _Dest)
+void D3DClass::TurnOnAlphaBlending()
 {
-	D3D11_BLEND_DESC blendDesc;
-	blendDesc.RenderTarget[0].BlendEnable = _blendEnable;
-	blendDesc.RenderTarget[0].SrcBlend = _Src;
-	blendDesc.RenderTarget[0].DestBlend = _Dest;
-	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].RenderTargetWriteMask = 0x0f;
-	if (m_blendState)
-		m_blendState->Release();
-	m_device->CreateBlendState(&blendDesc, &m_blendState);
+
+	FLOAT blendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
+	m_immDeviceContext->OMSetBlendState(m_blendState, blendFactor, 0xffffffff);
+}
+
+void D3DClass::TurnOffAlphaBlending()
+{
+
+	FLOAT blendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
+	m_immDeviceContext->OMSetBlendState(m_blendDisableState, blendFactor, 0xffffffff);
 }
