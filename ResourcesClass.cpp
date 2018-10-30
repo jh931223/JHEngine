@@ -180,20 +180,14 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 
 	result = new Material;
 	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShaderTransparent"));
-	result->GetParams()->SetTexture("_MainTex", FindTexture("cliff"));
-	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1,1,1,0.5f));
+	result->GetParams()->SetTexture("_MainTex", FindTexture("snow"));
+	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1,1,1,0.2f));
 	result->Queue = QueueState::Transparent;
 	materialMap["m_cube"] = result;
 
-	result = new Material;
-	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShader"));
-	result->GetParams()->SetTexture("_MainTex", FindTexture("grass"));
-	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1, 1, 1, 0.0f));
-	materialMap["m_cube2"] = result;
 
 	result = new Material;
 	result->SetShader(ResourcesClass::GetInstance()->FindShader("TextureShader"));
-	result->GetParams()->SetTexture("_MainTex", FindTexture("sky02"));
 	result->GetParams()->SetTexture("_MainTex", FindTexture("sky02"));
 	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1, 1, 1, 1));
 	materialMap["m_skySphere"] = result;

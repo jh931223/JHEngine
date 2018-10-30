@@ -269,4 +269,5 @@ public:
 	std::vector< ChunkData > chunkArray;
 	Octree<MeshRenderer*>* meshRendererOctree;
 	BrushType brushType=BrushType::Brush_Sphere;
+	MeshRenderer* targetMesh;
 };

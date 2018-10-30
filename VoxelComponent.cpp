@@ -61,7 +61,7 @@ void VoxelComponent::Initialize()
 	//SetLODLevel(2, 256);
 	//SetLODLevel(3, 256);
 
-	int start = 128;
+	int start = 500000;
 
 	SetLODLevel(0, start);
 	SetLODLevel(1, start + info.partitionSize + info.partitionSize);
@@ -250,14 +250,20 @@ void VoxelComponent::Update()
 	if (Input()->GetKeyDown(DIK_1))
 	{
 		brushType = BrushType::Brush_Sphere;
+		if (targetMesh)
+			targetMesh->SetMesh(SystemClass::GetInstance()->GetResources()->FindMesh("sphere"));
 	}
 	else if (Input()->GetKeyDown(DIK_2))
 	{
 		brushType = BrushType::Brush_Cube;
+		if (targetMesh)
+			targetMesh->SetMesh(SystemClass::GetInstance()->GetResources()->FindMesh("cube"));
 	}
 	else if (Input()->GetKeyDown(DIK_3))
 	{
 		brushType = BrushType::Brush_Default;
+		if (targetMesh)
+			targetMesh->SetMesh(SystemClass::GetInstance()->GetResources()->FindMesh("sphere"));
 	}
 	else if (Input()->GetKeyDown(DIK_4))
 	{
@@ -268,40 +274,49 @@ void VoxelComponent::Update()
 		}
 		else UpdateMeshAsync(0);
 	}
-
-	if (Input()->GetKey(VK_RBUTTON))
+	XMFLOAT3 origin = CameraComponent::mainCamera()->transform()->GetWorldPosition();
+	int mouseX, mouseY;
+	Input()->GetMouseLocation(mouseX, mouseY);
+	XMFLOAT2 mPos(mouseX, mouseY);
+	mPos -= SystemClass::GetInstance()->GetWindowPos();
+	//origin = CameraComponent::ScreenToPoint(mPos);
+	//printf("mouse : %f %f origin : %f %f %f\n", mPos.x, mPos.y, origin.x, origin.y, origin.z);
+	XMFLOAT3 dir = CameraComponent::mainCamera()->transform()->forward();
+	RaycastHit hit;
+	if (PhysicsClass::Raycast(origin, dir, 100, hit))
 	{
-		XMFLOAT3 origin = CameraComponent::mainCamera()->transform()->GetWorldPosition();
-		if (Input()->GetKey(DIK_LCONTROL))
+		if (Input()->GetKey(VK_RBUTTON))
 		{
-			int mouseX, mouseY;
-			Input()->GetMouseLocation(mouseX, mouseY);
-			XMFLOAT2 mPos(mouseX, mouseY);
-			mPos -= SystemClass::GetInstance()->GetWindowPos();
-			origin = CameraComponent::ScreenToPoint(mPos);
-			printf("mouse : %f %f origin : %f %f %f\n", mPos.x, mPos.y, origin.x, origin.y, origin.z);
-		}
-		XMFLOAT3 dir = CameraComponent::mainCamera()->transform()->forward();
-		RaycastHit hit;
-		if (PhysicsClass::Raycast(origin, dir, 100, hit))
-		{
+			/*if (Input()->GetKey(DIK_LCONTROL))
+			{
+				int mouseX, mouseY;
+				Input()->GetMouseLocation(mouseX, mouseY);
+				XMFLOAT2 mPos(mouseX, mouseY);
+				mPos -= SystemClass::GetInstance()->GetWindowPos();
+				origin = CameraComponent::ScreenToPoint(mPos);
+				printf("mouse : %f %f origin : %f %f %f\n", mPos.x, mPos.y, origin.x, origin.y, origin.z);
+			}*/
 			XMFLOAT3 pos = hit.point;
 			XMFLOAT3 cpos = CovertToChunkPos(pos, false);
 			EditVoxel(pos, brushRadius, -strength, brushType);
-		}
 
-	}
-	else if (Input()->GetKey(VK_LBUTTON))
-	{
-		XMFLOAT3 origin = CameraComponent::mainCamera()->transform()->GetWorldPosition();
-		XMFLOAT3 dir = CameraComponent::mainCamera()->transform()->forward();
-		RaycastHit hit;
-		if (PhysicsClass::Raycast(origin, dir, 100, hit))
+		}
+		else if (Input()->GetKey(VK_LBUTTON))
 		{
 			XMFLOAT3 pos = hit.point;
 			XMFLOAT3 cpos = CovertToChunkPos(pos, false);
 			EditVoxel(pos, brushRadius, strength, brushType);
 		}
+		if (targetMesh)
+		{
+			targetMesh->gameObject->transform->SetPosition(hit.point);
+			targetMesh->gameObject->transform->SetScale(XMFLOAT3(brushRadius, brushRadius, brushRadius));
+		}
+	}
+	else
+	{
+		if (targetMesh)
+			targetMesh->gameObject->transform->SetPosition(XMFLOAT3(9999999,9999999,999999));
 	}
 	ProcessCommandQueue();
 }
