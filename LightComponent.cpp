@@ -81,7 +81,7 @@ void LightComponent::GeneratePerspectiveMatrix(float screenDepth, float screenNe
 {
 	// 정사각형 광원에 대한 시야 및 화면 비율을 설정합니다.
 	float fieldOfView = (float)XM_PI / 4.0f;
-	float screenAspect = (float)SystemClass::GetInstance()->GetScreenWidth() / (float)SystemClass::GetInstance()->GetScreenHeight();
+	float screenAspect = (float)SystemClass::GetInstance()->GetWindowWidth() / (float)SystemClass::GetInstance()->GetWindowHeight();
 
 	// 빛의 투영 행렬을 만듭니다.
 	m_projectionMatrix = XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, screenNear, screenDepth);

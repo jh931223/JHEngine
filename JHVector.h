@@ -186,5 +186,30 @@ namespace JHDev
 		XMStoreFloat3(&n, UP);
 		return n;
 	}
+	inline void QuaternionToEuler(const XMVECTOR &qv1, XMFLOAT3 &euler)
+	{
+		XMFLOAT4 q1;
+		XMStoreFloat4(&q1, qv1);
+		double test = q1.x*q1.y + q1.z*q1.w;
+		if (test > 0.499f) { // singularity at north pole  
+			euler.y = 2 * atan2f(q1.x, q1.w);
+			euler.z = XM_PI / 2;
+			euler.x = 0;
+		}
+		else if (test < -0.499f) { // singularity at south pole  
+			euler.y = -2 * atan2(q1.x, q1.w);
+			euler.z = -XM_PI / 2;
+			euler.x = 0;
+		}
+		else
+		{
+			double sqx = q1.x*q1.x;
+			double sqy = q1.y*q1.y;
+			double sqz = q1.z*q1.z;
+			euler.y = atan2f(2 * q1.y*q1.w - 2 * q1.x*q1.z, 1 - 2 * sqy - 2 * sqz);
+			euler.z = asinf(2 * test);
+			euler.x = atan2f(2 * q1.x*q1.w - 2 * q1.y*q1.z, 1 - 2 * sqx - 2 * sqz);
+		}
+	}
 }
 

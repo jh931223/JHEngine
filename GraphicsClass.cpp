@@ -29,7 +29,7 @@ GraphicsClass::~GraphicsClass()
 }
 
 
-bool GraphicsClass::Initialize(int _screenWidth, int _screenHeight, HWND hwnd)
+bool GraphicsClass::Initialize(int _windowWidth, int _windowHeight, HWND hwnd)
 {
 	// Direct3D 按眉 积己
 	m_Direct3D = new D3DClass;
@@ -39,7 +39,7 @@ bool GraphicsClass::Initialize(int _screenWidth, int _screenHeight, HWND hwnd)
 	}
 
 	// Direct3D 按眉 檬扁拳
-	bool result = m_Direct3D->Initialize(_screenWidth, _screenHeight, VSYNC_ENABLED, hwnd, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
+	bool result = m_Direct3D->Initialize(_windowWidth, _windowHeight, VSYNC_ENABLED, hwnd, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
 	if(!result)
 	{
 		MessageBox(hwnd, L"Could not initialize Direct3D.", L"Error", MB_OK);
@@ -60,8 +60,8 @@ bool GraphicsClass::Initialize(int _screenWidth, int _screenHeight, HWND hwnd)
 	//m_ViewPoint->SetProjectionParameters((float)(XM_PI / 2.0f), 1.0f, 0.1f, 100.0f);
 	//m_ViewPoint->GenerateViewMatrix();
 	//m_ViewPoint->GenerateProjectionMatrix();
-	this->screenWidth = _screenWidth;
-	this->screenHeight = _screenHeight;
+	this->windowWidth = _windowWidth;
+	this->windowHeight = _windowHeight;
 	meshRenderers.clear();
 	lights.clear();
 	cameras.clear();
@@ -180,9 +180,9 @@ CameraComponent * GraphicsClass::GetMainCamera()
 		top = cameras[0];
 	return top;
 }
-XMFLOAT2 GraphicsClass::GetScreenSize()
+XMFLOAT2 GraphicsClass::GetWindowSize()
 {
-	return XMFLOAT2(screenWidth, screenHeight);
+	return XMFLOAT2(windowWidth, windowHeight);
 }
 ID3D11Device * GraphicsClass::GetDevice()
 {

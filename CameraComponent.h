@@ -19,6 +19,7 @@ public:
 	RenderTextureClass* GetRenderTexture();
 	void SetRenderTexture(RenderTextureClass* _bitmap);
 	static XMFLOAT3 ScreenToPoint(XMFLOAT2 _mousePos);
+	static void ScreenPointToRay(XMFLOAT2 _mousePos, XMFLOAT3 & reulstOrigin, XMFLOAT3 & resultDirection);
 	static CameraComponent* mainCamera();
 private:
 	XMMATRIX m_viewMatrix;

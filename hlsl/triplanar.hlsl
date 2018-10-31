@@ -153,7 +153,7 @@ float4 ps(v2f input) : SV_TARGET
 		d *= 0.3f;
 		specular *= 0.3f;
 	}
-	float3 ambient = ambientColor;
+	float3 ambient = ambientColor*0.3f;
 
 	float specularPower = 0.3f;
 	return float4(d+ ambient +specular* specularPower,1);

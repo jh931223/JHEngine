@@ -58,6 +58,8 @@ Collider::ColliderType VoxelCollider::GetColliderType()
 
 void VoxelCollider::GetChunksIncludeLine(XMFLOAT3 _lineStart, XMFLOAT3 _lineEnd, OctreeNode<MeshRenderer*>* _node, std::vector < Mesh*>& result)
 {
+	if (_node == NULL)
+		return;
 	BoxCollider boxChecker(false);
 	boxChecker.offset = _node->GetCenerPosition();
 	float halfSize = _node->GetCellSize()*0.5f;

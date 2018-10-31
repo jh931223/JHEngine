@@ -13,7 +13,6 @@ public:
 	std::vector<BehaviourComponent*> behaviours;
 	std::string name;
 	CTransform* transform;
-private:
 	SceneClass * scene;
 private:
 	bool AddComponent(Component* _newComponent);

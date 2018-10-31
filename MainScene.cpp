@@ -24,7 +24,7 @@ void MainScene::Setup()
 	MeshRenderer* renderer;
 	gobj = new GameObject("¶óÀÌÆ®");
 	LightComponent* m_Light = gobj->AddComponent<LightComponent>();
-	m_Light->SetAmbientColor(0.2f, 0.1f, 0.1f, 1.0f);
+	m_Light->SetAmbientColor(0.6f, 0.6f, 0.6f, 1.0f);
 	m_Light->SetDiffuseColor(1.0f, 1.0f, 1.0f, 1.0f);
 	m_Light->SetLookAt(238.3861f, 409.3519f, 524.0f);
 	m_Light->transform()->SetPosition(XMFLOAT3(0.0f, 600.0f, 524.0f));
@@ -39,7 +39,7 @@ void MainScene::Setup()
 	m_Camera->transform()->SetRotation(XMFLOAT3(0.0f, 0.0f, 0.0f));
 	m_Camera->background = CameraComponent::SkySphere;
 	m_Camera->skyMaterial = ResourcesClass::GetInstance()->FindMaterial("m_skySphere");
-	float screenAspect = (float)SystemClass::GetInstance()->GetScreenWidth() / (float)SystemClass::GetInstance()->GetScreenHeight();
+	float screenAspect = (float)SystemClass::GetInstance()->GetWindowWidth() / (float)SystemClass::GetInstance()->GetWindowHeight();
 	m_Camera->SetProjectionParameters((float)(XM_PI / 4.0f), screenAspect, 0.1f, 1500.0f);
 	auto input=gobj->AddComponent<InputComponent>();
 	// º¹¼¿ »ý¼º
@@ -50,7 +50,7 @@ void MainScene::Setup()
 	gobj = new GameObject("º¹¼¿");
 	//r->AddChild(gobj);
 	VoxelComponent* voxel = gobj->AddComponent<VoxelComponent>();
-	voxel->brushType = VoxelComponent::BrushType::Brush_Sphere;
+	voxel->brushInfo.brushType = VoxelComponent::BrushType::Brush_Sphere;
 	/*VoxelComponent* voxel = new VoxelComponent;
 	gobj->AddComponent(voxel);*/
 	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));
@@ -64,7 +64,6 @@ void MainScene::Setup()
 	renderer->SetMesh(ResourcesClass::GetInstance()->FindMesh("cube"));
 	renderer->SetMaterial(ResourcesClass::GetInstance()->FindMaterial("m_cube"));
 	gobj->transform->SetPosition(XMFLOAT3(0, 0, 0));
-	input->box = gobj;
 	voxel->targetMesh = renderer;
 
 

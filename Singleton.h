@@ -15,7 +15,7 @@ public:
 		delete ms_Instance;
 		ms_Instance = NULL;
 	};
-
+	
 private:
 	static T * ms_Instance;
 };

@@ -30,7 +30,7 @@ bool SystemClass::Initialize()
 	// 윈도우 창 가로, 세로 넓이 변수 초기화
 
 	// 윈도우 생성 초기화
-	InitializeWindows(screenWidth, screenHeight);
+	InitializeWindows(windowSize.x, windowSize.y);
 
 
 	// m_Input 객체 생성. 이 클래스는 추후 사용자의 키보드 입력 처리에 사용됩니다.
@@ -41,24 +41,25 @@ bool SystemClass::Initialize()
 	}
 
 	// m_Input 객체 초기화
-	m_Input->Initialize(m_hinstance, m_hwnd, screenWidth, screenHeight);
+	m_Input->Initialize(m_hinstance, m_hwnd);
 
 	// m_Graphics 객체 생성.  그래픽 랜더링을 처리하기 위한 객체입니다.
-	m_Graphics = new GraphicsClass;
+	m_Graphics = GraphicsClass::GetInstance();
 	if (!m_Graphics)
 	{
 		return false;
 	}
 	// m_Graphics 객체 초기화.
-	m_Graphics->Initialize(screenWidth, screenHeight, m_hwnd);
+	m_Graphics->Initialize(windowSize.x, windowSize.y, m_hwnd);
 
-	m_Resources = new ResourcesClass;
+	m_Resources = ResourcesClass::GetInstance();
 	if (!m_Resources)
 		return false;
 	m_Resources->Initialize(m_hwnd);
 
 
 	sceneList.push_back(new MainScene());
+
 	for (auto i : sceneList)
 		i->Setup();
 	for (auto i : sceneList)
@@ -163,18 +164,28 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 }
 
 
-int SystemClass::GetScreenWidth()
+int SystemClass::GetWindowWidth()
 {
-	return m_Graphics->GetScreenSize().x;
+	return m_Graphics->GetWindowSize().x;
 }
-int SystemClass::GetScreenHeight()
+int SystemClass::GetWindowHeight()
 {
-	return m_Graphics->GetScreenSize().y;
+	return m_Graphics->GetWindowSize().y;
 }
 
 XMFLOAT2 SystemClass::GetWindowPos()
 {
-	return XMFLOAT2(posX,posY);
+	return windowPos;
+}
+
+XMFLOAT2 SystemClass::GetWindowSize()
+{
+	return  m_Graphics->GetWindowSize();
+}
+
+XMFLOAT2 SystemClass::GetScreenSize()
+{
+	return XMFLOAT2(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
 }
 
 void SystemClass::InitializeWindows(int& _screenWidth, int& _screenHeight)
@@ -225,6 +236,8 @@ void SystemClass::InitializeWindows(int& _screenWidth, int& _screenHeight)
 
 		// 풀스크린으로 디스플레이 설정을 변경합니다.
 		ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN);
+		windowPos.x = (GetSystemMetrics(SM_CXSCREEN));
+		windowPos.y = (GetSystemMetrics(SM_CYSCREEN));
 	}
 	else
 	{
@@ -233,14 +246,14 @@ void SystemClass::InitializeWindows(int& _screenWidth, int& _screenHeight)
 		_screenHeight = 600;
 
 		// 윈도우 창을 가로, 세로의 정 가운데 오도록 합니다.
-		posX = (GetSystemMetrics(SM_CXSCREEN) - _screenWidth) / 2;
-		posY = (GetSystemMetrics(SM_CYSCREEN) - _screenHeight) / 2;
+		windowPos.x = (GetSystemMetrics(SM_CXSCREEN) - _screenWidth) / 2;
+		windowPos.y = (GetSystemMetrics(SM_CYSCREEN) - _screenHeight) / 2;
 	}
 
 	// 윈도우를 생성하고 핸들을 구합니다.
 	m_hwnd = CreateWindowEx(WS_EX_APPWINDOW, m_applicationName, m_applicationName,
 		WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP,
-		posX, posY, _screenWidth, _screenHeight, NULL, NULL, m_hinstance, NULL);
+		windowPos.x, windowPos.y, _screenWidth, _screenHeight, NULL, NULL, m_hinstance, NULL);
 
 	// 윈도우를 화면에 표시하고 포커스를 지정합니다
 	SetCursor(NULL);

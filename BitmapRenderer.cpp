@@ -42,7 +42,7 @@ void BitmapRenderer::SetBitmap(int _width, int _height)
 	}
 	bitmap = new BitmapClass;
 	auto system = SystemClass::GetInstance();
-	bitmap->Initialize(system->GetDevice(), system->GetScreenWidth(), system->GetScreenHeight(), _width, _height);
+	bitmap->Initialize(system->GetDevice(), system->GetWindowWidth(), system->GetWindowHeight(), _width, _height);
 }
 
 void BitmapRenderer::Render(ID3D11DeviceContext * _deviceContext, XMMATRIX _view, XMMATRIX _proj)

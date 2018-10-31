@@ -82,16 +82,15 @@ public:
 		VoxelData* chunk = NULL;
 		//MeshRenderer* renderer=NULL;
 		//bool isPolygonizable = false;
-	};
-	typedef std::vector<OctreeNode<ChunkData>*> ChunkLeafs;
-	typedef std::vector<OctreeNode<MeshRenderer*>*> RendererLeafs;
-
+	};	
 	struct LODGroupData
 	{
 		short level = 0;
 		short transitionBasis = 0;
 	};
-//#pragma pack(pop) 
+	typedef std::vector<OctreeNode<ChunkData>*> ChunkLeafs;
+	typedef std::vector<OctreeNode<MeshRenderer*>*> RendererLeafs;
+
 	enum ReserveType
 	{
 		Reserve_Deform,Reserve_Load
@@ -164,10 +163,6 @@ private:
 
 	void ReleaseChunks();
 
-	void SetOctreeDepth(int _targetDepth);
-
-
-
 	XMFLOAT2 GetUV(BYTE);
 
 	XMFLOAT3 CovertToChunkPos(XMFLOAT3 targetpos,bool returnNan=true);
@@ -207,34 +202,26 @@ private:
 
 	int ReadTXT(const char* filename);
 
+	void SetBrush(BrushType _brush);
+
 private:
 
 	static const int maxLODLevel = 3;
 
 	
-	//#pragma pack(push, 1)
 	struct MapInfo
 	{
 		int width, height, depth;
 		int partitionSize = 32;
-	};
-//#pragma pack(pop) 
-	MapInfo info;
-	float unit;
+	} info;
+
 	float tUnit;
 	int tAmount;
 	bool useMarchingCube=true;
 	bool useAsyncBuild=true;
-
-	bool useGPGPU = false;
 	bool useGetDataFromFile = false;
-
-	int currentOctreeDepth = 0;
-
-
 	char dataPath[256];
 	const char* pathRoot = "MapData";
-	//Octree< std::vector<VoxelData> >* tempChunks;
 
 	
 
@@ -245,13 +232,10 @@ private:
 
 
 	XMFLOAT3 lastBasePosition;
-	XMFLOAT3 customPos;
 	bool isLockedBasePosition;
 
 	int isoLevel = 0;
-	float strength=0.5f;
-	float brushRadius = 3.0f;
-
+	bool keepPress = false;
 
 
 #ifndef USE_JOBSYSTEM
@@ -268,6 +252,11 @@ public:
 	Octree< ChunkData >* tempChunks;
 	std::vector< ChunkData > chunkArray;
 	Octree<MeshRenderer*>* meshRendererOctree;
-	BrushType brushType=BrushType::Brush_Sphere;
+	struct BrushInfo
+	{
+		BrushType brushType = BrushType::Brush_Sphere;
+		float strength = 0.5f;
+		float brushRadius = 3.0f;
+	}brushInfo;
 	MeshRenderer* targetMesh;
 };

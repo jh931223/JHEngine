@@ -19,9 +19,11 @@ GameObject::GameObject(const std::string& _name,SceneClass* _scene):name(_name)
 
 GameObject::~GameObject()
 {
+	printf("%s delete\n", name.c_str());
 	for (auto i : components)
 		delete i;
 	components.clear();
+	behaviours.clear();
 	for (auto i : childObjects)
 		delete i;
 	childObjects.clear();

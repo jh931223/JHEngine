@@ -25,7 +25,7 @@ class Material;
 class Mesh;
 class RenderTextureClass;
 
-class GraphicsClass
+class GraphicsClass : public Singleton<GraphicsClass>
 {
 public:
 	GraphicsClass();
@@ -38,7 +38,6 @@ public:
 	D3DClass* GetD3D();
 
 	void PushRenderer(MeshRenderer* renderer);
-	void RegisterMeshRenderer(MeshRenderer * renderer);
 	void PushBitmapRenderer(BitmapRenderer * renderer);
 	void PushLights(LightComponent* renderer);
 	void PushCameras(CameraComponent* renderer);
@@ -51,7 +50,7 @@ public:
 	void RemoveCameras(CameraComponent* renderer);
 	CameraComponent* GetMainCamera();
 	bool RenderScene(XMMATRIX viewMatrix, XMMATRIX projectionMatrix, Material* customMaterial = NULL);
-	XMFLOAT2 GetScreenSize();
+	XMFLOAT2 GetWindowSize();
 	ID3D11Device* GetDevice();
 private:
 	bool Render();
@@ -74,7 +73,7 @@ private:
 
 	Mesh* skyMesh;
 
-	float screenWidth, screenHeight;
+	float windowWidth, windowHeight;
 };
 struct RenderTask : ITaskParallel
 {
@@ -87,3 +86,4 @@ struct RenderTask : ITaskParallel
 	virtual bool Excute(int index);
 	virtual void OnFinish(int id)override;
 };
+inline GraphicsClass* Graphics() { return GraphicsClass::GetInstance(); }

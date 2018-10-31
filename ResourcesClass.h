@@ -16,7 +16,6 @@ public:
 	ResourcesClass();
 	~ResourcesClass();
 	void Initialize(HWND hwnd);
-	static ResourcesClass* GetInstance();
 	Material* FindMaterial(std::string _name);
 	Mesh* FindMesh(std::string _name);
 	TextureClass* FindTexture(std::string _name);
@@ -26,6 +25,7 @@ public:
 	void AddResource(std::string name, TextureClass * _resource);
 	void AddResource(std::string name, Mesh * _resource);
 	void AddResource(std::string name, ShaderClass * _resource);
+	void AddResource(std::string name, Material * _resource);
 private:
 	std::map<std::string, Material*> materialMap;
 	std::map<std::string, TextureClass*> textureMap;
@@ -40,3 +40,4 @@ private:
 	void InitializeRenderTexture(HWND hwnd);
 };
 
+inline ResourcesClass* Resources() { return ResourcesClass::GetInstance(); }

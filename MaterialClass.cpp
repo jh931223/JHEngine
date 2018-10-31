@@ -3,12 +3,12 @@
 #include "TextureClass.h"
 #include "MaterialClass.h"
 #include "SystemClass.h"
+#include "ResourcesClass.h"
 #include <vector>
 
 Material::Material()
 {
 }
-
 Material::Material(const Material & mat)
 {
 	this->params = mat.params;
