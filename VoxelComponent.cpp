@@ -72,8 +72,7 @@ void VoxelComponent::Initialize()
 	//LoadPerlin(2048, 256, 2048, 128, 0.07f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	//LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");
-	LoadHeightMapFromRaw(2049, 256, 2049, 256, "data/cieload.raw");
+	LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");
 
 
 #ifndef USE_JOBSYSTEM

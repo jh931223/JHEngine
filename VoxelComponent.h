@@ -97,7 +97,7 @@ public:
 	};
 	enum BrushType
 	{
-		Brush_Default,Brush_Sphere,Brush_Cube
+		Brush_Default,Brush_Sphere,Brush_Cube,Brush_Flatten
 	};
 
 	VoxelComponent();

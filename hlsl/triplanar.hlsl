@@ -42,6 +42,8 @@ struct v2f
 	float3 lightDir : TEXCOORD3;
 	float4 lightClipPosition : TEXCOORD4;
 };
+//Texture2D _Tex
+
 
 Texture2D shaderTexture1 : register(t0);
 Texture2D shaderNormalTex1 : register(t1);
@@ -49,6 +51,15 @@ Texture2D shaderTexture2 : register(t2);
 Texture2D shaderNormalTex2 : register(t3);
 Texture2D shaderTexture3 : register(t4);
 Texture2D shaderNormalTex3 : register(t5);
+
+//Texture2D shaderTexture1 : register(t0);
+//Texture2D shaderNormalTex1 : register(t1);
+//Texture2D shaderTexture2 : register(t2);
+//Texture2D shaderNormalTex2 : register(t3);
+//Texture2D shaderTexture3 : register(t4);
+//Texture2D shaderNormalTex3 : register(t5);
+
+
 Texture2D shadowMap : register(t6);
 
 
@@ -115,6 +126,7 @@ float4 ps(v2f input) : SV_TARGET
 		blended_color = col1.xyzw * blend_weights.xxxx +
 			col2.xyzw * blend_weights.yyyy +
 			col3.xyzw * blend_weights.zzzz;
+		blended_color = blended_color * 2;
 		blended_bump_vec = bump1.xyz * blend_weights.xxx +
 			bump2.xyz * blend_weights.yyy +
 			bump3.xyz * blend_weights.zzz;

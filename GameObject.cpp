@@ -102,11 +102,16 @@ void GameObject::Update()
 {
 	if (behaviours.size())
 	{
-		for (auto i : behaviours)
+		for (int i=0;i<behaviours.size();i++)
 		{
-			if(i&&i->enabled)
-				i->Update();
+			if (behaviours[i]&& behaviours[i]->enabled)
+				behaviours[i]->Update();
 		}
+		//for (auto i : behaviours)
+		//{
+		//	if(i&&i->enabled)
+		//		i->Update();
+		//}
 	}
 	//for (auto i : childObjects)
 	//	i->Update();

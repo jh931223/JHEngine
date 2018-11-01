@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <list>
 #include<string>
 #include "SystemClass.h"
 #include "GraphicsClass.h"
@@ -8,8 +9,8 @@
 class GameObject;
 class SceneClass
 {
-	std::vector<GameObject*> gameObjects;
-	std::vector<GameObject*> newGameObjects;
+	std::list<GameObject*> gameObjects;
+	std::list<GameObject*> newGameObjects;
 
 public:
 	SceneClass();
