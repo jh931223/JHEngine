@@ -353,22 +353,31 @@ bool GraphicsClass::Render()
 
 	/// 그림자패스
 	{
-		Frustum::ToggleFrustumCulling(false);
-		if (!shadowMap)
-			shadowMap = ResourcesClass::GetInstance()->FindRenderTexture("ShadowMap");
-		if (!shadowMapMaterial)
-			shadowMapMaterial = ResourcesClass::GetInstance()->FindMaterial("m_depthMap");
-		XMMATRIX viewMatrix, projMatrix;
-		//m_Camera->Render();
-		m_Direct3D->TurnCullOff();
-		m_Light->GetViewMatrix(viewMatrix);
-		m_Light->GetProjectionMatrix(projMatrix);
-		if (!RenderToTexture(shadowMap,viewMatrix,projMatrix, shadowMapMaterial))
-			return false;
-		m_Direct3D->TurnCullBack();
-		auto blurShadowTex = ResourcesClass::GetInstance()->FindRenderTexture("BlurredShadowMap");
-		auto blurShadowMapMaterial = ResourcesClass::GetInstance()->FindMaterial("m_Blur_DepthMap");
-		Frustum::ToggleFrustumCulling(true);
+		if (castShadow)
+		{
+			Frustum::ToggleFrustumCulling(false);
+			if (!shadowMap)
+				shadowMap = ResourcesClass::GetInstance()->FindRenderTexture("ShadowMap");
+			if (!shadowMapMaterial)
+				shadowMapMaterial = ResourcesClass::GetInstance()->FindMaterial("m_depthMap");
+			XMMATRIX viewMatrix, projMatrix;
+			//m_Camera->Render();
+			m_Direct3D->TurnCullOff();
+			m_Light->GetViewMatrix(viewMatrix);
+			m_Light->GetProjectionMatrix(projMatrix);
+			if (!RenderToTexture(shadowMap, viewMatrix, projMatrix, shadowMapMaterial))
+				return false;
+			m_Direct3D->TurnCullBack();
+			auto blurShadowTex = ResourcesClass::GetInstance()->FindRenderTexture("BlurredShadowMap");
+			auto blurShadowMapMaterial = ResourcesClass::GetInstance()->FindMaterial("m_Blur_DepthMap");
+			Frustum::ToggleFrustumCulling(true);
+		}
+		else
+		{
+			if (!shadowMap)
+				shadowMap = ResourcesClass::GetInstance()->FindRenderTexture("ShadowMap");
+			shadowMap->ClearRenderTarget(m_Direct3D->GetImmDeviceContext(), 1.0f, 1.0f, 1.0f, 1.0f);
+		}
 	}
 
 	XMFLOAT4 backgroundColor = m_Camera->backGroundColor;

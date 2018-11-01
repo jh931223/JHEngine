@@ -97,7 +97,7 @@ public:
 	};
 	enum BrushType
 	{
-		Brush_Default,Brush_Sphere,Brush_Cube,Brush_Flatten
+		Brush_Default,Brush_Sphere,Brush_Cube,Brush_Paint
 	};
 
 	VoxelComponent();
@@ -202,7 +202,7 @@ private:
 
 	int ReadTXT(const char* filename);
 
-	void SetBrush(BrushType _brush);
+	void SetBrush(BrushType _brush,int _material=0);
 
 private:
 
@@ -257,6 +257,7 @@ public:
 		BrushType brushType = BrushType::Brush_Sphere;
 		float strength = 0.5f;
 		float brushRadius = 3.0f;
+		int material = 0;
 	}brushInfo;
 	MeshRenderer* targetMesh;
 };

@@ -157,12 +157,27 @@ void ResourcesClass::InitializeMaterial(HWND hwnd)
 
 	result = new Material;
 	result->SetShader(FindShader("TriplanarShader"));
+
 	result->GetParams()->SetTexture("Texture1", FindTexture("cliff"));
-	result->GetParams()->SetTexture("Texture1Normal", FindTexture("cliffNormal"));
-	result->GetParams()->SetTexture("Texture2", FindTexture("grass"));
-	result->GetParams()->SetTexture("Texture2Normal", FindTexture("snowNormal"));
-	result->GetParams()->SetTexture("Texture3", FindTexture("cliff"));
-	result->GetParams()->SetTexture("Texture3Normal", FindTexture("cliffNormal"));
+	result->GetParams()->SetTexture("Normal1", FindTexture("cliffNormal"));
+	result->GetParams()->SetTexture("Texture1_up", FindTexture("grass"));
+	result->GetParams()->SetTexture("Normal1_up", FindTexture("cliffNormal"));
+
+	result->GetParams()->SetTexture("Texture2", FindTexture("cliff"));
+	result->GetParams()->SetTexture("Normal2", FindTexture("cliffNormal"));
+	result->GetParams()->SetTexture("Texture2_up", FindTexture("snow"));
+	result->GetParams()->SetTexture("Normal2_up", FindTexture("snowNormal"));
+
+	result->GetParams()->SetTexture("Texture3", FindTexture("rock"));
+	result->GetParams()->SetTexture("Normal3", FindTexture("rockNormal"));
+	result->GetParams()->SetTexture("Texture3_up", FindTexture("grass"));
+	result->GetParams()->SetTexture("Normal3_up", FindTexture("cliffNormal"));
+
+	result->GetParams()->SetTexture("Texture4", FindTexture("rock2"));
+	result->GetParams()->SetTexture("Normal4", FindTexture("rock2Normal"));
+	result->GetParams()->SetTexture("Texture4_up", FindTexture("soil"));
+	result->GetParams()->SetTexture("Normal4_up", FindTexture("cliffNormal"));
+
 	result->GetParams()->SetFloat4("_MainColor", XMFLOAT4(1,1,1,1));
 	materialMap["m_triplanar"] = result;
 

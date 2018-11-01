@@ -2,10 +2,10 @@
 #include<vector>
 struct VertexBuffer
 {
-	XMFLOAT3 position;
-	XMFLOAT2 uv;
-	XMFLOAT3 normal;
-	XMFLOAT4 color;
+	XMFLOAT3 position=XMFLOAT3(0,0,0);
+	XMFLOAT2 uv=XMFLOAT2(0,0);
+	XMFLOAT3 normal=XMFLOAT3(0,0,0);
+	XMFLOAT4 color=XMFLOAT4(0,0,0,0);
 	void SetPosition(float x, float y, float z) { position = XMFLOAT3(x, y, z); }
 
 };

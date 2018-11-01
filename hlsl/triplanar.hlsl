@@ -30,6 +30,7 @@ struct vInput
 	float4 position : POSITION;
 	float2 uv : TEXCOORD0;
 	float3 normal : NORMAL;
+	float4 color : COLOR;
 };
 
 struct v2f
@@ -41,16 +42,12 @@ struct v2f
 	float3 viewDir : TEXCOORD2;
 	float3 lightDir : TEXCOORD3;
 	float4 lightClipPosition : TEXCOORD4;
+	float4 color : COLOR;
 };
-//Texture2D _Tex
+Texture2D _Tex[8] :register(t0);
+Texture2D _Normal[8] :register(t8);
+Texture2D shadowMap : register(t20);
 
-
-Texture2D shaderTexture1 : register(t0);
-Texture2D shaderNormalTex1 : register(t1);
-Texture2D shaderTexture2 : register(t2);
-Texture2D shaderNormalTex2 : register(t3);
-Texture2D shaderTexture3 : register(t4);
-Texture2D shaderNormalTex3 : register(t5);
 
 //Texture2D shaderTexture1 : register(t0);
 //Texture2D shaderNormalTex1 : register(t1);
@@ -58,9 +55,7 @@ Texture2D shaderNormalTex3 : register(t5);
 //Texture2D shaderNormalTex2 : register(t3);
 //Texture2D shaderTexture3 : register(t4);
 //Texture2D shaderNormalTex3 : register(t5);
-
-
-Texture2D shadowMap : register(t6);
+//Texture2D shadowMap : register(t6);
 
 
 SamplerState SampleType: register(s0);
@@ -92,6 +87,8 @@ v2f main(vInput input)
 	output.lightClipPosition = mul(worldPos, lightViewMatrix);
 	output.lightClipPosition = mul(output.lightClipPosition, lightProjectionMatrix);
 
+	output.color = normalize(input.color);
+
 	return output;
 }
 
@@ -111,25 +108,59 @@ float4 ps(v2f input) : SV_TARGET
 		float2 coord1 = input.worldPos.yz * tex_scale;
 		float2 coord2 = input.worldPos.zx * tex_scale;
 		float2 coord3 = input.worldPos.xy * tex_scale;
-		float4 col1 = shaderTexture1.Sample(SampleType,coord1);
-		float4 col2 = shaderTexture2.Sample(SampleType, coord2);
-		float4 col3 = shaderTexture3.Sample(SampleType, coord3);
 
-		float2 bumpFetch1 = shaderNormalTex1.Sample(SampleType, coord1).xy - 0.5;
-		float2 bumpFetch2 = shaderNormalTex2.Sample(SampleType, coord2).xy - 0.5;
-		float2 bumpFetch3 = shaderNormalTex3.Sample(SampleType, coord3).xy - 0.5;
+		float4 col1[4];
+		float4 col2[4];
+		float4 col3[4];
+		float2 bumpFetch1[4];
+		float2 bumpFetch2[4];
+		float2 bumpFetch3[4];
+		float3 bump1[4];
+		float3 bump2[4];
+		float3 bump3[4];
 
-		float3 bump1 = float3(0, bumpFetch1.x, bumpFetch1.y);
-		float3 bump2 = float3(bumpFetch2.y, 0, bumpFetch2.x);
-		float3 bump3 = float3(bumpFetch3.x, bumpFetch3.y, 0);
+		for (int i = 0; i < 4; i++)
+		{
+			int _texIndex = i * 2;
+			col1[i] = _Tex[_texIndex].Sample(SampleType, coord1);
+			col2[i] = _Tex[_texIndex +1].Sample(SampleType, coord2);
+			col3[i] = _Tex[_texIndex].Sample(SampleType, coord3);
+			bumpFetch1[i] = _Normal[_texIndex].Sample(SampleType, coord1).xy - 0.5;
+			bumpFetch2[i] = _Normal[_texIndex +1].Sample(SampleType, coord2).xy - 0.5;
+			bumpFetch3[i] = _Normal[_texIndex].Sample(SampleType, coord3).xy - 0.5;
+			bump1[i] = float3(0, bumpFetch1[i].x, bumpFetch1[i].y);
+			bump2[i] = float3(bumpFetch2[i].y, 0, bumpFetch2[i].x);
+			bump3[i] = float3(bumpFetch3[i].x, bumpFetch3[i].y, 0);
+		}
 
-		blended_color = col1.xyzw * blend_weights.xxxx +
-			col2.xyzw * blend_weights.yyyy +
-			col3.xyzw * blend_weights.zzzz;
+
+		float4 c1=float4(0, 0, 0, 0), c2=float4(0, 0, 0, 0), c3=float4(0, 0, 0, 0);
+		float3 b1=float3(0,0,0), b2=float3(0,0,0), b3=float3(0,0,0);
+
+
+		for (int i = 0; i < 4; i++)
+		{
+			float p = (i == 0) ? input.color.r:(i == 1) ? input.color.g:(i == 2) ? input.color.b : input.color.a;
+			c1 += col1[i].xyzw*p;
+			c2 += col2[i].xyzw*p;
+			c3 += col3[i].xyzw*p;
+
+			b1 += bump1[i].xyz*p;
+			b2 += bump2[i].xyz*p;
+			b3 += bump3[i].xyz*p;
+		}
+
+		blended_color = c1 * blend_weights.xxxx +
+			c2 * blend_weights.yyyy +
+			c3 * blend_weights.zzzz;
+
 		blended_color = blended_color * 2;
-		blended_bump_vec = bump1.xyz * blend_weights.xxx +
-			bump2.xyz * blend_weights.yyy +
-			bump3.xyz * blend_weights.zzz;
+
+		blended_bump_vec = b1 * blend_weights.xxx +
+			b2 * blend_weights.yyy +
+			b3 * blend_weights.zzz;
+
+		//blended_bump_vec=normalize(blended_bump_vec);
 	}
 	float3 N_for_lighting = normalize(input.worldNormal + blended_bump_vec);
 

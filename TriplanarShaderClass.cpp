@@ -140,13 +140,38 @@ bool TriplanarShaderClass::DrawCall(ID3D11DeviceContext * deviceContext, XMMATRI
 	deviceContext->PSSetConstantBuffers(0, 1, &psLightBuffer);
 
 	// 픽셀 셰이더에서 셰이더 텍스처 리소스를 설정합니다.
-	deviceContext->PSSetShaderResources(0, 1, params.GetTexture("Texture1")->GetResourceView());
-	deviceContext->PSSetShaderResources(1, 1, params.GetTexture("Texture1Normal")->GetResourceView());
-	deviceContext->PSSetShaderResources(2, 1, params.GetTexture("Texture2")->GetResourceView());
-	deviceContext->PSSetShaderResources(3, 1, params.GetTexture("Texture2Normal")->GetResourceView());
-	deviceContext->PSSetShaderResources(4, 1, params.GetTexture("Texture3")->GetResourceView());
-	deviceContext->PSSetShaderResources(5, 1, params.GetTexture("Texture3Normal")->GetResourceView());
-	deviceContext->PSSetShaderResources(6, 1, ResourcesClass::GetInstance()->FindRenderTexture("ShadowMap")->GetResourceView());
+	ID3D11ShaderResourceView* _tex[8]=
+	{
+		params.GetTexture("Texture1")->GetResourceView2(),
+		params.GetTexture("Texture1_up")->GetResourceView2(),
+		params.GetTexture("Texture2")->GetResourceView2(),
+		params.GetTexture("Texture2_up")->GetResourceView2(),
+		params.GetTexture("Texture3")->GetResourceView2(),
+		params.GetTexture("Texture3_up")->GetResourceView2(),
+		params.GetTexture("Texture4")->GetResourceView2(),
+		params.GetTexture("Texture4_up")->GetResourceView2()
+	};
+	ID3D11ShaderResourceView* _normal[8] =
+	{
+		params.GetTexture("Normal1")->GetResourceView2(),
+		params.GetTexture("Normal1_up")->GetResourceView2(),
+		params.GetTexture("Normal2")->GetResourceView2(),
+		params.GetTexture("Normal2_up")->GetResourceView2(),
+		params.GetTexture("Normal3")->GetResourceView2(),
+		params.GetTexture("Normal3_up")->GetResourceView2(),
+		params.GetTexture("Normal4")->GetResourceView2(),
+		params.GetTexture("Normal4_up")->GetResourceView2()
+	}; 
+	
+	deviceContext->PSSetShaderResources(0, 8, _tex);
+	deviceContext->PSSetShaderResources(8, 8, _normal);
+	//deviceContext->PSSetShaderResources(0, 1, params.GetTexture("Texture1")->GetResourceView());
+	//deviceContext->PSSetShaderResources(1, 1, params.GetTexture("Texture1Normal")->GetResourceView());
+	//deviceContext->PSSetShaderResources(2, 1, params.GetTexture("Texture2")->GetResourceView());
+	//deviceContext->PSSetShaderResources(3, 1, params.GetTexture("Texture2Normal")->GetResourceView());
+	//deviceContext->PSSetShaderResources(4, 1, params.GetTexture("Texture3")->GetResourceView());
+	//deviceContext->PSSetShaderResources(5, 1, params.GetTexture("Texture3Normal")->GetResourceView());
+	deviceContext->PSSetShaderResources(20, 1, ResourcesClass::GetInstance()->FindRenderTexture("ShadowMap")->GetResourceView());
 	return true;
 }
 

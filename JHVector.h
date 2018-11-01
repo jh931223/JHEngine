@@ -61,6 +61,14 @@ namespace JHDev
 		one = XMFLOAT2(one.x + other.x, one.y + other.y);
 		return one;
 	}
+	inline XMFLOAT4 operator+=(XMFLOAT4& one, const XMFLOAT4&other)
+	{
+		one.x = one.x + other.x;
+		one.y = one.y + other.y;
+		one.z = one.z + other.z;
+		one.w=one.w + other.w;
+		return one;
+	}
 	inline XMFLOAT3 operator*=(XMFLOAT3& one, Scalar num)
 	{
 		one = XMFLOAT3(one.x * num, one.y * num, one.z * num);
@@ -169,6 +177,14 @@ namespace JHDev
 			return (f > x) ? x : f;
 		else
 			return (f < x) ? x : f;
+	}
+	inline float Saturate(float x)
+	{
+		if (x < 0)
+			x = 0;
+		else if (x > 1)
+			x = 1;
+		return x;
 	}
 	inline XMFLOAT3 CalcNormal(const XMFLOAT3& v1, const XMFLOAT3& v2, const XMFLOAT3& v3)
 	{

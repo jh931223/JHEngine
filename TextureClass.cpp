@@ -62,8 +62,13 @@ void TextureClass::Shutdown()
 }
 
 
-ID3D11ShaderResourceView* const *TextureClass::GetResourceView()
+ID3D11ShaderResourceView* *TextureClass::GetResourceView()
 {
 	return &m_texture;
+}
+
+ID3D11ShaderResourceView* TextureClass::GetResourceView2()
+{
+	return m_texture;
 }
 

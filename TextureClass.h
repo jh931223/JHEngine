@@ -12,7 +12,9 @@ public:
 	bool InitializeWIC(ID3D11Device*, const WCHAR*);
 	void Shutdown();
 
-	ID3D11ShaderResourceView* const* GetResourceView();
+	ID3D11ShaderResourceView** GetResourceView();
+
+	ID3D11ShaderResourceView * GetResourceView2();
 
 
 private:

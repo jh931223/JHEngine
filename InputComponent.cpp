@@ -32,9 +32,9 @@ void InputComponent::Update()
 	{
 		Input()->ToggleMouseCursor(!Input()->GetMouseCursorToggle());
 	}
-	if (Input()->GetMouseCursorToggle())
+	if (Input()->GetKeyDown(DIK_X))
 	{
-
+		Graphics()->castShadow = !Graphics()->castShadow;
 	}
 	
 	float deltaTime=Timer::DeltaTime();

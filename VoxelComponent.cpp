@@ -158,7 +158,7 @@ void VoxelComponent::Update()
 		brushInfo.brushRadius = (brushInfo.brushRadius <= 0) ? 0 : brushInfo.brushRadius - 0.01f;
 		printf("brushRadius : %f\n", brushInfo.brushRadius);
 	}
-	if (Input()->GetKey(DIK_LALT))
+	/*if (Input()->GetKey(DIK_LALT))
 	{
 		auto mat = ResourcesClass::GetInstance()->FindMaterial("m_triplanar");
 		float bias = mat->GetParams()->GetFloat("_ShadowBias");
@@ -182,7 +182,7 @@ void VoxelComponent::Update()
 		{
 			brushInfo.brushRadius = (brushInfo.brushRadius <= 0) ? 0 : brushInfo.brushRadius - 0.01f;
 		}
-	}
+	}*/
 	if (Input()->GetKeyDown(DIK_F1))
 	{
 		SystemClass::GetInstance()->GetD3D()->ChangeFillMode(true);
@@ -228,32 +228,45 @@ void VoxelComponent::Update()
 
 	if (Input()->GetKeyDown(DIK_1))
 	{
-		SetBrush(BrushType::Brush_Sphere);
+		if (Input()->GetKey(DIK_LALT))
+		{
+			SetBrush(brushInfo.brushType,0);
+		}
+		else SetBrush(BrushType::Brush_Sphere,brushInfo.material);
 	}
 	else if (Input()->GetKeyDown(DIK_2))
 	{
-		SetBrush(BrushType::Brush_Cube);
+		if (Input()->GetKey(DIK_LALT))
+		{
+			SetBrush(brushInfo.brushType, 1);
+		}
+		else SetBrush(BrushType::Brush_Cube, brushInfo.material);
 	}
 	else if (Input()->GetKeyDown(DIK_3))
 	{
-		SetBrush(BrushType::Brush_Sphere);
+		if (Input()->GetKey(DIK_LALT))
+		{
+			SetBrush(brushInfo.brushType,2);
+		}
+		else SetBrush(BrushType::Brush_Default, brushInfo.material);
 	}
 
 	else if (Input()->GetKeyDown(DIK_4))
 	{
-
-		if (!useAsyncBuild)
+		if (Input()->GetKey(DIK_LALT))
 		{
-			UpdateMesh(3);
+			SetBrush(brushInfo.brushType, 3);
 		}
-		else UpdateMeshAsync(0);
+		else SetBrush(BrushType::Brush_Paint, brushInfo.material);
 	}
 	//////// Edit ///////////////
 	{
+
 		if (Input()->GetKeyDown(DIK_C))
 		{
 			keepPress = !keepPress;
 		}
+
 		XMFLOAT3 origin = CameraComponent::mainCamera()->transform()->GetWorldPosition();
 		XMFLOAT3 dir = CameraComponent::mainCamera()->transform()->forward();
 		if (Input()->GetMouseCursorToggle())
@@ -265,7 +278,7 @@ void VoxelComponent::Update()
 			CameraComponent::ScreenPointToRay(mPos,origin,dir);
 		}
 		RaycastHit hit;
-		if (PhysicsClass::Raycast(origin, dir, 100, hit))
+		if (PhysicsClass::Raycast(origin, dir, 100, hit)&& Input()->GetMouseCursorToggle())
 		{
 			if (Input()->GetMouseDown(KEY_RBUTTON)||(keepPress&&Input()->GetMouse(KEY_RBUTTON)))
 			{
@@ -560,10 +573,13 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 		return;
 
 	float density[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+	int rgba[8] = { 0, };
 	int caseCode = 0;
 	for (int i = 0; i < 8; i++)
 	{
-		density[i] = GetVoxel(totalPos + regularCorners[i] * _unit).isoValue;
+		auto voxelData = GetVoxel(totalPos + regularCorners[i] * _unit);
+		density[i] =voxelData.isoValue;
+		rgba[i] = voxelData.material;
 		newCorners[i] = totalPos + newCorners[i] * _unit;
 		if (density[i] < isoLevel)
 			caseCode |= 1 << i;
@@ -593,8 +609,25 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 		if (cache&&present&&d1 != 7)
 		{
 			auto prevCache = cache->GetReusedCell(offset, dir);
-			if(prevCache)
+			if (prevCache)
+			{
 				newIndex = prevCache->verts[idx];
+				if (newIndex != -1)
+				{
+					float mu = (isoLevel - density[d0]) / (density[d1] - density[d0]);
+					float col[4] = { 0, };
+					col[rgba[d1]] += Saturate(1.0f * mu);
+					col[rgba[d0]] += 1 - col[rgba[d1]];
+					/*vertices[newIndex].color.x += col[0];
+					vertices[newIndex].color.y += col[1];
+					vertices[newIndex].color.z += col[2];
+					vertices[newIndex].color.w += col[3];*/
+
+
+
+					vertices[newIndex].color += XMFLOAT4(col[0], col[1], col[2], col[3]);
+				}
+			}
 		}
 		if(newIndex ==-1)
 		{
@@ -605,7 +638,11 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 			VertexBuffer newVertex;
 			newVertex.position = (lerpSelf(p0, p1, mu));
 			newVertex.normal = XMFLOAT3(0, 0, 0);
-			newVertex.color = XMFLOAT4();
+			float col[4] = { 0, };
+			col[rgba[d1]] += Saturate(1.0f * mu);
+			col[rgba[d0]] += 1 - col[rgba[d1]];
+			newVertex.color = XMFLOAT4(col[0], col[1], col[2], col[3]);
+			//newVertex.color = XMFLOAT4(1,0,0,0);
 			vertices.push_back(newVertex);
 			newIndex = vertices.size()-1;
 		}
@@ -682,18 +719,25 @@ void VoxelComponent::PolygonizeTransitionCell(XMFLOAT3 pos,XMINT3 offset, int _u
 		{
 			newCorners.clear();
 			float density[13] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+			int rgba[13] = { 0, };
 			for (int j=0;j<9;j++)
 			{
 				newCorners.push_back(totalPos + transitionCornersByBasis[b][j] * _unit);
-				density[j] = GetVoxel(newCorners[j]).isoValue;
+				auto voxelData = GetVoxel(newCorners[j]);
+				density[j] = voxelData.isoValue;
+				rgba[j] = (voxelData.material);
 			}
 			for (int j = 0; j < 4; j++)
 				newCorners.push_back(totalPos + _9abc[b][j] * _unit);
 
 			density[9] = density[0];
+			rgba[9] = rgba[0];
 			density[10] = density[2];
+			rgba[10] = rgba[2];
 			density[11] = density[6];
+			rgba[11] = rgba[6];
 			density[12] = density[8];
+			rgba[12] = rgba[8];
 
 			caseCode = 0;
 			if (density[0] < isoLevel)caseCode |= 1 << 0;
@@ -731,7 +775,12 @@ void VoxelComponent::PolygonizeTransitionCell(XMFLOAT3 pos,XMINT3 offset, int _u
 				float mu = (isoLevel - density[d0]) / (density[d1] - density[d0]);
 				VertexBuffer newVertex;
 				newVertex.position = (lerpSelf(p0, p1, mu));
-				newVertex.normal = XMFLOAT3(0, 1, 0);
+				newVertex.normal = XMFLOAT3(0, 1, 0); 
+
+				float col[4] = { 0, };
+				col[rgba[d1]] += Saturate(1.0f * mu);
+				col[rgba[d0]] += 1 - col[rgba[d1]];
+				newVertex.color = XMFLOAT4(col[0], col[1], col[2], col[3]);
 				vertices.push_back(newVertex);
 			}
 			int indexBegin = indices.size();
@@ -1238,6 +1287,13 @@ bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength,Brus
 				case VoxelComponent::Brush_Cube:
 					amount = SIGN(_strength);
 					break;
+				case VoxelComponent::Brush_Paint:
+				{
+					float dis = GetDistance(pos, pos + XMFLOAT3(i, j, k));
+					if (dis > _radius)
+						continue;
+					break;
+				}
 				default:
 					float dis = GetDistance(pos, pos + XMFLOAT3(i, j, k));
 					if (dis > _radius)
@@ -1246,15 +1302,17 @@ bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength,Brus
 					break;
 				}
 				float lastValue = data.isoValue;
-				data.isoValue = amount;
-				if (_brushType != Brush_Default)
+				if(_brushType!=Brush_Paint)
+					data.isoValue = amount;
+				data.material = brushInfo.material;
+				if (_brushType != Brush_Default&& _brushType != Brush_Paint)
 				{
 					if (_strength > 0 && lastValue > data.isoValue)
 						continue;
 					else if (_strength < 0 && lastValue < data.isoValue)
 						continue;
 				}
-				if (lastValue == data.isoValue)
+				if (lastValue == data.isoValue&& _brushType != Brush_Paint)
 					continue;
 				if (SetVoxel(nPos.x, nPos.y, nPos.z, data, false))
 				{
@@ -1524,7 +1582,7 @@ void VoxelComponent::LoadHeightMapFromRaw(int _width, int _height,int _depth, in
 				VoxelData v;
 				if (y <= convertY)
 				{
-					v.material = 1;
+					v.material = 0;
 				}
 				v.isoValue = convertY - y;
 				SetVoxel(x, y, z, v, true);
@@ -1729,7 +1787,7 @@ void VoxelComponent::LoadCube(int _width, int _height, int _depth)
 			for (int y = 1; y < info.height; y++)
 			{
 				VoxelData v;
-				v.material = 1;
+				v.material = 0;
 				v.isoValue = info.height-y-1;
 				SetVoxel(x, y, z, v);
 				if(x%info.partitionSize==0&&y%info.partitionSize==0&&z%info.partitionSize==0)
@@ -1758,7 +1816,7 @@ void VoxelComponent::LoadPerlin(int _width,int _height, int _depth, int _maxHeig
 				VoxelData vox;
 				if (y <= noise)
 				{
-					vox.material = 1;
+					vox.material = 0;
 				}
 				else
 				{
@@ -2122,10 +2180,27 @@ int VoxelComponent::ReadTXT(const char * filename)
 	return atoi(str);
 }
 
-void VoxelComponent::SetBrush(BrushType _brush)
+void VoxelComponent::SetBrush(BrushType _brush,int _material)
 {
 	brushInfo.brushType = _brush;
-
+	brushInfo.material = _material;
+	XMFLOAT4 color(0, 0, 0, 0);
+	switch (_material)
+	{
+	case 0:
+		color = XMFLOAT4(1, 0, 0, 0.3);
+		break;
+	case 1:
+		color = XMFLOAT4(0, 1, 0, 0.3);
+		break;
+	case 2:
+		color = XMFLOAT4(0, 0, 1, 0.3);
+		break;
+	case 3:
+		color = XMFLOAT4(1, 1, 1, 0.3);
+		break;
+	}
+	targetMesh->GetMaterial()->GetParams()->SetFloat4("_MainColor", color);
 	if (targetMesh)
 	{
 		switch (_brush)

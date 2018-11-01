@@ -74,6 +74,8 @@ private:
 	Mesh* skyMesh;
 
 	float windowWidth, windowHeight;
+public:
+	bool castShadow=false;
 };
 struct RenderTask : ITaskParallel
 {
