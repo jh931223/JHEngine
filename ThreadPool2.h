@@ -118,12 +118,14 @@ public:
 private:
 	void Excute(int id)
 	{
-		while (true)
+		while (isRunThread)
 		{
 			{
 				std::unique_lock<std::mutex> lock(poolMutex);
-				workerConditions[id]->wait(lock, [&]()->bool {return this->workerFlags[id]; });
+				workerConditions[id]->wait(lock, [&]()->bool {return this->workerFlags[id]|| !isRunThread; });
 			}
+			if (!isRunThread)
+				break;
 			Task task;
 			bool isHaveTask = false;
 #ifdef USE_COMPETITION_QUEUE
@@ -230,6 +232,7 @@ private:
 
 	int maxThreadNums;
 
+	bool isRunThread = true;
 	bool isInit = false;
 
 	std::function<void(Task)> taskFunc;

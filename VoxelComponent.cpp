@@ -68,11 +68,11 @@ void VoxelComponent::Initialize()
 
 
 	//LoadCube(32, 32, 32);
-	//LoadPerlin(256, 128, 256,128, 0.2f);
+	LoadPerlin(256, 128, 256,128, 0.2f);
 	//LoadPerlin(2048, 256, 2048, 128, 0.07f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");
+	//LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");
 
 
 #ifndef USE_JOBSYSTEM
@@ -1302,6 +1302,7 @@ bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength,Brus
 					break;
 				}
 				float lastValue = data.isoValue;
+				int lastMat = data.material;
 				if(_brushType!=Brush_Paint)
 					data.isoValue = amount;
 				data.material = brushInfo.material;
@@ -1312,7 +1313,7 @@ bool VoxelComponent::EditVoxel(XMFLOAT3 pos, float _radius, float _strength,Brus
 					else if (_strength < 0 && lastValue < data.isoValue)
 						continue;
 				}
-				if (lastValue == data.isoValue&& _brushType != Brush_Paint)
+				if ((_brushType != Brush_Paint&&lastValue == data.isoValue)|| (_brushType == Brush_Paint && lastMat == data.material))
 					continue;
 				if (SetVoxel(nPos.x, nPos.y, nPos.z, data, false))
 				{

@@ -13,6 +13,12 @@ public:
 
 	~ThreadPool() 
 	{
+		isRunThread = false;
+		for (int i = 0; i < maxThreads; i++)
+		{
+			workerFlags[i] = true;
+			workerConditions[i]->notify_one();
+		}
 		for (int i = 0; i < maxThreads; i++)
 		{
 			workers[i].join();
@@ -145,12 +151,14 @@ protected :
 	}
 	void WorkerFunc(int id)
 	{
-		while (true)
+		while (isRunThread)
 		{
 			{
 				std::unique_lock<std::mutex> lock(workerMutex);
 				workerConditions[id]->wait(lock, [&,this]()->bool {return this->workerFlags[id]; });
 			}
+			if (!isRunThread)
+				break;
 			TaskBuffer task;
 			while (GetTask(task))
 			{
@@ -168,7 +176,7 @@ protected:
 	bool isInit = false;
 	int maxThreads;
 	bool keepOrder;
-
+	bool isRunThread = true;
 	std::vector<std::thread> workers;
 	std::vector<bool> workerFlags;
 	std::vector<std::condition_variable*> workerConditions;

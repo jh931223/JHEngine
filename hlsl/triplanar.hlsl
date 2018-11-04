@@ -97,10 +97,10 @@ float4 ps(v2f input) : SV_TARGET
 
 	float3 blend_weights = abs(input.worldNormal.xyz);
 	float tex_sharpness = 2.0f;
-	//blend_weights = (blend_weights - 0.2) * tex_sharpness;
-	//blend_weights = max(blend_weights, 0);
-	//blend_weights /= (blend_weights.x + blend_weights.y + blend_weights.z).xxx;
-	blend_weights /= dot(blend_weights, (float3)2);
+	blend_weights = (blend_weights - 0.2) * tex_sharpness;
+	blend_weights = max(blend_weights, 0);
+	blend_weights /= (blend_weights.x + blend_weights.y + blend_weights.z).xxx;
+	//blend_weights /= dot(blend_weights, (float3)2);
 	float4 blended_color;
 	float3 blended_bump_vec;
 	{
@@ -123,10 +123,12 @@ float4 ps(v2f input) : SV_TARGET
 		{
 			int _texIndex = i * 2;
 			col1[i] = _Tex[_texIndex].Sample(SampleType, coord1);
-			col2[i] = _Tex[_texIndex +1].Sample(SampleType, coord2);
+			col2[i] = (input.worldNormal.y>0)?_Tex[_texIndex +1].Sample(SampleType, coord2):_Tex[_texIndex].Sample(SampleType, coord2);
+			//col2[i] = _Tex[_texIndex + 1].Sample(SampleType, coord2);
 			col3[i] = _Tex[_texIndex].Sample(SampleType, coord3);
 			bumpFetch1[i] = _Normal[_texIndex].Sample(SampleType, coord1).xy - 0.5;
-			bumpFetch2[i] = _Normal[_texIndex +1].Sample(SampleType, coord2).xy - 0.5;
+			bumpFetch2[i] = (input.worldNormal.y>0) ? _Normal[_texIndex + 1].Sample(SampleType, coord2).xy - 0.5 : _Normal[_texIndex].Sample(SampleType, coord2).xy - 0.5;
+			//bumpFetch2[i] = _Normal[_texIndex + 1].Sample(SampleType, coord2).xy - 0.5;
 			bumpFetch3[i] = _Normal[_texIndex].Sample(SampleType, coord3).xy - 0.5;
 			bump1[i] = float3(0, bumpFetch1[i].x, bumpFetch1[i].y);
 			bump2[i] = float3(bumpFetch2[i].y, 0, bumpFetch2[i].x);
@@ -154,7 +156,7 @@ float4 ps(v2f input) : SV_TARGET
 			c2 * blend_weights.yyyy +
 			c3 * blend_weights.zzzz;
 
-		blended_color = blended_color * 2;
+		//blended_color = blended_color * 2;
 
 		blended_bump_vec = b1 * blend_weights.xxx +
 			b2 * blend_weights.yyy +

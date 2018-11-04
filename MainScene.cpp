@@ -35,7 +35,7 @@ void MainScene::Setup()
 	// light object »ý¼º
 	gobj = new GameObject("mainCamera");
 	CameraComponent* m_Camera = gobj->AddComponent<CameraComponent>();
-	m_Camera->transform()->SetPosition(XMFLOAT3(25.0f, 0.0f, -50.0f));
+	m_Camera->transform()->SetPosition(XMFLOAT3(25.0f, 100.0f, -50.0f));
 	m_Camera->transform()->SetRotation(XMFLOAT3(0.0f, 0.0f, 0.0f));
 	m_Camera->background = CameraComponent::SkySphere;
 	m_Camera->skyMaterial = ResourcesClass::GetInstance()->FindMaterial("m_skySphere");

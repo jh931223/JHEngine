@@ -64,7 +64,7 @@ public:
 	//#pragma pack(push, 1)
 	struct VoxelData
 	{
-		int material = 0;
+		byte material = 0;
 		float isoValue = -1;
 	};
 	struct ChunkData
@@ -74,7 +74,7 @@ public:
 		{
 			chunk = new VoxelData[length*length*length];
 		}
-		~ChunkData() { if(chunk)delete[] chunk; }
+		~ChunkData() { if (chunk)delete[] chunk; chunk = 0; }
 		bool IsHaveChunk()
 		{
 			return (chunk);
