@@ -13,6 +13,7 @@ class RegularCellCache;
 class VoxelCollider;
 class VoxelComponent;
 //#define USE_JOBSYSTEM
+const int MAX_THREAD_NUM = 8;
 
 struct COMMAND_BUFFER
 {
@@ -125,7 +126,7 @@ public:
 	void LoadMapInfo();
 	void InitDataDirectory(const char * _path);
 	void SaveMapInfo();
-	bool ReadVoxelData(XMFLOAT3 pos, const char* _path = 0);
+	OctreeNode<ChunkData>* ReadVoxelData(XMFLOAT3 pos, const char* _path = 0);
 	void WriteVoxelData(XMFLOAT3 pos);
 private:
 	

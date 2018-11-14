@@ -56,10 +56,10 @@ void VoxelComponent::Initialize()
 	int start = 128;
 
 	SetLODLevel(0, start);
-	SetLODLevel(1, start + info.partitionSize + info.partitionSize);
-	SetLODLevel(2, start + info.partitionSize + info.partitionSize + info.partitionSize);
-	SetLODLevel(3, start + info.partitionSize + info.partitionSize+ info.partitionSize + info.partitionSize);
-	SetLODLevel(4, start + info.partitionSize + info.partitionSize + info.partitionSize+ info.partitionSize);
+	SetLODLevel(1, start*2);
+	SetLODLevel(2, start*3);
+	SetLODLevel(3, start*4);
+	//SetLODLevel(4, start + info.partitionSize + info.partitionSize + info.partitionSize+ info.partitionSize);
 	//SetLODLevel(3, 256);
 
 
@@ -68,11 +68,11 @@ void VoxelComponent::Initialize()
 
 
 	//LoadCube(32, 32, 32);
-	LoadPerlin(256, 128, 256,128, 0.2f);
+	//LoadPerlin(256, 128, 256,128, 0.2f);
 	//LoadPerlin(2048, 256, 2048, 128, 0.07f);
 	//LoadMapData("Terrain1");
 	//int h = ReadTXT("/data/info.height.txt");
-	//LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");
+	LoadHeightMapFromRaw(1025, 256, 1025,256, "data/terrain.raw");
 
 
 #ifndef USE_JOBSYSTEM
@@ -82,9 +82,9 @@ void VoxelComponent::Initialize()
 		return this->UpdatePartialMesh(XMFLOAT3(buf.x, buf.y, buf.z), buf.lodLevel, buf.transitionCellBasis);
 	});
 	threadPool[Reserve_Load].SetTaskFunc(_task);
-	threadPool[Reserve_Load].Initialize(8, false);
+	threadPool[Reserve_Load].Initialize(MAX_THREAD_NUM, false);
 	threadPool[Reserve_Deform].SetTaskFunc(_task);
-	threadPool[Reserve_Deform].Initialize(8, false);
+	threadPool[Reserve_Deform].Initialize(MAX_THREAD_NUM, false);
 #endif
 
 	if (!useAsyncBuild)
@@ -618,13 +618,6 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 					float col[4] = { 0, };
 					col[rgba[d1]] += Saturate(1.0f * mu);
 					col[rgba[d0]] += 1 - col[rgba[d1]];
-					/*vertices[newIndex].color.x += col[0];
-					vertices[newIndex].color.y += col[1];
-					vertices[newIndex].color.z += col[2];
-					vertices[newIndex].color.w += col[3];*/
-
-
-
 					vertices[newIndex].color += XMFLOAT4(col[0], col[1], col[2], col[3]);
 				}
 			}
@@ -642,7 +635,6 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 			col[rgba[d1]] += Saturate(1.0f * mu);
 			col[rgba[d0]] += 1 - col[rgba[d1]];
 			newVertex.color = XMFLOAT4(col[0], col[1], col[2], col[3]);
-			//newVertex.color = XMFLOAT4(1,0,0,0);
 			vertices.push_back(newVertex);
 			newIndex = vertices.size()-1;
 		}
@@ -654,8 +646,6 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 	}
 	int minX = pos.x;
 	int maxX = pos.x + info.partitionSize-_unit;
-	//int minY = pos.x + offset.x*_unit;
-	//int maxY = pos.x + offset.x*_unit;
 	int minZ = pos.z;
 	int maxZ = pos.z + info.partitionSize - _unit;
 	for (int i = 0; i < triCount; i++)
@@ -665,26 +655,9 @@ void VoxelComponent::PolygonizeRegularCell(XMFLOAT3 pos,XMINT3 offset, int _unit
 		int index_1 = localIndices[regularCell.Indices()[triBegin + 1]];
 		int index_2 = localIndices[regularCell.Indices()[triBegin + 2]];
 		XMFLOAT3 n = CalcNormal(vertices[index_0].position, vertices[index_1].position, vertices[index_2].position);
-		//float ndotu = Dot(n, BasicVector::up);
-		//if(ndotu)
-		//XMFLOAT3 nUp(0, ndotu >= 0?1:-1, 0);
-		//std::function<bool(int)> normalCheck = [&](int _index) {
-
-		//	if (vertices[_index].position.x == minX || vertices[_index].position.x == maxX)
-		//		return false;
-		//	if (vertices[_index].position.z == minZ || vertices[_index].position.z == maxZ)
-		//		return false;
-		//	return true;
-		//};
-		//if(!normalCheck(index_0))
-			vertices[index_0].normal += n;
-		//vertices[index_0].normal += nUp;
-		//if (!normalCheck(index_1))
-			vertices[index_1].normal += n;
-		//vertices[index_1].normal += nUp;
-		//if (!normalCheck(index_2))
-			vertices[index_2].normal += n;
-		//vertices[index_2].normal += nUp;
+		vertices[index_0].normal += n;
+		vertices[index_1].normal += n;
+		vertices[index_2].normal += n;
 		indices.push_back(index_0);
 		indices.push_back(index_1);
 		indices.push_back(index_2);
@@ -1242,7 +1215,6 @@ bool VoxelComponent::SetVoxel(int x, int y, int z, VoxelData value,bool isInit)
 		y = pos.y - sPos.y;
 		z = pos.z - sPos.z;
 		chunk->chunk[x + y * info.partitionSize + z * info.partitionSize*info.partitionSize]=value;
-		
 		return true;
 	}
 	auto node = tempChunks->GetNodeAtPosition(pos, 0);
@@ -1519,7 +1491,7 @@ void VoxelComponent::ProcessLOD()
 	if (isLockedBasePosition)
 		return;
 	XMFLOAT3 newPosition = GetPartitionStartPos(CameraComponent::mainCamera()->transform()->GetWorldPosition());
-	float processDis = info.partitionSize * 2;
+	float processDis = info.partitionSize*2;
 	float distance = GetDistance(newPosition, lastBasePosition);
 	if (distance>=processDis)
 	{
@@ -1551,28 +1523,6 @@ void VoxelComponent::LoadHeightMapFromRaw(int _width, int _height,int _depth, in
 	ReadRawEX16(data, filename, info.width, info.depth,top,bottom);
 	printf("%d, %d\n", top,bottom);
 	float h = ((float)_maxHeight) / 65534.0f;
-	//int mX = (endX!=-1&&endX >= startX && endX < _width) ? endX+1 : _width;
-	//int mZ = (endZ!=-1&&endZ >= startZ && endZ < _depth) ? endZ+1 : _depth;
-	//int cX=0, cZ=0;
-	//for (int x= (startX >= 0 && startX < _width) ? startX : 0; x < mX; x++)
-	//{
-	//	cZ = 0;
-	//	for (int z= (startZ >= 0 && startZ < _depth) ? startZ : 0; z < mZ; z++)
-	//	{
-	//		float convertY = ((float)data[x][_depth -1-z] * h);
-	//		for (int y = 0; (y < (int)roundl(convertY)); y++)
-	//		{
-	//			VoxelData v;
-	//			v.material = 1;
-	//			v.isoValue = convertY - y;
-	//			SetVoxel(cX, y, cZ,v);
-	//			if (cX%info.partitionSize == 0 && y%info.partitionSize == 0 && cZ%info.partitionSize == 0)
-	//				ReserveUpdate(XMFLOAT3(cX, y, cZ), true, false);
-	//		}
-	//		cZ++;
-	//	}
-	//	cX++;
-	//}
 	for (int x = 0; x < info.width; x++)
 	{
 		for (int z = 0; z < info.depth; z++)
@@ -1658,19 +1608,6 @@ void VoxelComponent::LoadMapData(const char* _path)
 		if(ReadVoxelData(i, dataPath))
 			ReserveUpdate(i, Reserve_Load, false);
 
-
-
-	//for (int x=0;x<info.width;x+=info.partitionSize)
-	//{
-	//	for (int y = 0; y < info.height; y += info.partitionSize)
-	//	{
-	//		for (int z = 0; z < info.depth; z += info.partitionSize)
-	//		{
-	//			if(ReadVoxelData(XMFLOAT3(x, y, z), dataPath))
-	//				ReserveUpdate(XMFLOAT3(x, y, z), false, false);
-	//		}
-	//	}
-	//}
 }
 void VoxelComponent::SaveMapData(const char* _path)
 {
@@ -1727,10 +1664,8 @@ void VoxelComponent::SaveMapInfo()
 	fclose(pInput);
 }
 
-
-bool VoxelComponent::ReadVoxelData(XMFLOAT3 pos, const char* _path)
+OctreeNode<VoxelComponent::ChunkData>* VoxelComponent::ReadVoxelData(XMFLOAT3 pos, const char* _path)
 {
-	bool isRendered = false;
 	pos = GetPartitionStartPos(pos);
 	auto node = tempChunks->GetNodeAtPosition(pos, 0);
 	FILE* pInput = NULL;
@@ -1742,15 +1677,14 @@ bool VoxelComponent::ReadVoxelData(XMFLOAT3 pos, const char* _path)
 	sprintf(totalPath, "%s\\chunks\\%d_%d_%d.JHCD", _path, x, y, z);
 	fopen_s(&pInput, totalPath, "rb");
 	if (pInput == NULL)
-		return isRendered;
+		return NULL;
 	int aNums = info.partitionSize * info.partitionSize*info.partitionSize;
 	int elementSize = sizeof(VoxelData);
 	if(node->GetDepth()!=0)
 		node=tempChunks->Insert(pos, ChunkData(), 0);
 	fread(&(node->GetValue().chunk[0]), elementSize, aNums, pInput);
-	fread(&isRendered, sizeof(bool), 1, pInput);
 	fclose(pInput);
-	return isRendered;
+	return node;
 }
 void VoxelComponent::WriteVoxelData(XMFLOAT3 pos)
 {
@@ -1759,7 +1693,6 @@ void VoxelComponent::WriteVoxelData(XMFLOAT3 pos)
 	auto node2 = meshRendererOctree->GetNodeAtPosition(pos, 0);
 	if (node->GetDepth() != 0&& node2->GetValue()==NULL)
 		return;
-	bool isRendered = (node2->GetValue() != NULL);
 	FILE* pInput = NULL;
 	char totalPath[256];
 	float ps = 1.0f / info.partitionSize;
@@ -1773,7 +1706,6 @@ void VoxelComponent::WriteVoxelData(XMFLOAT3 pos)
 	int aNums = info.partitionSize * info.partitionSize*info.partitionSize;
 	int elementSize = sizeof(VoxelData);
 	fwrite(&(node->GetValue().chunk[0]), elementSize, aNums, pInput);
-	fwrite(&isRendered, sizeof(bool), 1, pInput);
 	fclose(pInput);
 }
 
@@ -2003,14 +1935,13 @@ void VoxelComponent::ProcessCommandQueue()
 #ifndef USE_JOBSYSTEM
 		for (int i = 0; i < 2; i++)
 		{
-			while (commandQueue[i].size())
-			{
-				threadPool[i].AddTaskList(commandQueue[i]);
-				commandQueue[i].clear();
-				//COMMAND_BUFFER _node = commandQueue[i].front();
-				//commandQueue[i].pop_front();
-				//threadPool[i].AddTask(_node);
-			}
+			if(commandQueue[i].size())
+				threadPool[i].AddTaskList(commandQueue[i],MAX_THREAD_NUM*4);
+			//commandQueue[i].pop_front();
+			//commandQueue[i].clear();
+			//COMMAND_BUFFER _node = commandQueue[i].front();
+			//commandQueue[i].pop_front();
+			//threadPool[i].AddTask(_node);
 		}
 #else
 		int length = 8, batch = 1;

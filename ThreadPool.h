@@ -53,16 +53,45 @@ public:
 			}
 		}
 	}
-	void AddTaskList(const std::list<TaskBuffer>& _task)
+	void AddTaskList(std::list<TaskBuffer>& _task)
 	{
+		if (!_task.size())
+			return;
 		{
 			std::unique_lock<std::mutex> lock(taskMutex);
 			for(auto i:_task)
 				taskQueue.push_back(i);
+			_task.clear();
 			{
 				std::unique_lock<std::mutex> lock(workerMutex);
 				int count= taskQueue.size();
 				while (waitingQueue.size()&&count--)
+				{
+					int id = waitingQueue.front();
+					ChangeState(id);
+					workerConditions[id]->notify_one();
+				}
+			}
+		}
+	}
+	void AddTaskList(std::list<TaskBuffer>& _task,int taskQueueLimit)
+	{
+		if (!_task.size())
+			return;
+		{
+			std::unique_lock<std::mutex> lock(taskMutex);
+			
+			while(_task.size())
+			{
+				if (taskQueue.size() >= taskQueueLimit)
+					break;
+				taskQueue.push_back(_task.front());
+				_task.pop_front();
+			}
+			{
+				std::unique_lock<std::mutex> lock(workerMutex);
+				int count = taskQueue.size();
+				while (waitingQueue.size() && count--)
 				{
 					int id = waitingQueue.front();
 					ChangeState(id);
